@@ -155,4 +155,10 @@ if __name__ == "__main__":
     except Exception as error:
         # Deliberately omit SDK exception content, responses and credential details.
         print("Provisioning stopped:", type(error).__name__, "— inspect authentication, scope or existing resources privately")
+        if type(error).__name__ == "ClientError":
+            code = error.response.get("Error", {}).get("Code", "Unknown")
+            operation = getattr(error, "operation_name", "Unknown")
+            # Only identifiers: never serialize the SDK response or message.
+            if re.fullmatch(r"[A-Za-z0-9_.-]+", code) and re.fullmatch(r"[A-Za-z0-9_.-]+", operation):
+                print("AWS operation:", operation, "| error code:", code)
         raise SystemExit(1)
