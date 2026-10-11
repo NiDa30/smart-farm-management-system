@@ -9,6 +9,31 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
+
+
+def prepare_private_directory(output):
+    output.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if os.name == "nt":
+        # Windows chmod/stat do not describe NTFS access control. Replace the
+        # directory ACL before writing secrets; new files inherit this ACL.
+        script = r"""
+$ErrorActionPreference = 'Stop'
+$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+$acl = New-Object System.Security.AccessControl.DirectorySecurity
+$acl.SetOwner($sid)
+$acl.SetAccessRuleProtection($true, $false)
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule($sid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
+$acl.AddAccessRule($rule)
+Set-Acl -LiteralPath $env:SMARTFARM_PRIVATE_DIRECTORY -AclObject $acl
+"""
+        subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+            env={**os.environ, "SMARTFARM_PRIVATE_DIRECTORY": str(output)},
+            check=True, capture_output=True,
+        )
+    elif output.stat().st_mode & 0o077:
+        raise ValueError("Output directory must be private (chmod 700)")
 
 
 def policies(region, account):
@@ -108,9 +133,7 @@ def main():
     repo = Path(__file__).resolve().parents[2]
     if output.is_relative_to(repo) and not output.is_relative_to(repo / ".local"):
         parser.error("Inside repository, output must be under ignored .local/")
-    output.mkdir(parents=True, exist_ok=True, mode=0o700)
-    if output.stat().st_mode & 0o077:
-        parser.error("Output directory must be private (chmod 700)")
+    prepare_private_directory(output)
     device, backend = policies(args.region, args.account_id)
     for name, doc in [("device-policy.json", device), ("backend-iam-policy.json", backend)]:
         (output / name).write_text(json.dumps(doc, indent=2) + "\n")

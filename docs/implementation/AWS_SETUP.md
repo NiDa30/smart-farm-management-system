@@ -16,6 +16,12 @@ Management principal needs STS identity plus scoped IoT Describe/CreateThing, Ge
 
 ## 2. Render policies before provisioning
 
+On Windows, the script uses PowerShell to restrict the output directory's NTFS
+ACL to the current Windows user (including inheritance for new files). POSIX
+systems require directory mode 700. If ACL setup fails, provisioning stops before
+AWS calls. Use a local NTFS folder, not a shared/FAT filesystem. Existing secret
+files with explicitly assigned permissions require separate ACL review.
+
 From repository root (ACCOUNT_ID must be your verified12-digit account):
 
 ```bash
