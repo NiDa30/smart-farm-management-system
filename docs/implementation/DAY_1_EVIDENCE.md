@@ -1,5 +1,21 @@
 # Day 1 execution evidence — 11/10/2026
 
+## Subsequent local execution update
+
+The report below records the original cloud baseline, not the latest overall
+project state. Branch `feat/day1-iot-foundation` was subsequently committed/pushed.
+The user supplied successful AWS provisioning output from their Windows machine:
+`AWS Thing/certificate/policy provisioned. Private files and endpoint saved to ...`.
+Windows DACL and direct botocore dependency fixes were pushed; cloud checks passed
+8 tests, while the user's Windows run passed 7 with 1 POSIX-only skip.
+AWS authentication/provisioning is therefore confirmed by user-provided output on
+their local host, not by execution in this cloud runtime. Firmware build, private
+Wokwi filesystem support, live telemetry and backend MQTT connection remain
+unverified. See the maintained [build journal](../book/BUILD_JOURNAL.md) and
+[troubleshooting record](../book/TROUBLESHOOTING.md) for current state.
+
+## Original cloud baseline (historical)
+
 Baseline HEAD: `5848a623d73390f914f423e8147f91147474c690`, changes currently in shared working tree; no commit/push performed. User confirmed AWS account with IoT permissions and Wokwi (no physical ESP32). Singapore is default region for demo latency; no claim of cheapest current price.
 
 ## Implemented
