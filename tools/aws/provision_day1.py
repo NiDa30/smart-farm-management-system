@@ -20,12 +20,17 @@ def prepare_private_directory(output):
         script = r"""
 $ErrorActionPreference = 'Stop'
 $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
-$acl = New-Object System.Security.AccessControl.DirectorySecurity
-$acl.SetOwner($sid)
+$path = $env:SMARTFARM_PRIVATE_DIRECTORY
+# Read and update only the DACL. Do not touch owner/group/SACL, which can
+# require privileges unavailable to a normal Windows user.
+$acl = [System.IO.Directory]::GetAccessControl($path, [System.Security.AccessControl.AccessControlSections]::Access)
 $acl.SetAccessRuleProtection($true, $false)
+foreach ($existing in @($acl.GetAccessRules($true, $false, [System.Security.Principal.SecurityIdentifier]))) {
+    $acl.RemoveAccessRuleSpecific($existing)
+}
 $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($sid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
 $acl.AddAccessRule($rule)
-Set-Acl -LiteralPath $env:SMARTFARM_PRIVATE_DIRECTORY -AclObject $acl
+[System.IO.Directory]::SetAccessControl($path, $acl)
 """
         subprocess.run(
             ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
