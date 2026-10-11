@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Smart Farm command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "commandId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "deviceId": {
+      "const": "PUMP01"
+    },
+    "action": {
+      "enum": [
+        "ON",
+        "OFF",
+        "RESET_LOCKOUT"
+      ]
+    },
+    "durationSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "commandId",
+    "deviceId",
+    "action",
+    "issuedAt",
+    "expiresAt"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "ON"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "durationSeconds"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "durationSeconds"
+          ]
+        }
+      }
+    }
+  ]
+}

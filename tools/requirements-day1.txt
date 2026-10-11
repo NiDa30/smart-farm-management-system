@@ -1,0 +1,4 @@
+awscli==1.46.1
+platformio==6.2.0
+jsonschema==4.26.0
+rfc3339-validator==0.1.4

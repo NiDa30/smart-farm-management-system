@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Smart Farm event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "deviceId": {
+      "const": "PUMP01"
+    },
+    "bootId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "const": "SAFETY_TRIP"
+    },
+    "reason": {
+      "enum": [
+        "MAX_RUNTIME",
+        "CONNECTION_LOST",
+        "DEVICE_FAULT"
+      ]
+    },
+    "source": {
+      "const": "EDGE"
+    },
+    "reportedState": {
+      "const": "OFF"
+    },
+    "commandId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "timestamp",
+    "eventId",
+    "type",
+    "reason",
+    "source",
+    "reportedState",
+    "commandId"
+  ]
+}

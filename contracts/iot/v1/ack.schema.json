@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Smart Farm ack v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "deviceId": {
+      "const": "PUMP01"
+    },
+    "bootId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "commandId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "stage": {
+      "enum": [
+        "RECEIVED",
+        "EXECUTED"
+      ]
+    },
+    "status": {
+      "enum": [
+        "SUCCESS",
+        "FAILED"
+      ]
+    },
+    "reportedState": {
+      "enum": [
+        "ON",
+        "OFF",
+        "UNKNOWN",
+        "ERROR"
+      ]
+    },
+    "errorCode": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "safetyLockout": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "timestamp",
+    "commandId",
+    "stage",
+    "status",
+    "reportedState",
+    "errorCode"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "FAILED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "errorCode": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

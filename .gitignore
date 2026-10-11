@@ -6,3 +6,13 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local AWS/device provisioning and build artifacts
+.local/
+backend/target/
+firmware/esp32/.pio/
+firmware/esp32/config/config.local.h
+firmware/esp32/data/*
+!firmware/esp32/data/.gitkeep
+firmware/esp32/certs/
+__pycache__/
