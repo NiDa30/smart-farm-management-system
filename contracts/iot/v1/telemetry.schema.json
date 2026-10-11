@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Smart Farm telemetry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "deviceId": {
+      "const": "ENV01"
+    },
+    "bootId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "temperature": {
+      "type": "number",
+      "minimum": -40,
+      "maximum": 80
+    },
+    "humidity": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "soilMoisture": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "uptimeMs": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "timestamp",
+    "temperature",
+    "humidity",
+    "soilMoisture",
+    "uptimeMs"
+  ]
+}

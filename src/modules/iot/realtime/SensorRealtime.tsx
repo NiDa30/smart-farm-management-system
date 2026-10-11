@@ -176,7 +176,7 @@ export const SensorRealtime: React.FC = () => {
       if (!err) {
         showToast(`Đã gửi gói tin test MQTT: ${tVal}°C, ${hVal}%`, 'info');
       } else {
-        showToast('Lỗi gửi gói tin test', 'error');
+        showToast('Lỗi gửi gói tin test', 'warning');
       }
     });
   };

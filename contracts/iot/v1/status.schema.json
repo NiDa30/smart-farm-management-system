@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Smart Farm status v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "deviceId": {
+      "enum": [
+        "ENV01",
+        "PUMP01"
+      ]
+    },
+    "bootId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "connection": {
+      "enum": [
+        "ONLINE",
+        "OFFLINE"
+      ]
+    },
+    "reportedState": {
+      "enum": [
+        "ON",
+        "OFF",
+        "UNKNOWN",
+        "ERROR"
+      ]
+    },
+    "activeCommandId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "safetyLockout": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "timestamp",
+    "connection"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "deviceId": {
+            "const": "PUMP01"
+          },
+          "connection": {
+            "const": "ONLINE"
+          }
+        },
+        "required": [
+          "deviceId",
+          "connection"
+        ]
+      },
+      "then": {
+        "required": [
+          "reportedState",
+          "safetyLockout",
+          "activeCommandId"
+        ]
+      }
+    }
+  ]
+}

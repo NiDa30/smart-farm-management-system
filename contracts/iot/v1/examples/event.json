@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "deviceId": "PUMP01",
+  "bootId": "3e4d1219-4d80-456c-8561-ec0b744f5184",
+  "sequence": 120,
+  "timestamp": "2026-10-11T03:01:05Z",
+  "eventId": "fa6e7cb8-0d86-46c3-a27c-caa1cb4546ac",
+  "type": "SAFETY_TRIP",
+  "reason": "MAX_RUNTIME",
+  "source": "EDGE",
+  "reportedState": "OFF",
+  "commandId": null
+}

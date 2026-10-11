@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "commandId": "fa6e7cb8-0d86-46c3-a27c-caa1cb4546ab",
+  "deviceId": "PUMP01",
+  "action": "ON",
+  "durationSeconds": 20,
+  "issuedAt": "2026-10-11T03:01:07Z",
+  "expiresAt": "2026-10-11T03:01:17Z"
+}

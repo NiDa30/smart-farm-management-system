@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "deviceId": "ENV01",
+  "bootId": "3e4d1219-4d80-456c-8561-ec0b744f5184",
+  "sequence": 120,
+  "timestamp": "2026-10-11T03:01:05Z",
+  "temperature": 31.2,
+  "humidity": 72.0,
+  "soilMoisture": 28.0,
+  "uptimeMs": 600000
+}
