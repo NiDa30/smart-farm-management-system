@@ -1,0 +1,6 @@
+{
+  "name": "Smart Farm Management System",
+  "description": "Hệ thống Quản lý Nông nghiệp & IoT Platform - Phân hệ Kinh doanh & Khách hàng: CRM, Bảng giá đa phân khúc, Báo giá, Quản lý Đơn hàng, Phân bổ giữ hàng không bán vượt tồn, Giao nhận, Quản lý Tuổi nợ và Truy xuất nguồn gốc nông sản từ Cây trồng đến Khách hàng",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
