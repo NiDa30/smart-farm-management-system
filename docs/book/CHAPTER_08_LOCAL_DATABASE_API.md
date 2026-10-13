@@ -1,7 +1,7 @@
 # Chương 8 — Từ gói MQTT đến dữ liệu PostgreSQL và API
 
 **Bản thảo thực hành, cập nhật 13/10/2026.** Code và kiểm tra PostgreSQL/API đã
-đạt trong cloud. Triển khai Windows hiện dừng ở bước sửa cài đặt/đường dẫn Docker;
+đạt trong cloud. PostgreSQL trên Windows đã Healthy sau khi vượt qua lỗi Docker;
 chưa có bằng chứng AWS → PostgreSQL → API live trên máy người dùng.
 
 ## Vì sao cần bước này?
@@ -81,7 +81,9 @@ docker version
 Không đoán đường dẫn này luôn tồn tại. Nếu where.exe không tìm thấy executable,
 kiểm tra installation hoàn tất. Nếu Client có nhưng Server không có, kiểm tra
 engine/WSL trước, không chỉnh SQL hoặc thay password. **Các cách sửa Docker trên
-máy người dùng vẫn chờ xác nhận thành công.**
+máy người dùng đã được vượt qua:** output Compose sau đó xác nhận image pulled,
+network/volume created và container Healthy. Người dùng không cung cấp bước sửa
+cụ thể đã dùng, nên không kết luận WSL hay PATH là bản sửa cuối cùng.
 
 ## Chạy database và backend
 

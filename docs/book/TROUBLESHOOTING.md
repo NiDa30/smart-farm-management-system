@@ -33,6 +33,11 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 
 ### Docker Desktop thiếu Windows feature / executable không tồn tại
 
+**Kết quả tiếp theo:** người dùng chạy Compose thành công; image pulled và
+container PostgreSQL Healthy. Blocker Docker đã vượt qua. Chưa có output xác
+định thao tác WSL/PATH nào giải quyết lỗi, nên không coi một cách sửa cụ thể
+đã được xác nhận. Database healthy chưa chứng minh backend đã lưu telemetry.
+
 Người dùng báo installer cần Virtual Machine Platform và admin. Hướng dẫn
 PowerShell admin wsl --install; nếu feature vẫn thiếu dùng DISM bật VMP/WSL,
 restart rồi updateWSL/version2. Đây là quyền trên máy người dùng, không phải

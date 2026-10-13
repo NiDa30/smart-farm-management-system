@@ -1,5 +1,16 @@
 # Nhật ký xây dựng Smart Farm
 
+## Windows PostgreSQL Healthy — Docker không còn chặn triển khai
+
+Người dùng cung cấp output `docker compose --env-file .local/postgres/db.env
+up -d --wait postgres`: image postgres:16-bookworm pulled, network và volume
+được tạo, container smartfarm-mvp-postgres-1 Healthy. Xác nhận engine/Compose
+hoạt động và database sẵn sàng trên Windows. Không có bằng chứng chính xác
+người dùng đã dùng cách sửa WSL/PATH nào; không suy ra cách sửa cụ thể.
+Tiếp theo chạy run_backend_windows.sh với Wokwi/gateway đang chạy và probe cũ
+đã dừng, quan sát migration/subscription/TELEMETRY_SAVED, rồi gọi API latest.
+Chưa có bằng chứng ingest hoặc API có dữ liệu trên Windows trong mốc này.
+
 ## 13/10/2026 — Docker Windows đang chặn triển khai; viết sách song song
 
 Người dùng yêu cầu vừa làm vừa viết sách. Đã bắt đầu bản thảo chương8, dẫn chiếu
