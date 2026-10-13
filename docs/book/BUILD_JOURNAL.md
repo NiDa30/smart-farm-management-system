@@ -1,5 +1,14 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 — Image ghép boot, chờ chẩn đoán Wi-Fi/NTP/MQTT
+
+Người dùng gửi log Wokwi mới chỉ có bootloader đến entry; không thấy lỗi
+partition cũ trong đoạn gửi, nhưng chưa có bằng chứng mount/TLS/telemetry.
+Firmware trước thiếu log cho trạng thái chờ Wi-Fi/NTP/endpoint. Thêm log boot,
+mount result, endpoint presence (không in giá trị), và trạng thái chờ mỗi 10 giây
+trước khi MQTT client khởi tạo. Cần rebuild firmware, ghép image lại và quan sát
+serial 30–60 giây. Chưa kết luận nguyên nhân im lặng hoặc gate Day 1 đạt.
+
 ## 13/10/2026 — LittleFS build và công cụ ghép flash
 
 Người dùng cung cấp buildfs SUCCESS sau 9.12 giây; danh sách image có .gitkeep,
