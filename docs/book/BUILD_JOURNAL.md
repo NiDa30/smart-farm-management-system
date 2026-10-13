@@ -1,5 +1,18 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 — LittleFS build và công cụ ghép flash
+
+Người dùng cung cấp buildfs SUCCESS sau 9.12 giây; danh sách image có .gitkeep,
+AmazonRootCA1.pem, device.pem.crt, private.pem.key. Trước đó đã giới hạn quyền
+data directory và tải Root CA qua HTTPS chính thức. Không lưu nội dung key.
+Thêm tools/wokwi/merge_flash.py đọc layout từ partitions.bin, kiểm tra size và
+overlap, ghép bootloader/partition table/OTA init/app/LittleFS thành flash 4 MiB.
+Output trong .pio/build/esp32dev/wokwi-private, quyền thư mục riêng tư; Wokwi
+config chuyển từ application-only sang image ghép. Cloud chạy 10 tests đạt,
+gồm kiểm tra offsets, gaps, overlap và quá kích thước bằng dữ liệu giả.
+Chưa chạy merge trên artifact thật của người dùng hoặc xác nhận Wokwi nạp
+image ghép/TLS; cần người dùng chạy helper và gửi serial log tiếp theo.
+
 ## 13/10/2026 — Wokwi khởi động firmware, thiếu partition LittleFS
 
 Kiểm tra tiếp theo do người dùng cung cấp: partitions.bin có nvs 0x9000/0x5000,
