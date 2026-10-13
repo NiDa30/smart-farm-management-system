@@ -1,5 +1,24 @@
 # Nhật ký xây dựng Smart Farm
 
+## Công tắc từ xa và hẹn giờ tắt tối đa 60 phút
+
+Người dùng xác nhận bật/tắt và timer 3 giây hoạt động trong Wokwi sau bản sửa
+clock. Yêu cầu tiếp: công tắc từ xa và hẹn giờ tắt mở rộng. UI thêm switch
+chỉ phản ánh reportedState mới; không đổi ON lạc quan khi POST thành công.
+Hẹn giờ theo giây/phút, 1..3600 giây. Bỏ chọn hẹn giờ gửi ON 3600 giây:
+có thể tắt thủ công và vẫn có cutoff an toàn 60 phút; không phải ON vô hạn.
+Thay đổi cài đặt chỉ áp dụng lần bật tiếp theo, không gia hạn lệnh đang chạy.
+
+Backend/schema/firmware nâng cùng giới hạn 3600; migration V5 thay constraint
+DB, không sửa V3 đã triển khai. Runtime dùng monotonic/esp_timer; TTL nhận
+lệnh vẫn 10 giây, không đồng nghĩa thời gian bật. Mất kết nối vẫn OFF/lockout.
+Cloud validation: 17 Java tests pass với PostgreSQL (không skip), 10 Python
+contract tests pass; native timer test kiểm tra cutoff 3600 giây; firmware
+và frontend build pass. UI fixture kiểm tra switch, đổi phút và cutoff mặc định;
+không publish AWS.
+Firmware cũ từ chối thời gian trên 30 giây: phải build/merge/restart firmware
+trước khi thử thời gian dài. Chưa xác nhận live tính năng mới này.
+
 ## Wokwi clock chậm 7–9 giây: NTP và dung sai mô phỏng
 
 Người dùng ghi nhận age=-7 và -9, ON bị CLOCK_SKEW, GPIO vẫn OFF.

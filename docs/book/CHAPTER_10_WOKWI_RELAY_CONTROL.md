@@ -153,3 +153,16 @@ clock thiết bị nên clock chậm vẫn tạo bất định về độ mới 
 cách này cho bơm thật. Nếu lệch quá 10 giây vẫn từ chối, cần sửa nguồn giờ.
 Thử ON 3 giây một lần: yêu cầu ACK SUCCESS, LED sáng rồi tự tắt. Chưa có
 kết quả live xác nhận bản sửa này.
+
+## Công tắc và hẹn giờ tắt
+
+Switch gửi ON/OFF nhưng vị trí chỉ đổi theo status thiết bị mới, không dựa
+vào click. Có thể chọn giây hoặc phút; tối đa 60 phút. Tắt tùy chọn timer
+vẫn giữ cutoff 60 phút, nên không phải bật vô hạn. Có nút gửi OFF riêng
+để dùng ngay cả khi trạng thái chưa xác định. Timer thiết bị tiếp tục khi
+đóng trình duyệt; mất kết nối AWS thì firmware tắt và khóa an toàn.
+
+Thử 3 giây, thử 1 phút tự tắt, rồi bật 1 phút và tắt bằng switch trước hạn.
+Sửa cài đặt khi đang ON không thay timer hiện tại; tắt rồi bật lại mới áp dụng.
+Migration V5 giữ lịch sử cũ và mở giới hạn duration; phải cập nhật cả backend
+và firmware. Chưa kiểm chứng runtime 60 phút trong Wokwi.

@@ -50,7 +50,7 @@ public class PumpService {
     public synchronized Command create(Request request) {
         if (!enabled) throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Local Wokwi control is disabled");
         if (request.action()==null || !Set.of("ON","OFF","RESET_LOCKOUT").contains(request.action())
-            || (request.action().equals("ON") ? request.durationSeconds()==null || request.durationSeconds()<1 || request.durationSeconds()>30 : request.durationSeconds()!=null))
+            || (request.action().equals("ON") ? request.durationSeconds()==null || request.durationSeconds()<1 || request.durationSeconds()>3600 : request.durationSeconds()!=null))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Invalid command/duration");
         var transport=transports.getIfAvailable();
         if (transport==null || !transport.controlConnected()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"MQTT control unavailable");

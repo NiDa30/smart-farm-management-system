@@ -10,6 +10,9 @@ export const PumpControl: React.FC = () => {
   const [error, setError] = useState('');
   const [available, setAvailable] = useState(false);
   const [duration, setDuration] = useState(5);
+  const [timerEnabled, setTimerEnabled] = useState(true);
+  const [unit, setUnit] = useState<'seconds' | 'minutes'>('seconds');
+  const durationSeconds = timerEnabled ? duration * (unit === 'minutes' ? 60 : 1) : 3600;
   const [sending, setSending] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [now, setNow] = useState(Date.now());
@@ -40,12 +43,12 @@ export const PumpControl: React.FC = () => {
   const fresh = available && status?.fresh && age >= -2000 && age <= 15000;
   const state = fresh ? status?.reportedState : 'UNKNOWN';
   const pending = commands.some(command => ['PENDING','SENT','PUBLISH_UNCERTAIN'].includes(command.state));
-  const canOn = !!fresh && status?.controlEnabled && state === 'OFF' && !status.safetyLockout && !pending && !sending && Number.isInteger(duration) && duration >= 1 && duration <= 30;
+  const canOn = !!fresh && status?.controlEnabled && state === 'OFF' && !status.safetyLockout && !pending && !sending && Number.isInteger(durationSeconds) && durationSeconds >= 1 && durationSeconds <= 3600;
   const send = async (action: 'ON' | 'OFF' | 'RESET_LOCKOUT') => {
     setSending(true); setError('');
     try {
       const response = await fetch(`${API}/commands`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(action === 'ON' ? { action, durationSeconds: duration } : { action }), signal: AbortSignal.timeout(15000) });
+        body: JSON.stringify(action === 'ON' ? { action, durationSeconds } : { action }), signal: AbortSignal.timeout(15000) });
       if (!response.ok) throw new Error(response.status === 409 ? 'Thiết bị chưa sẵn sàng, đang khóa hoặc còn lệnh chờ ACK.' : response.status === 403 ? 'Backend chưa bật chế độ điều khiển Wokwi.' : 'Chưa xác nhận gửi lệnh. Kiểm tra lịch sử và trạng thái; không tự gửi lại lệnh ON.');
       const command = await response.json();
       if (command && typeof command.commandId === 'string') setCommands(previous => [command, ...previous.filter(item => item.commandId !== command.commandId)].slice(0,20));
@@ -62,13 +65,29 @@ export const PumpControl: React.FC = () => {
       {!available && <p role="alert" className="text-rose-700 text-sm">Backend chưa khả dụng; không thể xác nhận trạng thái relay.</p>}
       {status && !status.controlEnabled && <p className="text-amber-800 text-sm">Chế độ điều khiển chưa bật trên backend.</p>}
       {status?.safetyLockout && <p className="text-rose-700 text-sm">Khóa an toàn đang bật. Chỉ reset khi thiết bị báo OFF mới.</p>}
-      <label className="block text-sm font-semibold">Thời gian bật (giây)<input type="number" min={1} max={30} step={1} value={Number.isFinite(duration) ? duration : ''} onChange={event => setDuration(event.target.valueAsNumber)} className="block mt-1 border rounded-lg px-3 py-2 w-32" /></label>
+      <div className="flex items-center gap-3">
+        <button type="button" role="switch" aria-label="Công tắc từ xa" aria-checked={state === 'ON'}
+          disabled={state === 'UNKNOWN' || (state === 'OFF' ? !canOn : !available || !status?.controlEnabled || sending)}
+          onClick={() => void send(state === 'ON' ? 'OFF' : 'ON')}
+          className={`relative w-14 h-8 rounded-full transition-colors disabled:opacity-40 ${state === 'ON' ? 'bg-emerald-600' : 'bg-slate-300'}`}>
+          <span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-all ${state === 'ON' ? 'left-7' : 'left-1'}`} />
+        </button><span className="font-semibold">Công tắc từ xa{sending || pending ? ' · Đang chờ xác nhận' : ''}</span>
+      </div>
+      <fieldset className="border rounded-lg p-4 space-y-3">
+        <legend className="px-2 font-semibold">Hẹn giờ tắt</legend>
+        <label className="flex items-center gap-2"><input type="checkbox" checked={timerEnabled} onChange={event => setTimerEnabled(event.target.checked)} />Tự tắt sau thời gian cài đặt</label>
+        {timerEnabled && <div className="flex gap-2 items-center">
+          <label>Thời gian<input aria-label="Thời gian hẹn tắt" type="number" min={1} max={unit === 'minutes' ? 60 : 3600} step={1} value={Number.isFinite(duration) ? duration : ''} onChange={event => setDuration(event.target.valueAsNumber)} className="ml-2 border rounded-lg px-3 py-2 w-28" /></label>
+          <select aria-label="Đơn vị thời gian" value={unit} onChange={event => { setUnit(event.target.value as 'seconds' | 'minutes'); setDuration(1); }} className="border rounded-lg px-3 py-2"><option value="seconds">Giây</option><option value="minutes">Phút</option></select>
+        </div>}
+        <p className="text-sm text-slate-500">{timerEnabled ? 'Tối đa 60 phút. Cài đặt áp dụng cho lần bật tiếp theo.' : 'Bật bằng công tắc và tắt thủ công; giới hạn an toàn tự tắt sau 60 phút.'}</p>
+      </fieldset>
       <div className="flex flex-wrap gap-3">
-        <button type="button" disabled={!canOn} onClick={() => void send('ON')} className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold disabled:opacity-40">Bật có thời hạn</button>
+        <button type="button" disabled={!canOn} onClick={() => void send('ON')} className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold disabled:opacity-40">Bật đèn</button>
         <button type="button" disabled={!available || !status?.controlEnabled || sending} onClick={() => void send('OFF')} className="bg-rose-600 text-white px-4 py-2 rounded-lg font-semibold disabled:opacity-40">Gửi lệnh tắt</button>
         <button type="button" disabled={!fresh || state !== 'OFF' || !status?.safetyLockout || !status?.controlEnabled || sending} onClick={() => void send('RESET_LOCKOUT')} className="border px-4 py-2 rounded-lg disabled:opacity-40">Reset khóa</button>
       </div>
-      <p className="text-xs text-slate-500 flex gap-2"><ShieldCheck className="w-4 h-4" /> Bật 1–30 giây; chưa có status mới hoặc ACK thì không tự coi lệnh đã thực thi.</p>
+      <p className="text-xs text-slate-500 flex gap-2"><ShieldCheck className="w-4 h-4" /> Bật tối đa 60 phút; chưa có status mới hoặc ACK thì không tự coi lệnh đã thực thi.</p>
       {error && <p role="alert" className="text-rose-700 text-sm">{error}</p>}
     </section>
     <section className="bg-white border rounded-xl overflow-x-auto"><h2 className="p-4 font-semibold border-b">20 lệnh gần nhất</h2><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-3">Thời điểm</th><th className="p-3">Lệnh</th><th className="p-3">Kết quả</th><th className="p-3">ACK / lỗi</th></tr></thead><tbody>{commands.map(command => <tr key={command.commandId} className="border-t"><td className="p-3">{new Date(command.issuedAt).toLocaleString('vi-VN')}</td><td className="p-3">{command.action}{command.durationSeconds ? ` ${command.durationSeconds}s` : ''}</td><td className="p-3">{labels[command.state] ?? command.state}</td><td className="p-3">{command.errorCode ?? command.reportedState ?? '—'}</td></tr>)}{!commands.length && <tr><td colSpan={4} className="p-8 text-center text-slate-400">Chưa có lệnh.</td></tr>}</tbody></table></section>

@@ -30,7 +30,7 @@ class ContractsTest(unittest.TestCase):
                 self.validate("telemetry", value)
 
     def test_on_requires_bounded_duration(self):
-        for duration in [None, 0, 31]:
+        for duration in [None, 0, 3601]:
             value = self.example("command")
             if duration is None: del value["durationSeconds"]
             else: value["durationSeconds"] = duration

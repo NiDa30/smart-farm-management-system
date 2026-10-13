@@ -32,15 +32,15 @@ with sync_playwright() as p:
     page.goto(os.environ.get('FRONTEND_URL','http://127.0.0.1:3000'))
     page.get_by_role('button',name='IoT & Tự động hóa').click()
     page.get_by_role('button',name='Điều khiển Actuator',exact=True).click()
-    on=page.get_by_role('button',name='Bật có thời hạn',exact=True)
+    on=page.get_by_role('button',name='Bật đèn',exact=True)
     expect(on).to_be_disabled()
     mode='ready'
     page.get_by_role('button',name='Làm mới trạng thái').click()
     expect(on).to_be_enabled()
-    page.get_by_label('Thời gian bật (giây)').fill('31')
+    page.get_by_label('Thời gian hẹn tắt').fill('3601')
     expect(on).to_be_disabled()
-    page.get_by_label('Thời gian bật (giây)').fill('3')
-    on.click()
+    page.get_by_label('Thời gian hẹn tắt').fill('3')
+    page.get_by_role('switch',name='Công tắc từ xa').click()
     expect(page.get_by_role('status')).to_have_text('Đang tắt') # no optimistic GPIO state
     expect(page.get_by_text('Đã gửi, chờ ACK',exact=True)).to_be_visible()
     expect(on).to_be_disabled()
@@ -48,6 +48,9 @@ with sync_playwright() as p:
     mode='on'; history[0]['state']='EXECUTED'; history[0]['reportedState']='ON'
     page.get_by_role('button',name='Làm mới trạng thái').click()
     expect(page.get_by_role('status')).to_have_text('Đang bật')
+    expect(page.get_by_role('switch')).to_be_checked()
+    page.get_by_role('switch').click()
+    assert posted[-1]=={'action':'OFF'},posted
     mode='locked'
     page.get_by_role('button',name='Làm mới trạng thái').click()
     expect(page.get_by_role('status')).to_have_text('Đang tắt')
@@ -57,6 +60,19 @@ with sync_playwright() as p:
     page.get_by_role('button',name='Làm mới trạng thái').click()
     expect(page.get_by_role('status')).to_have_text('Chưa xác định')
     expect(on).to_be_disabled()
+    history.clear(); mode='ready'
+    page.get_by_role('button',name='Làm mới trạng thái').click()
+    expect(on).to_be_enabled()
+    page.get_by_label('Đơn vị thời gian').select_option('minutes')
+    page.get_by_label('Thời gian hẹn tắt').fill('2')
+    on.click()
+    assert posted[-1]=={'action':'ON','durationSeconds':120},posted
+    history.clear()
+    page.get_by_role('button',name='Làm mới trạng thái').click()
+    expect(on).to_be_enabled()
+    page.get_by_label('Tự tắt sau thời gian cài đặt').uncheck()
+    page.get_by_role('switch').click()
+    assert posted[-1]=={'action':'ON','durationSeconds':3600},posted
     assert not errors,errors
     print('PASS fixture UI: disabled mode, duration bounds, SENT is not execution, ACK/status, lockout and stale gates; no AWS publish')
     browser.close()

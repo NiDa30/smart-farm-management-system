@@ -38,12 +38,18 @@ class PumpControlTest {
     }
     @Test void refusesUnknownStaleOnAndInvalidDurations() throws Exception {
         assertEquals(409,assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("ON",3))).getStatusCode().value());
-        assertEquals(400,assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("ON",31))).getStatusCode().value());
+        assertEquals(400,assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("ON",3601))).getStatusCode().value());
         status("OFF",false);
         jdbc.update("UPDATE pump_status SET observed_at=CURRENT_TIMESTAMP-INTERVAL '20 seconds'");
         assertEquals("UNKNOWN",pump.status().reportedState());
         assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("ON",3)));
         assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("OFF",3)));
+    }
+    @Test void acceptsOneHourTimerAndPersistsDuration() throws Exception {
+        status("OFF",false);
+        var command=pump.create(new PumpService.Request("ON",3600));
+        assertEquals(3600,command.durationSeconds());
+        assertEquals(3600,pump.commands().get(0).durationSeconds());
     }
     @Test void ackBeforePublishCompletionCannotBeOverwrittenAsSent() throws Exception {
         status("OFF",false);

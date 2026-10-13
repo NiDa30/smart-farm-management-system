@@ -18,7 +18,7 @@ class RelaySafety {
     else if (issued <= 0 || expires <= issued || expires - issued > 15) error = "INVALID_LIFETIME";
     else if (issued > epoch + (futureToleranceSeconds > 10 ? 10 : futureToleranceSeconds)) error = "CLOCK_SKEW";
     else if (expires <= epoch) error = "EXPIRED";
-    else if (action == ON && (seconds < 1 || seconds > 30)) error = "INVALID_DURATION";
+    else if (action == ON && (seconds < 1 || seconds > 3600)) error = "INVALID_DURATION";
     else if (action == ON && locked) error = "SAFETY_LOCKOUT";
     else if (action == ON && running) error = "BUSY";
     else if (action == RESET && running) error = "BUSY";

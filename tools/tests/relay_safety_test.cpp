@@ -14,7 +14,7 @@ int main() {
   assert(!relay.isOn()); // duplicate after timeout does not turn on again
   assert(relay.apply("expired", RelaySafety::ON, 3, epoch-20, epoch-10, epoch, 6000));
   assert(!relay.isOn());
-  assert(relay.apply("long", RelaySafety::ON, 31, epoch, epoch+10, epoch, 6000));
+  assert(relay.apply("long", RelaySafety::ON, 3601, epoch, epoch+10, epoch, 6000));
   assert(!relay.apply("new", RelaySafety::ON, 30, epoch, epoch+10, epoch, 6000));
   assert(relay.tickSafety(6100, false));
   assert(relay.lockout() && !relay.isOn());
@@ -34,6 +34,11 @@ int main() {
   assert(strcmp(clock.apply("beyond",RelaySafety::ON,3,epoch+11,epoch+21,epoch,3000,10),"CLOCK_SKEW")==0);
   assert(strcmp(clock.apply("clamped",RelaySafety::ON,3,epoch+11,epoch+21,epoch,3000,99),"CLOCK_SKEW")==0);
   assert(strcmp(clock.apply("still-expired",RelaySafety::ON,3,epoch-10,epoch,epoch,3000,10),"EXPIRED")==0);
+  RelaySafety extended;
+  assert(!extended.apply("hour",RelaySafety::ON,3600,epoch,epoch+10,epoch,0));
+  assert(!extended.tickSafety(3599999,true));
+  assert(extended.tickSafety(3600000,true));
+  assert(!extended.isOn());
   RelaySafety crowded;
   assert(!crowded.apply("first",RelaySafety::ON,30,epoch,epoch+10,epoch,0));
   for(int i=0;i<31;i++) {
