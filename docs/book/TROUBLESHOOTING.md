@@ -31,4 +31,13 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 
 ## Quy trình chẩn đoán cho sách
 
+### 13/10/2026 — PlatformIO mirror TLS và tải bị ngắt
+
+Windows: mirror sin1.contabostorage.com báo SSL WRONG_VERSION_NUMBER. Framework
+vẫn cài thành công sau khi PlatformIO chọn mirror khác. tool-esptoolpy đang tải
+59% rồi báo Aborted; nguyên nhân abort chưa xác định. Không phải bằng chứng lỗi
+source code, và chưa có kết quả compile. Hướng xử lý đầu tiên: chạy lại build,
+không xóa venv/package đã cài và không tắt xác minh TLS. Nếu còn thất bại, thu
+log cuối đầy đủ trước khi thay đổi proxy/mạng. Chưa xác nhận retry thành công.
+
 Ghi lỗi nguyên văn đã làm sạch, xác định môi trường và bước thất bại, chạy kiểm tra nhỏ có thể phân biệt nguyên nhân, sửa tối thiểu, rồi chạy lại bước đó. Không bỏ TLS verification, không mở toàn bộ IAM để chữa lỗi, không xóa certificate/manifest khi chưa hiểu trạng thái provisioning. Phân biệt lỗi đã tái hiện với giả thuyết; giữ cả bản sửa sai và bản sửa cuối để giải thích bài học.

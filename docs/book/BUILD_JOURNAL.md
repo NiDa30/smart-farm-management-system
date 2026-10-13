@@ -1,5 +1,15 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 — Tải toolchain firmware trên Windows (chưa build xong)
+
+Người dùng cung cấp đầu ra PlatformIO: toolchain-xtensa-esp32 8.4.0+2021r2-patch5
+đã cài. Mirror sin1.contabostorage.com gặp SSL WRONG_VERSION_NUMBER; PlatformIO
+tự chuyển mirror và cài framework-arduinoespressif32 3.20017.241212+sha.dcc1105b
+thành công. Khi tải tool-esptoolpy từ mirror thay thế, tiến trình báo Aborted ở
+59%. Chưa xác định nguyên nhân abort (không kết luận người dùng hủy hoặc TLS
+gây ra). Chưa có bằng chứng biên dịch firmware thành công. Bước tiếp theo:
+chạy lại đúng lệnh build để tận dụng package đã cài; giữ TLS verification.
+
 ## 11/10/2026 — Trạng thái hiện tại
 
 - Repository: NiDa30/smart-farm-management-system; nhánh làm việc `feat/day1-iot-foundation`. Không merge vào main.
