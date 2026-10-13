@@ -1,5 +1,17 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 — Docker Windows đang chặn triển khai; viết sách song song
+
+Người dùng yêu cầu vừa làm vừa viết sách. Đã bắt đầu bản thảo chương8, dẫn chiếu
+runbook, ghi lý do kiến trúc và các lỗi thực tế thay vì chỉ lưu checklist.
+Docker installer báo thiếu Virtual Machine Platform, per-user installation
+không bật được vì cần admin; đã hướng dẫn WSL/features/restart, chưa có output
+xác nhận fix. Sau đó init database helper tạo private db.env thành công nhưng
+Git Bash gọi docker ở đường dẫn per-user không tồn tại. Hướng dẫn reopen terminal,
+hash-r, where.exe docker, thử Program Files PATH nếu đúng vị trí. Chưa xác nhận
+Docker Client/Server hoặc container healthy trên Windows. Không cần tạo lại
+db.env; chưa chạy được ingestion DB/API live ở máy người dùng.
+
 ## 13/10/2026 — PostgreSQL local, ingestion và read API
 
 Người dùng xác nhận có Docker và cho phép tiếp tục implementation. Thêm

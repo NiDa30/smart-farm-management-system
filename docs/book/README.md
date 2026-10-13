@@ -5,6 +5,7 @@
 - [Nhật ký xây dựng](BUILD_JOURNAL.md): công việc, quyết định, bằng chứng, trạng thái hiện tại.
 - [Sổ lỗi và cách xử lý](TROUBLESHOOTING.md): triệu chứng, nguyên nhân đã xác định, giải pháp và giới hạn.
 - [Dàn ý sách](BOOK_OUTLINE.md): tổ chức câu chuyện xây dựng thành các chương thực hành.
+- [Chương 8 — PostgreSQL local và API](CHAPTER_08_LOCAL_DATABASE_API.md): bản thảo thực hành đang được cập nhật cùng triển khai.
 - [Kế hoạch MVP](../implementation/ONE_WEEK_SMART_FARM_MVP_PLAN.md) và [checklist](../implementation/MVP_CHECKLIST.md).
 
 ## Cách duy trì

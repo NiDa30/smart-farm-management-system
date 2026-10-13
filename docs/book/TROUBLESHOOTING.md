@@ -31,6 +31,19 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 
 ## Quy trình chẩn đoán cho sách
 
+### Docker Desktop thiếu Windows feature / executable không tồn tại
+
+Người dùng báo installer cần Virtual Machine Platform và admin. Hướng dẫn
+PowerShell admin wsl --install; nếu feature vẫn thiếu dùng DISM bật VMP/WSL,
+restart rồi updateWSL/version2. Đây là quyền trên máy người dùng, không phải
+quyền cloud hay IAM. Chưa có xác nhận fix thành công.
+
+Sau đó helper tạo db.env đạt, nhưng Git Bash trỏ docker vào AppData/Local/Programs
+không tồn tại. Tách lỗi password/database khỏi lỗi executable: mở Docker Desktop,
+reopen Git Bash/VS Code, hash-r, where.exe docker. Thử thêm Program Files Docker
+bin vào PATH chỉ nếu đúng nơi cài. Nếu chỉ có Client mà không có Server, xử lý
+engine/WSL. Không xóa envfile/volume để sửa PATH. Kết quả xử lý vẫn chờ người dùng.
+
 ### Test PostgreSQL Connection refused trong lúc image đang tải
 
 Khi triển khai persistence, Maven integration tests ban đầu chạy trước khi
