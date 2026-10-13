@@ -1,5 +1,16 @@
 # Nhật ký xây dựng Smart Farm
 
+## Chuyển sang backend — người dùng báo test đã hoàn tất
+
+Người dùng nói đã test xong Wokwi/AWS và yêu cầu tiếp tục. Ghi nhận hoàn tất theo
+lời người dùng; chưa có JSON hoặc số gói/5 phút được gửi, không tự điền bằng
+chứng còn thiếu. Tiếp tục gate backend WSS/SigV4 đã có code. Chuẩn bị helper
+Windows Git Bash kiểm tra JDK21, profile/account, endpoint rồi build và chạy
+probe. Backend runtime IAM policy phải gắn riêng, không thay provisioning policy;
+không tạo EC2/RDS. Chưa chạy live backend bằng credentials của người dùng.
+Người dùng cho biết chưa cài/chưa biết JDK21; cần hướng dẫn cài và xác nhận
+java/javac trước khi chạy helper Windows.
+
 ## Wokwi telemetry được broker xác nhận QoS1
 
 Người dùng cung cấp serial log Wokwi lặp `Telemetry queued; wait for PUBACK`

@@ -1,5 +1,37 @@
 # Day 1 backend bootstrap
 
+## Windows Git Bash: next live gate
+
+The user has reported the Wokwi/Test Client test complete. Backend live reception
+is a separate gate. Install a full JDK 21 and reopen Git Bash: both `java -version`
+and `javac -version` must identify version 21. Maven is supplied by the wrapper;
+do not install a separate global Maven just for this workflow.
+
+The provisioning user's management IAM policy is not MQTT runtime authorization.
+Attach the rendered `.local/aws/backend-iam-policy.json` as a **separate inline
+IAM policy**, e.g. `SmartFarmBackendRuntime`, on the principal used by the local
+backend profile. In the current local MVP this is `smartfarm-dev`; production
+should use a separate runtime role. Do not replace `SmartFarmDay1Provisioning`,
+and do not attach this document as an IoT certificate policy. It allows the
+backend client, farm-scoped subscribe/receive, pump command and diagnostic echo;
+the current probe publishes only echo and never controls the actuator.
+
+From repository root, with Wokwi running and no second backend probe:
+
+```bash
+# First quick connectivity check (not the five-minute acceptance gate):
+PROBE_SECONDS=30 bash tools/backend/run_probe_windows.sh
+# After it succeeds, run the observation gate:
+bash tools/backend/run_probe_windows.sh
+```
+
+The helper checks JDK and AWS account, reads the local endpoint, builds/tests the
+backend, then observes live telemetry via WSS/SigV4. Expected output includes
+`WSS_PUBACK_ECHO_PASS` and `TELEMETRY_PACKETS=...`; at least 58 packets are needed
+for the default 300-second check. The user must supply the live output: no cloud
+credentials or Windows run success are assumed. Packet count does not validate
+schema, uniqueness or changing sensor values; use Test Client evidence too.
+
 Java **JDK21**, Spring Boot3.5.16, Maven3.9.11 wrapper and AWS IoT Device SDK Java v2 1.34.0. No REST/database/control endpoints yet. Use `JAVA_HOME` pointing to a full JDK, not a JRE; cloud audit machine initially had only a Java runtime.
 
 ```bash
