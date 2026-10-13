@@ -1,5 +1,14 @@
 # Nhật ký xây dựng Smart Farm
 
+## Windows frontend — người dùng xác nhận chạy thành công
+
+Sau cập nhật Sensor Realtime dùng API, người dùng báo “đã chạy thành công”.
+Ghi nhận frontend local hoạt động theo xác nhận này; API live đã có bằng chứng
+ở mốc trước. Chưa có kết quả riêng cho sensor variation, Stop Wokwi→stale,
+backend outage→error và recovery trên Windows; không coi tất cả đã nghiệm thu.
+Các trạng thái đó đã được kiểm tra bằng browser fixtures trong cloud. Tiếp theo
+là command/ACK/an toàn relay theo kế hoạch; chưa có điều khiển actuator live.
+
 ## 13/10/2026 — React Sensor Realtime dùng API backend
 
 Thay màn hình HiveMQ trực tiếp bằng latest/history API PostgreSQL; ba card
