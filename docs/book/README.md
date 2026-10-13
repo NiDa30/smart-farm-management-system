@@ -22,3 +22,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 Đây là bản ghi hồi cứu từ lịch sử có sẵn ngày 11/10/2026, chưa phải bản ghi đầy đủ mọi thao tác ngoài cuộc trò chuyện. Bổ sung nếu có bằng chứng mới.
 
 - [Lịch sử cảm biến và CSV](CHAPTER_11_SENSOR_HISTORY.md)
+
+- [Cảnh báo cảm biến](CHAPTER_12_SENSOR_ALERTS.md)

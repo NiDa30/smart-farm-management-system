@@ -1,5 +1,26 @@
 # Nhật ký xây dựng Smart Farm
 
+## Cảnh báo đất thấp và nhiệt độ cao từ telemetry thật
+
+Người dùng xác nhận trang lịch sử cảm biến hoạt động; chưa có bằng chứng CSV
+live riêng. Tiếp tục cảnh báo, không tự điều khiển relay. V8 lưu state và incident
+PostgreSQL; chỉ sample newly inserted, timestamp mới trong30s và không tương
+lai>2s được evaluate trong transaction cùng insert telemetry. Duplicate không
+trigger; timestamp <=watermark không cập nhật alert. Ngưỡng đất<30 mở, >=35
+đóng; nhiệt>35 mở, <=33 đóng. Không backfill alert từ history cũ. Không có
+email/SNS, ngưỡng cố định MVP, chưa có UI sửa ngưỡng hay acknowledge.
+
+Row lock và unique active(device,type) ngăn incident trùng, state bền vững
+qua restart. Không nhận telemetry không tự clear cảnh báo. UI poll API5s,
+100 incident ưu tiên active; dữ liệu cũ báo lỗi nếu backend mất.
+Test phát hiện precision timestamp Java nanoseconds/DB microseconds có thể
+coi sample timestamp giống nhau là mới: normalize watermark milliseconds,
+rerun đạt. Lần chạy lặp phát hiện test history cũ không xóa history khi reset
+fixture nên chạm giới hạn50; thêm truncate bảng test history, không xóa dữ liệu
+ứng dụng hoặc thay giới hạn API. Cloud: 23 Java tests PostgreSQL đạt, frontend lint/build và
+Playwright active/cleared/filter/empty/error đạt. Không có live AWS trong test.
+Chờ người dùng hạ soil<30 rồi tăng>=35 và thử nhiệt36→33 trên Wokwi.
+
 ## Chuyển lịch sử cảm biến từ mock sang dữ liệu PostgreSQL
 
 Người dùng muốn chuyển chức năng khác; phần NVS/offline recovery để sau.

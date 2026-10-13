@@ -25,7 +25,7 @@ class PumpControlTest {
     @Autowired ObjectMapper mapper;
     @MockitoBean CommandTransport transport;
     @BeforeEach void clear() {
-        jdbc.execute("TRUNCATE telemetry_test.pump_command,telemetry_test.pump_status");
+        jdbc.execute("TRUNCATE telemetry_test.pump_command,telemetry_test.pump_status,telemetry_test.pump_state_history");
         reset(transport); when(transport.controlConnected()).thenReturn(true);
     }
     void status(String state,boolean locked) throws Exception {
