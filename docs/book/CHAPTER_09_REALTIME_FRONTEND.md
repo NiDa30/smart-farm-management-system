@@ -1,8 +1,9 @@
 # Chương 9 — Hiển thị telemetry thật trên React
 
 Bản thảo cập nhật13/10/2026. Chương8 đã có bằng chứng API latest trả reading
-live trên Windows. Chương này thêm giao diện gọi API; người dùng vẫn cần chạy
-bản mới để xác nhận toàn bộ luồng đến trình duyệt của họ.
+live trên Windows. Chương này thêm giao diện gọi API; người dùng sau đó xác
+nhận “đã chạy thành công”. Chưa có ảnh hoặc kết quả riêng của từng tình huống
+sensor variation/stale/outage/recovery trên máy họ.
 
 ## Từ API đến màn hình
 
