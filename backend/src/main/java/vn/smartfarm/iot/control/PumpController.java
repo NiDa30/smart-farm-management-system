@@ -8,6 +8,7 @@ public class PumpController {
     private final PumpService service;
     public PumpController(PumpService service) { this.service=service; }
     @GetMapping("/status") public PumpService.Status status() { return service.status(); }
+    @GetMapping("/history") public List<PumpService.StateChange> history() { return service.stateHistory(); }
     @GetMapping("/commands") public List<PumpService.Command> commands() { return service.commands(); }
     @PostMapping("/commands") @ResponseStatus(HttpStatus.ACCEPTED)
     public PumpService.Command create(@RequestBody PumpService.Request request) { return service.create(request); }

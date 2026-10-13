@@ -1,5 +1,23 @@
 # Nhật ký xây dựng Smart Farm
 
+## Người dùng xác nhận công tắc/hẹn giờ; thêm lịch sử trạng thái
+
+Người dùng báo kiểm tra công tắc và hẹn giờ thành công trên Windows/Wokwi.
+Không có log chi tiết mới để chứng minh runtime 60 phút; ghi nhận là user-reported.
+Backend khởi động thất bại từng gây Vite ECONNREFUSED 8080; người dùng sau đó
+xác nhận chạy thành công, nguyên nhân lỗi startup chưa có stack trace.
+MQTT từng ngắt errno119 rồi tự kết nối lại/PUBACK, chưa xác định nguyên nhân.
+
+Migration V6 thêm lịch sử thay đổi status: lần đầu, ON/OFF/lockout đổi,
+boot mới. Trigger PostgreSQL ghi cùng transaction với status đã được kiểm tra
+thứ tự; heartbeat và packet trùng không tạo thêm sự kiện. API /history trả
+50 thay đổi mới nhất, UI hiển thị; lỗi lịch sử không chặn nút OFF.
+Cloud: 18 Java tests pass với PostgreSQL, trong đó test history kiểm tra
+transition, heartbeat và packet trùng; frontend lint/build và UI fixture pass.
+Chưa kiểm tra history live trên Windows.
+Không suy luận nguyên nhân timer/mạng từ status. Sự kiện lý do trực tiếp từ
+firmware vẫn là bước tiếp theo, chưa triển khai ở bản này.
+
 ## Công tắc từ xa và hẹn giờ tắt tối đa 60 phút
 
 Người dùng xác nhận bật/tắt và timer 3 giây hoạt động trong Wokwi sau bản sửa

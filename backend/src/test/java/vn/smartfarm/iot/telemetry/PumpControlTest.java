@@ -45,6 +45,20 @@ class PumpControlTest {
         assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("ON",3)));
         assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("OFF",3)));
     }
+    @Test void stateHistoryRecordsTransitionsButNotHeartbeats() throws Exception {
+        int before=pump.stateHistory().size();
+        status("OFF",false);
+        assertEquals(before+1,pump.stateHistory().size());
+        String payload="{\"schemaVersion\":1,\"deviceId\":\"PUMP01\",\"bootId\":\"ab6cfc5e-18ff-4a01-852b-03604df6b52f\",\"sequence\":2,\"timestamp\":\""+Instant.now()+"\",\"reportedState\":\"OFF\",\"safetyLockout\":false,\"connection\":\"ONLINE\"}";
+        pump.receive("smartfarm/FARM001/PUMP01/status",payload.getBytes());
+        assertEquals(before+1,pump.stateHistory().size());
+        payload=payload.replace("\"sequence\":2","\"sequence\":3").replace("\"OFF\"","\"ON\"");
+        pump.receive("smartfarm/FARM001/PUMP01/status",payload.getBytes());
+        assertEquals(before+2,pump.stateHistory().size());
+        assertEquals("ON",pump.stateHistory().get(0).reportedState());
+        pump.receive("smartfarm/FARM001/PUMP01/status",payload.getBytes());
+        assertEquals(before+2,pump.stateHistory().size());
+    }
     @Test void acceptsOneHourTimerAndPersistsDuration() throws Exception {
         status("OFF",false);
         var command=pump.create(new PumpService.Request("ON",3600));

@@ -3,10 +3,12 @@ import { Power, ShieldCheck, RefreshCw } from 'lucide-react';
 
 interface PumpStatus { deviceId: 'PUMP01'; reportedState: 'ON' | 'OFF' | 'UNKNOWN'; safetyLockout: boolean; fresh: boolean; controlEnabled: boolean; observedAt: string | null }
 interface Command { commandId: string; action: string; durationSeconds: number | null; issuedAt: string; state: string; reportedState: string | null; errorCode: string | null }
+interface StateChange { id: number; observedAt: string; reportedState: string; safetyLockout: boolean; changeType: string }
 const API = '/api/v1/actuators/PUMP01';
 export const PumpControl: React.FC = () => {
   const [status, setStatus] = useState<PumpStatus | null>(null);
   const [commands, setCommands] = useState<Command[]>([]);
+  const [stateHistory, setStateHistory] = useState<StateChange[]>([]);
   const [error, setError] = useState('');
   const [available, setAvailable] = useState(false);
   const [duration, setDuration] = useState(5);
@@ -33,7 +35,12 @@ export const PumpControl: React.FC = () => {
           || (value.observedAt !== null && (typeof value.observedAt !== 'string' || !Number.isFinite(Date.parse(value.observedAt)))) || !Array.isArray(history) || !history.every(command => command && typeof command.commandId === 'string'
             && ['ON','OFF','RESET_LOCKOUT'].includes(command.action) && typeof command.state === 'string'
             && typeof command.issuedAt === 'string' && Number.isFinite(Date.parse(command.issuedAt)))) throw new Error();
-        if (active) { setStatus(value); setCommands(history); setAvailable(true); }
+        if (active) { setStatus(value); setCommands(history); setAvailable(true);
+          try { const response = await fetch(`${API}/history`, { signal: controller.signal, cache: 'no-store' });
+            if (response.ok) { const changes = await response.json();
+              if (active && Array.isArray(changes) && changes.every(item => item && Number.isInteger(item.id) && Number.isFinite(Date.parse(item.observedAt)) && ['ON','OFF'].includes(item.reportedState) && typeof item.safetyLockout === 'boolean')) setStateHistory(changes);
+            }
+          } catch { /* State history must not block emergency OFF. */ } }
       } catch { if (active) setAvailable(false); }
       finally { clearTimeout(timeout); if (active) next = setTimeout(poll, 2000); }
     };
@@ -89,6 +96,17 @@ export const PumpControl: React.FC = () => {
       </div>
       <p className="text-xs text-slate-500 flex gap-2"><ShieldCheck className="w-4 h-4" /> Bật tối đa 60 phút; chưa có status mới hoặc ACK thì không tự coi lệnh đã thực thi.</p>
       {error && <p role="alert" className="text-rose-700 text-sm">{error}</p>}
+    </section>
+    <section className="bg-white border rounded-xl p-4 space-y-3">
+      <h2 className="font-semibold">Lịch sử trạng thái thiết bị</h2>
+      <p className="text-xs text-slate-500">Ghi nhận khi trạng thái thay đổi hoặc thiết bị khởi động lại; chưa xác định nguyên nhân tự tắt hay mất mạng.</p>
+      {!stateHistory.length && <p className="text-sm text-slate-500">Chưa có thay đổi được ghi nhận.</p>}
+      {stateHistory.map(change => <div key={change.id} className="border-t pt-2 text-sm flex flex-wrap gap-3">
+        <time>{new Date(change.observedAt).toLocaleString('vi-VN')}</time>
+        <span>{change.reportedState === 'ON' ? 'Bật' : 'Tắt'}</span>
+        <span>{change.safetyLockout ? 'Có khóa an toàn' : 'Không khóa'}</span>
+        <span>{change.changeType === 'NEW_BOOT' ? 'Thiết bị khởi động lại' : change.changeType === 'FIRST_STATUS' ? 'Trạng thái đầu tiên' : 'Trạng thái thay đổi'}</span>
+      </div>)}
     </section>
     <section className="bg-white border rounded-xl overflow-x-auto"><h2 className="p-4 font-semibold border-b">20 lệnh gần nhất</h2><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-3">Thời điểm</th><th className="p-3">Lệnh</th><th className="p-3">Kết quả</th><th className="p-3">ACK / lỗi</th></tr></thead><tbody>{commands.map(command => <tr key={command.commandId} className="border-t"><td className="p-3">{new Date(command.issuedAt).toLocaleString('vi-VN')}</td><td className="p-3">{command.action}{command.durationSeconds ? ` ${command.durationSeconds}s` : ''}</td><td className="p-3">{labels[command.state] ?? command.state}</td><td className="p-3">{command.errorCode ?? command.reportedState ?? '—'}</td></tr>)}{!commands.length && <tr><td colSpan={4} className="p-8 text-center text-slate-400">Chưa có lệnh.</td></tr>}</tbody></table></section>
   </div>;

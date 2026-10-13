@@ -16,6 +16,8 @@ def route_api(route):
         history.append({'commandId':'ab6cfc5e-18ff-4a01-852b-03604df6b52f','action':value['action'],
             'durationSeconds':value.get('durationSeconds'),'issuedAt':stamp.isoformat(),'state':'SENT','reportedState':None,'errorCode':None})
         route.fulfill(status=202,content_type='application/json',body=json.dumps(history[-1]))
+    elif route.request.url.endswith('/history'):
+        route.fulfill(status=200,content_type='application/json',body=json.dumps([{'id':1,'observedAt':stamp.isoformat(),'reportedState':'OFF','safetyLockout':False,'changeType':'FIRST_STATUS'}]))
     elif route.request.url.endswith('/status'):
         value={'deviceId':'PUMP01','reportedState':'ON' if mode=='on' else 'OFF','safetyLockout':mode=='locked',
             'fresh':mode!='stale','controlEnabled':mode!='disabled','observedAt':stamp.isoformat()}
@@ -36,6 +38,7 @@ with sync_playwright() as p:
     expect(on).to_be_disabled()
     mode='ready'
     page.get_by_role('button',name='Làm mới trạng thái').click()
+    expect(page.get_by_text('Trạng thái đầu tiên',exact=True)).to_be_visible()
     expect(on).to_be_enabled()
     page.get_by_label('Thời gian hẹn tắt').fill('3601')
     expect(on).to_be_disabled()

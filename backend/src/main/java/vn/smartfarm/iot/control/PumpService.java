@@ -40,6 +40,14 @@ public class PumpService {
         });
         return rows.isEmpty() ? new Status("PUMP01","UNKNOWN",false,false,enabled,null) : rows.getFirst();
     }
+    public record StateChange(long id, Instant observedAt, Instant receivedAt, String reportedState,
+        boolean safetyLockout, String changeType) {}
+    public List<StateChange> stateHistory() {
+        return jdbc.query("SELECT * FROM pump_state_history ORDER BY id DESC LIMIT 50", (rs,n) ->
+            new StateChange(rs.getLong("id"),rs.getTimestamp("observed_at").toInstant(),
+                rs.getTimestamp("received_at").toInstant(),rs.getString("reported_state"),
+                rs.getBoolean("safety_lockout"),rs.getString("change_type")));
+    }
     public List<Command> commands() {
         jdbc.update("UPDATE pump_command SET state='TIMED_OUT' WHERE state IN ('PENDING','SENT','PUBLISH_UNCERTAIN') AND expires_at < CURRENT_TIMESTAMP - INTERVAL '5 seconds'");
         return jdbc.query("SELECT * FROM pump_command ORDER BY issued_at DESC,command_id DESC LIMIT 20", (rs,n) ->

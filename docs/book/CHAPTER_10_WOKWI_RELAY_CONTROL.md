@@ -166,3 +166,12 @@ Thử 3 giây, thử 1 phút tự tắt, rồi bật 1 phút và tắt bằng sw
 Sửa cài đặt khi đang ON không thay timer hiện tại; tắt rồi bật lại mới áp dụng.
 Migration V5 giữ lịch sử cũ và mở giới hạn duration; phải cập nhật cả backend
 và firmware. Chưa kiểm chứng runtime 60 phút trong Wokwi.
+
+## Lịch sử trạng thái nhận được
+
+Sau khi công tắc/hẹn giờ được người dùng xác nhận, bổ sung API GET
+/api/v1/actuators/PUMP01/history và UI 50 thay đổi mới nhất. V6 ghi trạng thái
+đầu tiên, thay đổi ON/OFF/khóa và boot mới. Heartbeat không tạo thêm dòng.
+Lịch sử giữ trong PostgreSQL qua restart backend, không tự xóa khi refresh.
+Đây là lịch sử quan sát, chưa phân biệt tắt bằng timer, lệnh OFF hay mất mạng.
+Cần sự kiện có lý do từ firmware để kết luận; không gán lý do bằng suy đoán.
