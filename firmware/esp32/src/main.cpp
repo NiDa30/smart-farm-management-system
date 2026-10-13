@@ -142,6 +142,11 @@ static void handleCommand(const CommandPacket &packet) {
   if (!connected) { relay.fail(id,"CONNECTION_LOST"); error = "CONNECTION_LOST"; }
   if (!relay.isOn()) activeCommand = "";
   applyRelayOutput();
+  if (error && (strcmp(error,"EXPIRED")==0 || strcmp(error,"CLOCK_SKEW")==0 || strcmp(error,"INVALID_LIFETIME")==0 || strcmp(error,"CLOCK_NOT_READY")==0)) {
+    int64_t epoch=time(nullptr), issued=parseUtc(doc["issuedAt"] | ""), expires=parseUtc(doc["expiresAt"] | "");
+    Serial.printf("COMMAND_TIME now=%lld issued=%lld expires=%lld age=%lld remaining=%lld\n",
+      (long long)epoch,(long long)issued,(long long)expires,(long long)(epoch-issued),(long long)(expires-epoch));
+  }
   JsonDocument ack;
   base(ack); ack["deviceId"] = "PUMP01"; ack["commandId"] = id;
   ack["stage"] = "EXECUTED"; ack["status"] = error ? "FAILED" : "SUCCESS";

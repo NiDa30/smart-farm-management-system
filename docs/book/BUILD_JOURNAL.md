@@ -1,5 +1,14 @@
 # Nhật ký xây dựng Smart Farm
 
+## Wokwi nhận ON nhưng từ chối thời gian
+
+Người dùng cung cấp serial COMMAND_EXECUTED action=ON state=OFF result=EXPIRED.
+Xác nhận packet đến command handler và output không bật. Code trước gộp lỗi
+clock chưa sẵn sàng, issuedAt tương lai, lifetime sai và expiry thực vào EXPIRED;
+chưa thể kết luận packet đến muộn. Tách CLOCK_NOT_READY/CLOCK_SKEW/
+INVALID_LIFETIME/EXPIRED và thêm log epoch UTC đã parse, age/remaining; không
+in keys hoặc raw payload. Giữ TTL và giới hạn relay, chờ log runtime mới.
+
 ## Windows control build đạt, merge thiếu LittleFS image
 
 Người dùng gửi log firmware SUCCESS sau67.20s; RAM15.0%, flash74.2%. Merge

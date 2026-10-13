@@ -13,8 +13,10 @@ class RelaySafety {
       if (item.used && epoch <= item.expires && strcmp(item.id, id) == 0) return item.error;
     }
     const char* error = nullptr;
-    if (epoch < 1700000000 || issued > epoch + 2 || expires <= epoch || expires <= issued || expires - issued > 15)
-      error = "EXPIRED";
+    if (epoch < 1700000000) error = "CLOCK_NOT_READY";
+    else if (issued <= 0 || expires <= issued || expires - issued > 15) error = "INVALID_LIFETIME";
+    else if (issued > epoch + 2) error = "CLOCK_SKEW";
+    else if (expires <= epoch) error = "EXPIRED";
     else if (action == ON && (seconds < 1 || seconds > 30)) error = "INVALID_DURATION";
     else if (action == ON && locked) error = "SAFETY_LOCKOUT";
     else if (action == ON && running) error = "BUSY";
