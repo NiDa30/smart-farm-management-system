@@ -31,6 +31,16 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 
 ## Quy trình chẩn đoán cho sách
 
+### Test PostgreSQL Connection refused trong lúc image đang tải
+
+Khi triển khai persistence, Maven integration tests ban đầu chạy trước khi
+Compose đã healthy và bị Connection refused ở127.0.0.1:5433. Chờ
+`docker compose ... up -d --wait postgres` kết thúc healthy rồi chạy lại:
+7tests đạt, không skip. Không sửa assertions, không dùng H2 để thay bằng chứng
+PostgreSQL. Với Windows envfile, ghi LF thay vì CRLF để Bash source cùng
+password mà Docker đọc; đây là phòng ngừa trong code, chưa có lỗi CRLF thực tế
+do người dùng báo. Không xóa volume hoặc thay password ngẫu nhiên để né lỗi.
+
 ### Backend echo đạt nhưng thiếu telemetry
 
 Ngày 13/10/2026: Maven build và WSS_PUBACK_ECHO_PASS đạt, probe 30 giây báo

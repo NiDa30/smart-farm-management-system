@@ -1,5 +1,32 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 — PostgreSQL local, ingestion và read API
+
+Người dùng xác nhận có Docker và cho phép tiếp tục implementation. Thêm
+Compose PostgreSQL16 (loopback5433, volume giữ dữ liệu), password ngẫu nhiên
+trong ignored private .local/postgres/db.env, Flyway V1, telemetry validator,
+MQTT subscription liên tục, JDBC INSERT ON CONFLICT chống trùng và API
+latest/history trên loopback8080. API chưa có authentication, chỉ cho local.
+Validator từ chối trường lạ/thiếu, numeric coercion, UUID/time sai, số vượt range,
+duplicate JSON keys và timestamp tương lai quá60 giây. History tối đa31 ngày,
+limit1..1000, source-time ordering; device cố địnhENV01/FARM001.
+
+Cloud Docker đã chạy PostgreSQL thật. Lần kiểm tra đầu tiên chạy khi image còn
+đang tải nên test context lỗi Connection refused; chờ Compose healthy rồi chạy
+lại đạt7 Java tests (0skip): 3validator, 3DB/API và 1probe config. Test DB ở schema
+telemetry_test, gồm8 insert đồng thời cùng identity chỉ có1 reading. 10 Python
+tests đạt sau bổ sung exact-topic subscribe trong renderer. App jar khởi động,
+Flyway public migration đạt, HTTP history[] và latest404 đúng khi chưa có dữ
+liệu. MQTT disabled trong cloud smoke vì không có credentials live tại đây.
+
+Hướng dẫn Windows: docs/implementation/LOCAL_TELEMETRY_BACKEND.md; init helper
+ghi LF để Git Bash source password không dính CR. Chạy DB healthy rồi
+run_backend_windows.sh, không chạy song song probe cùng clientID. Người dùng
+chưa chạy bản persistence trên Windows; AWS→PostgreSQL→HTTP live chưa xác nhận.
+Queue128 là volatile, DB error/queuefull có thể mất gói và được log; PUBACK không
+đảm bảo DB commit. Chưa claim durable replay/exactly-once, reconnect-outage
+recovery, frontend realtime hoặc actuator ACK.
+
 ## 13/10/2026 15:27:46 (Việt Nam) — Gate kết nối 5 phút đạt
 
 Người dùng cung cấp toàn bộ output Windows: PROBE_SECONDS=300, Maven verify

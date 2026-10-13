@@ -32,7 +32,7 @@ for the default 300-second check. The user must supply the live output: no cloud
 credentials or Windows run success are assumed. Packet count does not validate
 schema, uniqueness or changing sensor values; use Test Client evidence too.
 
-Java **JDK21**, Spring Boot3.5.16, Maven3.9.11 wrapper and AWS IoT Device SDK Java v2 1.34.0. No REST/database/control endpoints yet. Use `JAVA_HOME` pointing to a full JDK, not a JRE; cloud audit machine initially had only a Java runtime.
+Java **JDK21**, Spring Boot3.5.16, Maven3.9.11 wrapper and AWS IoT Device SDK Java v2 1.34.0. PostgreSQL/Flyway ingestion and read-only telemetry API are now available locally; no control endpoints yet. Follow [local telemetry setup](../docs/implementation/LOCAL_TELEMETRY_BACKEND.md) for the continuous application. The probe below remains a separate connectivity check. Use `JAVA_HOME` pointing to a full JDK, not a JRE; cloud audit machine initially had only a Java runtime.
 
 ```bash
 cd backend

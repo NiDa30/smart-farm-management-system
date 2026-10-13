@@ -65,7 +65,7 @@ def policies(region, account):
     backend = {"Version": "2012-10-17", "Statement": [
         statement("iot:Connect", "client", ["smartfarm-backend-FARM001"]),
         statement("iot:Publish", "topic", [root + "PUMP01/command", root + "backend/probe"]),
-        statement("iot:Subscribe", "topicfilter", filters + [root + "backend/probe"]),
+        statement("iot:Subscribe", "topicfilter", filters + [root + "ENV01/telemetry", root + "backend/probe"]),
         statement("iot:Receive", "topic", receive + [root + "backend/probe"]),
     ]}
     return device, backend
