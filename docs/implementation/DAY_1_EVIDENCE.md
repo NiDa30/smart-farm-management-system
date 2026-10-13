@@ -1,5 +1,48 @@
 # Day 1 execution evidence — 11/10/2026
 
+## Subsequent local execution update
+
+Latest user-provided Windows result: 300-second probe completed with
+WSS_PUBACK_ECHO_PASS, TELEMETRY_PACKETS=60 and BUILD SUCCESS at
+2026-10-13 15:27:46 GMT+7. The five-minute packet-count observation gate passed.
+Earlier paragraphs mentioning this gate as outstanding are historical. This
+does not establish schema validation, deduplication, sensor variation or policy
+denial tests; payloads were not supplied. Persistence/API/control remain next work.
+
+User-provided Windows backend output on 13/10/2026 confirms JDK 21.0.12.1,
+Maven verification (1 test passed), WSS_PUBACK_ECHO_PASS and
+TELEMETRY_PACKETS=5 over a 30-second probe, followed by BUILD SUCCESS.
+An earlier insufficient-telemetry run was followed by this successful retry;
+its cause was not established. The 300-second gate and payload/sensor evidence
+remain outstanding; backend persistence/control/UI are not yet implemented.
+
+Further user-provided Wokwi serial output confirms repeated telemetry queued and
+QoS1 PUBACK callbacks after adding scoped iot:RetainPublish to the active device
+policy. The earlier retained-LWT CONNECT failure was reproduced and resolved
+with the Windows TLS probe. MQTT Test Client payload, sensor variation,
+five-minute observation and backend receive remain outstanding. PUBACK callbacks
+include status publishes, so their count is not a telemetry packet count.
+
+On 13/10/2026 the user supplied Windows firmware build success output:
+esptool.py 4.9.0 created the ESP32 image, `[SUCCESS] Took 97.88 seconds`.
+This supersedes the previous unverified local firmware compile status. Cloud
+registry access was not revalidated. Private LittleFS loading, Wokwi execution,
+MQTT TLS/PUBACK and telemetry remain unverified.
+
+The report below records the original cloud baseline, not the latest overall
+project state. Branch `feat/day1-iot-foundation` was subsequently committed/pushed.
+The user supplied successful AWS provisioning output from their Windows machine:
+`AWS Thing/certificate/policy provisioned. Private files and endpoint saved to ...`.
+Windows DACL and direct botocore dependency fixes were pushed; cloud checks passed
+8 tests, while the user's Windows run passed 7 with 1 POSIX-only skip.
+AWS authentication/provisioning is therefore confirmed by user-provided output on
+their local host, not by execution in this cloud runtime. Firmware build, private
+Wokwi filesystem support, live telemetry and backend MQTT connection remain
+unverified. See the maintained [build journal](../book/BUILD_JOURNAL.md) and
+[troubleshooting record](../book/TROUBLESHOOTING.md) for current state.
+
+## Original cloud baseline (historical)
+
 Baseline HEAD: `5848a623d73390f914f423e8147f91147474c690`, changes currently in shared working tree; no commit/push performed. User confirmed AWS account with IoT permissions and Wokwi (no physical ESP32). Singapore is default region for demo latency; no claim of cheapest current price.
 
 ## Implemented

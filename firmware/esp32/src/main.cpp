@@ -108,6 +108,7 @@ void setup() {
   digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
   pinMode(FARM_RELAY_PIN, OUTPUT);
   Serial.begin(115200);
+  Serial.println("SmartFarm Day1 starting; relay OFF");
   uint8_t id[16];
   esp_fill_random(id, sizeof(id));
   id[6] = (id[6] & 0x0f) | 0x40;
@@ -118,15 +119,34 @@ void setup() {
     id[8], id[9], id[10], id[11], id[12], id[13], id[14], id[15]);
   dht.setup(FARM_DHT_PIN, DHTesp::DHT22);
   analogReadResolution(12);
-  if (!LittleFS.begin(false)) Serial.println("LittleFS unavailable; upload private filesystem image first");
+  if (!LittleFS.begin(false)) {
+    Serial.println("LittleFS unavailable; upload private filesystem image first");
+  } else {
+    Serial.println("LittleFS mounted");
+  }
+  Serial.println(strlen(FARM_AWS_ENDPOINT) > 0 ? "AWS endpoint configured" : "AWS endpoint missing: edit config.local.h and rebuild");
   WiFi.mode(WIFI_STA);
   WiFi.begin(FARM_WIFI_SSID, FARM_WIFI_PASSWORD);
+  Serial.println("Wi-Fi connecting");
   configTime(0, 0, "pool.ntp.org", "time.google.com");
 }
 
 void loop() {
   digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
   const uint32_t now = millis();
+  static uint32_t lastDiagnostic = 0;
+  if (!client && now - lastDiagnostic >= 10000) {
+    lastDiagnostic = now;
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("Waiting for Wi-Fi; check Wokwi network settings");
+    } else if (time(nullptr) <= 1700000000) {
+      Serial.println("Wi-Fi connected; waiting for NTP time sync");
+    } else if (strlen(FARM_AWS_ENDPOINT) == 0) {
+      Serial.println("AWS endpoint missing: edit config.local.h and rebuild");
+    } else {
+      Serial.println("Wi-Fi and time ready; starting AWS MQTT TLS");
+    }
+  }
   if (WiFi.status() != WL_CONNECTED) {
     connected = false;
     if (now - lastWifiAttempt >= 10000) {

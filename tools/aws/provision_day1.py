@@ -9,6 +9,36 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
+
+
+def prepare_private_directory(output):
+    output.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if os.name == "nt":
+        # Windows chmod/stat do not describe NTFS access control. Replace the
+        # directory ACL before writing secrets; new files inherit this ACL.
+        script = r"""
+$ErrorActionPreference = 'Stop'
+$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+$path = $env:SMARTFARM_PRIVATE_DIRECTORY
+# Read and update only the DACL. Do not touch owner/group/SACL, which can
+# require privileges unavailable to a normal Windows user.
+$acl = [System.IO.Directory]::GetAccessControl($path, [System.Security.AccessControl.AccessControlSections]::Access)
+$acl.SetAccessRuleProtection($true, $false)
+foreach ($existing in @($acl.GetAccessRules($true, $false, [System.Security.Principal.SecurityIdentifier]))) {
+    $acl.RemoveAccessRuleSpecific($existing)
+}
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule($sid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
+$acl.AddAccessRule($rule)
+[System.IO.Directory]::SetAccessControl($path, $acl)
+"""
+        subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+            env={**os.environ, "SMARTFARM_PRIVATE_DIRECTORY": str(output)},
+            check=True, capture_output=True,
+        )
+    elif output.stat().st_mode & 0o077:
+        raise ValueError("Output directory must be private (chmod 700)")
 
 
 def policies(region, account):
@@ -25,6 +55,7 @@ def policies(region, account):
         statement("iot:Connect", "client", ["ENV01"]),
         statement("iot:Publish", "topic", [root + p for p in [
             "ENV01/telemetry", "ENV01/status", "PUMP01/ack", "PUMP01/status", "PUMP01/event"]]),
+        statement("iot:RetainPublish", "topic", [root + "ENV01/status"]),
         statement("iot:Subscribe", "topicfilter", [root + "PUMP01/command"]),
         statement("iot:Receive", "topic", [root + "PUMP01/command"]),
     ]}
@@ -34,7 +65,7 @@ def policies(region, account):
     backend = {"Version": "2012-10-17", "Statement": [
         statement("iot:Connect", "client", ["smartfarm-backend-FARM001"]),
         statement("iot:Publish", "topic", [root + "PUMP01/command", root + "backend/probe"]),
-        statement("iot:Subscribe", "topicfilter", filters + [root + "backend/probe"]),
+        statement("iot:Subscribe", "topicfilter", filters + [root + "ENV01/telemetry", root + "backend/probe"]),
         statement("iot:Receive", "topic", receive + [root + "backend/probe"]),
     ]}
     return device, backend
@@ -108,9 +139,7 @@ def main():
     repo = Path(__file__).resolve().parents[2]
     if output.is_relative_to(repo) and not output.is_relative_to(repo / ".local"):
         parser.error("Inside repository, output must be under ignored .local/")
-    output.mkdir(parents=True, exist_ok=True, mode=0o700)
-    if output.stat().st_mode & 0o077:
-        parser.error("Output directory must be private (chmod 700)")
+    prepare_private_directory(output)
     device, backend = policies(args.region, args.account_id)
     for name, doc in [("device-policy.json", device), ("backend-iam-policy.json", backend)]:
         (output / name).write_text(json.dumps(doc, indent=2) + "\n")
@@ -127,4 +156,10 @@ if __name__ == "__main__":
     except Exception as error:
         # Deliberately omit SDK exception content, responses and credential details.
         print("Provisioning stopped:", type(error).__name__, "— inspect authentication, scope or existing resources privately")
+        if type(error).__name__ == "ClientError":
+            code = error.response.get("Error", {}).get("Code", "Unknown")
+            operation = getattr(error, "operation_name", "Unknown")
+            # Only identifiers: never serialize the SDK response or message.
+            if re.fullmatch(r"[A-Za-z0-9_.-]+", code) and re.fullmatch(r"[A-Za-z0-9_.-]+", operation):
+                print("AWS operation:", operation, "| error code:", code)
         raise SystemExit(1)

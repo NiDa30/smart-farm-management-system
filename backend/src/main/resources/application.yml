@@ -1,0 +1,13 @@
+server:
+  address: 127.0.0.1
+  port: ${SERVER_PORT:8080}
+spring:
+  datasource:
+    url: ${SMARTFARM_DB_URL:jdbc:postgresql://127.0.0.1:5433/smartfarm}
+    username: ${SMARTFARM_DB_USER:smartfarm}
+    password: ${SMARTFARM_DB_PASSWORD}
+  flyway:
+    enabled: true
+smartfarm:
+  mqtt:
+    enabled: ${SMARTFARM_MQTT_ENABLED:false}
