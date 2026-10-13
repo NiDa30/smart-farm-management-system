@@ -1,5 +1,26 @@
 # Nhật ký xây dựng Smart Farm
 
+## Quy tắc tưới Wokwi ENV01 → PUMP01
+
+Người dùng xác nhận cảnh báo ngưỡng hoạt động và đồng ý làm automation.
+Một template cố định: hai mẫu mới dưới 30%, cách nhau không quá 15 giây,
+gửi ON 20 giây; đất đạt 35% gửi OFF sớm. Nghỉ 60 giây sau trạng thái OFF mới.
+Migration V9 lưu state/run và commandId. Trang Quy tắc Tự động hóa dùng API
+thay builder mock. Mặc định tắt; restart backend tạm dừng; thao tác thủ công
+qua API tạm dừng trước dispatch. Scheduler chạy mỗi 2 giây khi MQTT enabled.
+
+PumpService giữ kiểm tra ACK, pending, causal status và TTL. ON thất bại hoặc
+không xác nhận thì tạm dừng, không tự thử lại ON. Theo dõi command trực tiếp
+bằng ID, không phụ thuộc 20 lệnh mới nhất. OFF thử một lần rồi chờ status OFF
+mới, không gửi dồn. Nếu OFF chưa xác nhận, operator kiểm tra Actuator; thiết
+bị vẫn có cutoff 20 giây. Chỉ hỗ trợ một backend process, chưa nhiều instance.
+
+Cloud: 28 Java tests với PostgreSQL đạt, gồm hai mẫu mới, pending, manual,
+restart, thất bại gửi lệnh, đất đủ ẩm, khoảng nghỉ và dữ liệu cũ. Transport MQTT
+được mock, chưa nghiệm thu live. Foreign key V9 yêu cầu fixture pump truncate
+thêm watering state/run; chỉ sửa dữ liệu test. UI enable/disable, lint/build đạt.
+Chờ Wokwi soil 45 → 28 → 35, GPIO, ACK và run history thật. NVS để sau.
+
 ## Cảnh báo đất thấp và nhiệt độ cao từ telemetry thật
 
 Người dùng xác nhận trang lịch sử cảm biến hoạt động; chưa có bằng chứng CSV

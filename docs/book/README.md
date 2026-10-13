@@ -24,3 +24,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Lịch sử cảm biến và CSV](CHAPTER_11_SENSOR_HISTORY.md)
 
 - [Cảnh báo cảm biến](CHAPTER_12_SENSOR_ALERTS.md)
+
+- [Quy tắc tưới tự động](CHAPTER_13_AUTOMATIC_WATERING.md)
