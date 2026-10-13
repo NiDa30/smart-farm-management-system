@@ -1,5 +1,17 @@
 # Nhật ký xây dựng Smart Farm
 
+## Last Will retained tái hiện lỗi, policy thiếu RetainPublish
+
+Người dùng chạy probe --with-will trên Windows: TLS verified, rồi server đóng
+trước CONNACK; probe không có will trước đó thành công. Device policy renderer
+thiếu iot:RetainPublish trong khi firmware dùng retained LWT và retained status.
+Bổ sung action giới hạn đúng topic smartfarm/FARM001/ENV01/status; kiểm tra
+scope bằng test. Cần tạo version mới của IoT device policy và đặt default trên
+AWS; đây không phải IAM policy smartfarm-dev. Script không tự sửa policy có sẵn
+khác nội dung, nên cần cập nhật AWS trước khi retry provisioning. Chưa có kết quả
+live sau sửa; chỉ kết luận lỗi retained CONNECT đã tái hiện và thiếu quyền được
+xác định trong code, không tuyên bố Wokwi đã kết nối.
+
 ## MQTT lỗi vẫn còn sau thử gateway
 
 Người dùng gửi log sau bước private gateway: Wi-Fi/NTP wait rồi MQTT receive

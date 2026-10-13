@@ -61,6 +61,8 @@ class ContractsTest(unittest.TestCase):
         self.assertFalse(any("command" in r or "*" in r or "FARM002" in r for r in publish))
         self.assertTrue(all("FARM001" in r for r in publish))
         self.assertEqual(len(publish), 5)
+        retain = next(s for s in device["Statement"] if s["Action"] == "iot:RetainPublish")["Resource"]
+        self.assertEqual(retain, ["arn:aws:iot:ap-southeast-1:123456789012:topic/smartfarm/FARM001/ENV01/status"])
         subscribe = next(s for s in device["Statement"] if s["Action"] == "iot:Subscribe")["Resource"]
         self.assertEqual(subscribe, ["arn:aws:iot:ap-southeast-1:123456789012:topicfilter/smartfarm/FARM001/PUMP01/command"])
 

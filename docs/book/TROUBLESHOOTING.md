@@ -31,6 +31,15 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 
 ## Quy trình chẩn đoán cho sách
 
+### Retained Last Will cần iot:RetainPublish
+
+MQTT CONNECT không LWT được AWS chấp nhận trên Windows; cùng certificate/client
+ID với QoS1 retained LWT bị server đóng trước CONNACK. Device policy ban đầu chỉ
+có iot:Publish, thiếu iot:RetainPublish cho ENV01/status. Sửa renderer và thêm
+statement vào version default của IoT policy (không phải IAM user policy), rồi
+chạy lại probe và simulator để xác nhận. Không bỏ LWT để né quyền, không mở
+wildcard publish/retain. Kết quả sau sửa còn chờ người dùng.
+
 ### Wokwi boot nhưng LittleFS không mount
 
 Log người dùng ngày 13/10/2026: partition `spiffs` không tìm thấy; LittleFS lỗi

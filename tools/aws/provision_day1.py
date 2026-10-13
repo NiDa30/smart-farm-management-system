@@ -55,6 +55,7 @@ def policies(region, account):
         statement("iot:Connect", "client", ["ENV01"]),
         statement("iot:Publish", "topic", [root + p for p in [
             "ENV01/telemetry", "ENV01/status", "PUMP01/ack", "PUMP01/status", "PUMP01/event"]]),
+        statement("iot:RetainPublish", "topic", [root + "ENV01/status"]),
         statement("iot:Subscribe", "topicfilter", [root + "PUMP01/command"]),
         statement("iot:Receive", "topic", [root + "PUMP01/command"]),
     ]}
