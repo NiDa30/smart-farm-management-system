@@ -1,5 +1,17 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 15:27:46 (Việt Nam) — Gate kết nối 5 phút đạt
+
+Người dùng cung cấp toàn bộ output Windows: PROBE_SECONDS=300, Maven verify
+BUILD SUCCESS và 1 test đạt, WSS_PUBACK_ECHO_PASS, TELEMETRY_PACKETS=60,
+exec BUILD SUCCESS sau khoảng 5:02 phút. Gate số lượng gói đạt ngưỡng 58.
+Luồng simulator → AWS IoT → backend local được quan sát 5 phút. Probe hiện
+đếm callback, không kiểm chứng uniqueness/schema hoặc tính tỷ lệ mất gói.
+Không suy ra độ ổn định production hoặc full Day1 security-deny tests đã đạt.
+Chưa có payload/biến thiên sensor được gửi lại. Bước kế tiếp: persistence
+PostgreSQL local, validation/idempotency và API đọc telemetry, giữ cloud cost
+thấp; chưa triển khai DB/API trong mốc này.
+
 ## 13/10/2026 15:20 (Việt Nam) — Backend nhận telemetry, probe ngắn đạt
 
 Người dùng xác nhận JDK/javac Temurin 21.0.12.1. Khi tạo backend IAM inline

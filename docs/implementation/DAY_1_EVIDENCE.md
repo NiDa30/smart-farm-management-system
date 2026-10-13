@@ -2,6 +2,13 @@
 
 ## Subsequent local execution update
 
+Latest user-provided Windows result: 300-second probe completed with
+WSS_PUBACK_ECHO_PASS, TELEMETRY_PACKETS=60 and BUILD SUCCESS at
+2026-10-13 15:27:46 GMT+7. The five-minute packet-count observation gate passed.
+Earlier paragraphs mentioning this gate as outstanding are historical. This
+does not establish schema validation, deduplication, sensor variation or policy
+denial tests; payloads were not supplied. Persistence/API/control remain next work.
+
 User-provided Windows backend output on 13/10/2026 confirms JDK 21.0.12.1,
 Maven verification (1 test passed), WSS_PUBACK_ECHO_PASS and
 TELEMETRY_PACKETS=5 over a 30-second probe, followed by BUILD SUCCESS.
