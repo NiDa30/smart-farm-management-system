@@ -7,6 +7,7 @@
 - [Dàn ý sách](BOOK_OUTLINE.md): tổ chức câu chuyện xây dựng thành các chương thực hành.
 - [Chương 8 — PostgreSQL local và API](CHAPTER_08_LOCAL_DATABASE_API.md): bản thảo thực hành đang được cập nhật cùng triển khai.
 - [Chương 9 — Telemetry trên React](CHAPTER_09_REALTIME_FRONTEND.md): API, proxy, polling, freshness và kiểm tra giao diện.
+- [Chương 9B — Sensor theo khu vực](CHAPTER_09B_SENSOR_AREAS.md): registry, thêm sensor/khu vực, topic identity, migration và runtime IAM.
 - [Kế hoạch MVP](../implementation/ONE_WEEK_SMART_FARM_MVP_PLAN.md) và [checklist](../implementation/MVP_CHECKLIST.md).
 
 ## Cách duy trì

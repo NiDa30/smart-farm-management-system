@@ -21,16 +21,14 @@ import software.amazon.awssdk.iot.AwsIotMqttConnectionBuilder;
 @ConditionalOnProperty(name = "smartfarm.mqtt.enabled", havingValue = "true")
 public class TelemetryIngestion implements ApplicationRunner, DisposableBean {
     private static final Logger LOG = LoggerFactory.getLogger(TelemetryIngestion.class);
-    private static final String TOPIC = "smartfarm/FARM001/ENV01/telemetry";
-    private final TelemetryValidator validator;
-    private final TelemetryRepository repository;
+    private static final String TOPIC = "smartfarm/FARM001/+/telemetry";
+    private final TelemetryStorage storage;
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(128), runnable -> new Thread(runnable, "telemetry-storage"));
     private MqttClientConnection connection;
 
-    public TelemetryIngestion(TelemetryValidator validator, TelemetryRepository repository) {
-        this.validator = validator;
-        this.repository = repository;
+    public TelemetryIngestion(TelemetryStorage storage) {
+        this.storage = storage;
     }
 
     @Override
@@ -65,7 +63,7 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean {
             }
             byte[] copy = Arrays.copyOf(payload, payload.length);
             try {
-                worker.execute(() -> store(copy));
+                worker.execute(() -> store(message.getTopic(), copy));
             } catch (RejectedExecutionException error) {
                 LOG.error("Telemetry storage queue unavailable: message not persisted");
             }
@@ -73,16 +71,19 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean {
         LOG.info("MQTT_TELEMETRY_SUBSCRIBED {}", TOPIC);
     }
 
-    private void store(byte[] payload) {
+    private void store(String topic, byte[] payload) {
         final Telemetry value;
         try {
-            value = validator.parse(payload);
+            value = storage.decodeRegistered(topic, payload);
         } catch (IllegalArgumentException error) {
             LOG.warn("Telemetry rejected: invalid v1 payload");
             return;
+        } catch (RuntimeException error) {
+            LOG.error("Telemetry registry lookup failed ({}): message not persisted", error.getClass().getSimpleName());
+            return;
         }
         try {
-            boolean inserted = repository.insert(value);
+            boolean inserted = storage.save(value);
             if (inserted) LOG.info("TELEMETRY_SAVED device={} sequence={}", value.deviceId(), value.sequence());
             else LOG.debug("Telemetry duplicate ignored");
         } catch (RuntimeException error) {

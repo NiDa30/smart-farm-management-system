@@ -22,7 +22,7 @@ class ContractsTest(unittest.TestCase):
                 self.validate(name, self.example(name))
 
     def test_invalid_telemetry_identity_values_and_time(self):
-        for field, invalid in [("deviceId", "PUMP01"), ("soilMoisture", -1), ("humidity", 101),
+        for field, invalid in [("deviceId", "bad/device"), ("soilMoisture", -1), ("humidity", 101),
                                ("temperature", "31"), ("bootId", "invalid"), ("timestamp", "yesterday")]:
             value = self.example("telemetry")
             value[field] = invalid

@@ -21,7 +21,7 @@ test('polling success does not make an old reading fresh', () => {
 });
 
 test('invalid numbers or wrong device cannot populate sensor cards', () => {
-  for (const values of [{ humidity: '40' }, { soilMoisture: 101 }, { temperature: NaN }, { deviceId: 'OTHER' }]) {
+  for (const values of [{ humidity: '40' }, { soilMoisture: 101 }, { temperature: NaN }, { deviceId: 'bad/device' }]) {
     assert.throws(() => parseReading({ ...sample, telemetry: { ...sample.telemetry, ...values } }));
   }
   assert.throws(() => parseReading({ ...sample, receivedAt: 'not-a-date' }));

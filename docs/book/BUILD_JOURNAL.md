@@ -1,5 +1,33 @@
 # Nhật ký xây dựng Smart Farm
 
+## Sensor theo khu vực — implementation và cloud verification
+
+Người dùng yêu cầu thêm sensor và quản lý nhiệt độ theo khu vực, rồi đồng ý
+triển khai. Migration V2 tạo registry area/device, gắn ENV01 vào AREA001,
+giữ readings cũ và thêm foreign key. API hỗ trợ list/create/metadata; summaries
+lấy latest bằng lateral join. Validator mở deviceId theo pattern; ingest
+subscribe +/telemetry, đối chiếu topic/payload với registry và từ chối thiết bị
+chưa đăng ký hoặc sai farm. Schema telemetry v1 giữ tương thích payload ENV01.
+
+UI thêm khu vực/sensor, lọc khu vực, chọn sensor để xem chi tiết/lịch sử và các
+trạng thái pending/error/freshness. Panel remount theo deviceId để tránh giữ
+số đo của sensor trước. ENVIRONMENT v1 vẫn yêu cầu cả ba chỉ số; chưa hỗ trợ
+sensor loại khác, edit/delete hoặc nhiều farm. Registry backend chưa đồng bộ
+với các khu vực mock cũ. Form đăng ký không provision certificate AWS.
+
+Cloud: 10 Java tests trên PostgreSQL 16.15 đạt, gồm migration V1→V2 giữ sample
+cũ, tách reading từng device và validation registry/topic. 10 Python tests,
+3 Node tests, lint/build đạt. Browser dùng API/database thật trong schema riêng:
+tạo khu vực/sensor, pending, lọc, reading từ fixture SQL, đổi sensor không lẫn
+số, lỗi mã trùng; không có page errors. Freshness smoke cũng đạt. Locator trong
+harness được sửa để scope history và select; không kết luận đó là lỗi AWS.
+
+Người dùng cần cập nhật SmartFarmBackendRuntime trước startup: Subscribe
+FARM001/+/telemetry và Receive FARM001/*/telemetry. Helper render_telemetry_iam.py
+chỉ tạo policy offline; không mở wildcard cho certificate ENV01. Chưa cập nhật
+IAM trên AWS, chưa provision ENV02 hoặc xác nhận nhiều thiết bị live trên
+Windows. Chương 9B có hướng dẫn rollout, giữ volume/db.env/certificate hiện có.
+
 ## Windows frontend — người dùng xác nhận chạy thành công
 
 Sau cập nhật Sensor Realtime dùng API, người dùng báo “đã chạy thành công”.
