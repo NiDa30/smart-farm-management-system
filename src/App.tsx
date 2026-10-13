@@ -54,7 +54,7 @@ import { IoTDashboard } from './modules/iot/dashboard/IoTDashboard';
 import { DeviceMonitor } from './modules/iot/devices/DeviceMonitor';
 import { SensorRealtime } from './modules/iot/realtime/SensorRealtime';
 import { HistoricalData } from './modules/iot/history/HistoricalData';
-import { ControlCenter } from './modules/iot/control/ControlCenter';
+import { PumpControl } from './modules/iot/control/PumpControl';
 import { DigitalTwinView } from './modules/iot/digital-twin/DigitalTwinView';
 import { AutomationManager } from './modules/iot/automation/AutomationManager';
 import { IoTAlertCenter } from './modules/iot/alerts/IoTAlertCenter';
@@ -268,7 +268,7 @@ const AppContent: React.FC = () => {
       return <HistoricalData />;
     }
     if (currentRoute.startsWith('/iot/control')) {
-      return <ControlCenter />;
+      return <PumpControl />;
     }
     if (currentRoute.startsWith('/iot/digital-twin')) {
       return <DigitalTwinView />;

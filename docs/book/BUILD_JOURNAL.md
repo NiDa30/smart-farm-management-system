@@ -1,5 +1,26 @@
 # Nhật ký xây dựng Smart Farm
 
+## Relay Wokwi — code/tests; chưa control live
+
+Người dùng hoãn provisioning sensor mới và đồng ý tiếp tục command/ACK cho
+ENV01/PUMP01. Thêm API command/status/history, V3 persistence, bounded ON1..30s,
+TTL10s, fresh-OFF gate, ACK correlation, PUBLISH_UNCERTAIN và timeout không tự
+suy ra trạng thái relay. Backend mặc định control disabled; telemetry vẫn dùng
+policy đọc hiện có nếu không bật flag. Khi control enabled, thêm status/ACK
+subscriptions, publish command non-retained và resubscribe sau reconnect.
+
+Firmware control mặc định disabled, chỉ ENV01/FARM001. LED GPIO26, queue trong
+loop, retained/expired command rejection, dedup cache và esp_timer cutoff độc
+lập, mất link đang ON→OFF/lockout, RESET khi OFF. Cache đầy vẫn cho OFF. Lockout
+RAM không persist reboot; boot OFF. Chưa safety event publisher hoặc rule engine.
+
+PlatformIO Linux compile đạt (variant enabled cũng đạt); native C++ assertions
+đạt, 16 Java tests PostgreSQL đạt (transport mock), lint/build/browser UI fixtures
+đạt. Local HTTP pump status disabled trảUNKNOWN. Mirror proxy403 được fallback
+thành công, không tắtTLS. Chưa có AWS publish control hoặc Wokwi GPIO runtime
+evidence. Viết chương10 với hướng dẫn managed IAM policy để tránh inline quota,
+flags/rebuild và nghiệm thu3s. Không provision thêm device/certificate.
+
 ## Sensor theo khu vực — implementation và cloud verification
 
 Người dùng yêu cầu thêm sensor và quản lý nhiệt độ theo khu vực, rồi đồng ý

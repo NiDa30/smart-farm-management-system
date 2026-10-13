@@ -12,3 +12,6 @@
 // Calibrate for the actual sensor. Wokwi potentiometer: low=wet, high=dry.
 #define FARM_SOIL_WET_ADC 0
 #define FARM_SOIL_DRY_ADC 4095
+
+// Set 1 only for the private ENV01 Wokwi relay demo.
+#define FARM_CONTROL_ENABLED 0

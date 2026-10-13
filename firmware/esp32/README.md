@@ -1,5 +1,10 @@
 # ESP32 Day 1 AWS TLS spike
 
+Control update: a Wokwi-only GPIO26/LED demo is now implemented but disabled by
+default. Follow [chapter 10](../../docs/book/CHAPTER_10_WOKWI_RELAY_CONTROL.md)
+to enable it, update backend IAM and verify runtime. Earlier Day 1 limitations
+below are historical. Compile/native tests are not live relay evidence.
+
 This is a build/provisioning baseline, not completed remote control. Relay stays OFF. ESP-MQTT publishes real DHT22+ADC readings using QoS1 to AWS, with TLS CA/hostname/client certificate verification. No fabricated soil data. GPIO34 must be wired to a calibrated sensor or Wokwi potentiometer before accepting sample evidence.
 
 Pins: DHT22 GPIO15 (existing diagram); potentiometer signal GPIO34, rails3V3/GND; relay GPIO26. Set `FARM_RELAY_OFF_LEVEL` for relay polarity; on real hardware use safe pull resistors/low-voltage loads. No actuator ON test in this Day1 firmware.

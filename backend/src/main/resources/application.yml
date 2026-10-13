@@ -2,6 +2,14 @@ server:
   address: 127.0.0.1
   port: ${SERVER_PORT:8080}
 spring:
+  jackson:
+    mapper:
+      allow-coercion-of-scalars: false
+    deserialization:
+      accept-float-as-int: false
+      fail-on-unknown-properties: true
+    parser:
+      strict-duplicate-detection: true
   datasource:
     url: ${SMARTFARM_DB_URL:jdbc:postgresql://127.0.0.1:5433/smartfarm}
     username: ${SMARTFARM_DB_USER:smartfarm}
@@ -11,3 +19,5 @@ spring:
 smartfarm:
   mqtt:
     enabled: ${SMARTFARM_MQTT_ENABLED:false}
+  control:
+    enabled: ${SMARTFARM_CONTROL_ENABLED:false}

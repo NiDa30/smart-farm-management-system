@@ -23,6 +23,24 @@
       "top": -80,
       "left": 50,
       "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "relay_led",
+      "top": 170,
+      "left": 70,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "relay_r",
+      "top": 150,
+      "left": 30,
+      "attrs": {
+        "value": "220"
+      }
     }
   ],
   "connections": [
@@ -72,6 +90,24 @@
       "soil1:SIG",
       "esp:34",
       "green",
+      []
+    ],
+    [
+      "esp:26",
+      "relay_r:1",
+      "green",
+      []
+    ],
+    [
+      "relay_r:2",
+      "relay_led:A",
+      "green",
+      []
+    ],
+    [
+      "relay_led:C",
+      "esp:GND.1",
+      "black",
       []
     ]
   ],
