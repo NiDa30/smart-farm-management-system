@@ -1,5 +1,16 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 — Wokwi khởi động firmware, thiếu partition LittleFS
+
+Người dùng cài Wokwi extension VS Code, kích hoạt license và cung cấp boot log
+ESP32. Firmware khởi động, báo `partition "spiffs" could not be found`,
+`Mounting LittleFS failed! Error: 261`, rồi giữ relay OFF vì không đọc được
+credentials. `wokwi.toml` hiện trỏ vào application firmware.bin, chưa có bằng
+chứng partition table và filesystem riêng tư đã được nạp vào simulator.
+Không đổi tên partition hoặc bật auto-format để che lỗi. Cần tạo filesystem
+image, kiểm tra partition table và chuẩn bị image phù hợp simulator trước khi
+nghiệm thu TLS. Chưa có kết nối MQTT. Không lưu key/image vào Git.
+
 ## 13/10/2026 — Tải toolchain firmware trên Windows (chưa build xong)
 
 **Cập nhật sau retry:** người dùng cung cấp đầu ra build thành công:

@@ -31,6 +31,16 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 
 ## Quy trình chẩn đoán cho sách
 
+### Wokwi boot nhưng LittleFS không mount
+
+Log người dùng ngày 13/10/2026: partition `spiffs` không tìm thấy; LittleFS lỗi
+261, credentials không đọc được; relay OFF. Tên `spiffs` là tên partition được
+LittleFS Arduino dùng mặc định, không chứng minh cần đổi sang filesystem SPIFFS.
+Kiểm tra partition table và filesystem image đã thực sự nạp vào flash simulator.
+Application firmware.bin riêng không chứng minh các phần flash khác đã được nạp.
+Chưa xác nhận cách nạp image và chưa giải quyết xong. Không auto-format flash
+hoặc vô hiệu hóa TLS; dữ liệu credentials chỉ đặt trong ignored private folders.
+
 ### 13/10/2026 — PlatformIO mirror TLS và tải bị ngắt
 
 Kết quả sau đó: người dùng chạy lại build và báo SUCCESS sau 97.88 giây,
