@@ -8,14 +8,15 @@
 #include <time.h>
 #include <esp_timer.h>
 #include "RelaySafety.h"
-#ifndef FARM_CONTROL_ENABLED
-#define FARM_CONTROL_ENABLED 0
-#endif
 
 #if __has_include("config.local.h")
 #include "config.local.h"
 #else
 #include "config.example.h"
+#endif
+
+#ifndef FARM_CONTROL_ENABLED
+#define FARM_CONTROL_ENABLED 0
 #endif
 
 // Only ENV01 may control PUMP01 in this Wokwi MVP. Default disabled.
@@ -120,7 +121,7 @@ static void handleCommand(const CommandPacket &packet) {
     || !doc["schemaVersion"].is<int>() || doc["schemaVersion"].as<int>() != 1
     || strcmp(doc["deviceId"] | "", "PUMP01") != 0 || (!on && !off && !reset)
     || (on && !doc["durationSeconds"].is<unsigned>())
-    || (!on && doc.as<JsonObject>().containsKey("durationSeconds"))
+    || (!on && !doc["durationSeconds"].isUnbound())
     || !doc["issuedAt"].is<const char*>() || !doc["expiresAt"].is<const char*>()) error = "INVALID_COMMAND";
   else error = relay.apply(id, on ? RelaySafety::ON : off ? RelaySafety::OFF : RelaySafety::RESET,
     on ? doc["durationSeconds"].as<unsigned>() : 0,

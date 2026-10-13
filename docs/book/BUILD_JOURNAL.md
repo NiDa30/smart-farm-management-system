@@ -1,5 +1,16 @@
 # Nhật ký xây dựng Smart Farm
 
+## Windows control build đạt, merge thiếu LittleFS image
+
+Người dùng gửi log firmware SUCCESS sau67.20s; RAM15.0%, flash74.2%. Merge
+FileNotFoundError cho .pio/build/esp32dev/littlefs.bin. Không biết chính xác
+vì sao artifact mất; firmware build không bảo đảm giữ filesystem output.
+Hướng xử lý: buildfs từ data/certificate hiện có rồi merge; không tạo cert mới.
+Warning FARM_CONTROL_ENABLED redefined do fallback trước include local config;
+dời fallback xuống sau include. ArduinoJson containsKey deprecated được đổi
+sang isUnbound để vẫn từ chối durationSeconds=null trên OFF/RESET. Chưa control
+live và chưa có output buildfs/merge sau sửa của người dùng.
+
 ## Relay Wokwi — code/tests; chưa control live
 
 Người dùng hoãn provisioning sensor mới và đồng ý tiếp tục command/ACK cho
