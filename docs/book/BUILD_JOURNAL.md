@@ -1,5 +1,24 @@
 # Nhật ký xây dựng Smart Farm
 
+## Chuyển lịch sử cảm biến từ mock sang dữ liệu PostgreSQL
+
+Người dùng muốn chuyển chức năng khác; phần NVS/offline recovery để sau.
+Bằng chứng trước: serial RELAY_OFF reason=CONNECTION_LOST xác nhận xử lý
+mất mạng; gateway restart không phục hồi DNS/Wi-Fi của phiên Wokwi, phải
+restart simulation. Chưa kiểm chứng gửi lý do sau reconnect không reboot.
+Không ghi nhận hoàn tất kiểm tra toàn bộ network recovery.
+
+Trang /iot/history nay dùng registry/API telemetry thay dữ liệu SM-01 mock.
+Chọn sensor, 1h/24h, nhiệt độ/độ ẩm/đất; biểu đồ timestamp thực, thống kê mẫu
+đã tải và CSV cùng mẫu. Không dùng parseHistory realtime vì hàm đó cắt 15 mẫu.
+Giới hạn API1000: cảnh báo mẫu mới nhất có thể không bao phủ toàn khoảng24h,
+không gọi thống kê toàn ngày. Khoảng trống >30s không nối đường, không nội suy.
+Load/error/empty riêng; refresh thủ công, không thêm poll AWS hay quyền mới.
+Cloud validation: frontend lint/build đạt; Playwright fixture kiểm tra query
+range, chart, CSV có3 dòng mẫu, empty/error và disabled export đạt. Không
+đọc dữ liệu AWS live trong phép thử này.
+Chờ kiểm chứng live lịch sử và CSV trên Windows.
+
 ## Lý do trạng thái do firmware báo
 
 Người dùng xác nhận có lịch sử trạng thái sau bản V6. Bổ sung stateReason

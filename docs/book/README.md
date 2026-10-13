@@ -20,3 +20,5 @@ Khi tiếp tục ở phiên mới, đọc bộ hồ sơ này và kiểm tra Git 
 Không lưu access key, secret key, token, private key, liên kết xác minh hoặc ảnh chứa bí mật. Trong sách dùng ACCOUNT_ID, CERTIFICATE_ID và endpoint mẫu; không sao chép thông tin nhận dạng tài khoản cá nhân. Chỉ dùng lệnh đã kiểm chứng hoặc đánh dấu rõ chưa chạy. Không biến suy đoán thành kết luận.
 
 Đây là bản ghi hồi cứu từ lịch sử có sẵn ngày 11/10/2026, chưa phải bản ghi đầy đủ mọi thao tác ngoài cuộc trò chuyện. Bổ sung nếu có bằng chứng mới.
+
+- [Lịch sử cảm biến và CSV](CHAPTER_11_SENSOR_HISTORY.md)
