@@ -33,6 +33,10 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 
 ### Retained Last Will cần iot:RetainPublish
 
+**Kết quả xác nhận:** sau khi cập nhật active policy, người dùng chạy probe có
+LWT và nhận MQTT CONNECT accepted. Bản sửa quyền giải quyết được phép thử tái
+hiện trên Windows. Wokwi và telemetry vẫn cần kiểm chứng riêng.
+
 MQTT CONNECT không LWT được AWS chấp nhận trên Windows; cùng certificate/client
 ID với QoS1 retained LWT bị server đóng trước CONNACK. Device policy ban đầu chỉ
 có iot:Publish, thiếu iot:RetainPublish cho ENV01/status. Sửa renderer và thêm

@@ -1,5 +1,15 @@
 # Nhật ký xây dựng Smart Farm
 
+## Xác nhận sửa RetainPublish thành công trên Windows
+
+Sau khi thêm iot:RetainPublish cho ENV01/status và lưu policy version mới làm
+active, người dùng chạy check_device_connection.py --with-will: endpoint/client
+ID match, certificate pair loaded, TLS verified, MQTT CONNECT accepted (ENV01).
+Lỗi CONNECT với retained LWT đã được giải quyết trong phép thử Windows; chưa có
+log Wokwi sau sửa hoặc telemetry được quan sát ở AWS. Tiếp theo chạy lại
+simulator, giữ gateway đang cấu hình nếu dùng private gateway, kiểm tra connected,
+PUBACK và MQTT Test Client trong 5 phút. Không cần rebuild firmware cho policy.
+
 ## Last Will retained tái hiện lỗi, policy thiếu RetainPublish
 
 Người dùng chạy probe --with-will trên Windows: TLS verified, rồi server đóng
