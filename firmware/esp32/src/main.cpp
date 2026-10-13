@@ -39,11 +39,15 @@ struct CommandPacket { char payload[769]; bool retained; };
 static QueueHandle_t commandQueue;
 static esp_timer_handle_t relayTimer;
 static portMUX_TYPE relayMux = portMUX_INITIALIZER_UNLOCKED;
+enum OffCause { NO_CAUSE, TIMER_CAUSE, NETWORK_CAUSE };
+static volatile OffCause offCause = NO_CAUSE;
+static const char* stateReason = "BOOT";
 static volatile bool forcedOff = false, controlFault = false;
 
 static void forceRelayOff(void*) {
   portENTER_CRITICAL(&relayMux);
   forcedOff = true;
+  offCause = TIMER_CAUSE;
   digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
   portEXIT_CRITICAL(&relayMux);
 }
@@ -94,6 +98,7 @@ static void publishPumpStatus() {
   doc["connection"] = "ONLINE";
   doc["reportedState"] = relay.isOn() && !forcedOff ? "ON" : "OFF";
   doc["safetyLockout"] = relay.lockout();
+  doc["stateReason"] = stateReason;
   if (activeCommand.length()) doc["activeCommandId"] = activeCommand; else doc["activeCommandId"] = nullptr;
   String payload; serializeJson(doc, payload);
   esp_mqtt_client_publish(client, pumpStatusTopic.c_str(), payload.c_str(), 0, 1, 0);
@@ -141,7 +146,7 @@ static void handleCommand(const CommandPacket &packet) {
       relay.fail(id,"DEVICE_FAULT"); error = "DEVICE_FAULT";
     } else {
       portENTER_CRITICAL(&relayMux);
-      if (connected) forcedOff = false;
+      if (connected) { forcedOff = false; offCause = NO_CAUSE; }
       portEXIT_CRITICAL(&relayMux);
       activeCommand = id;
     }
@@ -149,6 +154,12 @@ static void handleCommand(const CommandPacket &packet) {
   if (!relay.isOn()) { esp_timer_stop(relayTimer); activeCommand = ""; }
   if (!connected) { relay.fail(id,"CONNECTION_LOST"); error = "CONNECTION_LOST"; }
   if (!relay.isOn()) activeCommand = "";
+  if (!error) {
+    if (on && relay.isOn() && !wasOn) stateReason = "COMMAND_ON";
+    else if (off) stateReason = "COMMAND_OFF";
+    else if (reset) stateReason = "LOCKOUT_RESET";
+  } else if (strcmp(error,"DEVICE_FAULT")==0) stateReason = "DEVICE_FAULT";
+  else if (strcmp(error,"CONNECTION_LOST")==0) stateReason = "CONNECTION_LOST";
   applyRelayOutput();
   if (error && (strcmp(error,"EXPIRED")==0 || strcmp(error,"CLOCK_SKEW")==0 || strcmp(error,"INVALID_LIFETIME")==0 || strcmp(error,"CLOCK_NOT_READY")==0)) {
     int64_t epoch=time(nullptr), issued=parseUtc(doc["issuedAt"] | ""), expires=parseUtc(doc["expiresAt"] | "");
@@ -178,6 +189,7 @@ static void mqttEvent(void *, esp_event_base_t, int32_t id, void *eventData) {
   } else if (id == MQTT_EVENT_DISCONNECTED || id == MQTT_EVENT_ERROR) {
     portENTER_CRITICAL(&relayMux);
     connected = false;
+    if (digitalRead(FARM_RELAY_PIN) != FARM_RELAY_OFF_LEVEL) offCause = NETWORK_CAUSE;
     forcedOff = true;
     digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
     portEXIT_CRITICAL(&relayMux);
@@ -282,11 +294,17 @@ void loop() {
   bool link = connected && WiFi.status() == WL_CONNECTED;
   bool fault;
   portENTER_CRITICAL(&relayMux); fault=controlFault; controlFault=false; portEXIT_CRITICAL(&relayMux);
-  if (fault) { relay.trip(); activeCommand=""; esp_timer_stop(relayTimer); }
+  if (fault) { relay.trip(); stateReason="DEVICE_FAULT"; activeCommand=""; esp_timer_stop(relayTimer); }
+  bool wasRunning = relay.isOn();
+  OffCause cause;
+  portENTER_CRITICAL(&relayMux); cause=offCause; offCause=NO_CAUSE; portEXIT_CRITICAL(&relayMux);
+  if (wasRunning && cause == TIMER_CAUSE) { relay.stop(); stateReason="TIMER_EXPIRED"; }
+  else if (wasRunning && (cause == NETWORK_CAUSE || !link || forcedOff)) { relay.trip(); stateReason="CONNECTION_LOST"; }
   bool stopped = relay.tickSafety(now, link);
-  if (forcedOff && relay.isOn()) stopped = relay.tickSafety(now,false) || stopped;
+  if (stopped && wasRunning) stateReason="TIMER_EXPIRED";
+  stopped = stopped || (wasRunning && !relay.isOn());
   applyRelayOutput();
-  if (stopped) { activeCommand = ""; esp_timer_stop(relayTimer); publishPumpStatus(); Serial.println("RELAY_AUTO_OFF"); }
+  if (stopped) { activeCommand = ""; esp_timer_stop(relayTimer); publishPumpStatus(); Serial.printf("RELAY_OFF reason=%s\n",stateReason); }
   static uint32_t lastPumpStatus = 0;
   if (controlEnabled && link && now-lastPumpStatus>=5000) { lastPumpStatus=now; publishPumpStatus(); }
   if (controlEnabled && link) {

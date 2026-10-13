@@ -41,12 +41,12 @@ public class PumpService {
         return rows.isEmpty() ? new Status("PUMP01","UNKNOWN",false,false,enabled,null) : rows.getFirst();
     }
     public record StateChange(long id, Instant observedAt, Instant receivedAt, String reportedState,
-        boolean safetyLockout, String changeType) {}
+        boolean safetyLockout, String changeType, String stateReason) {}
     public List<StateChange> stateHistory() {
         return jdbc.query("SELECT * FROM pump_state_history ORDER BY id DESC LIMIT 50", (rs,n) ->
             new StateChange(rs.getLong("id"),rs.getTimestamp("observed_at").toInstant(),
                 rs.getTimestamp("received_at").toInstant(),rs.getString("reported_state"),
-                rs.getBoolean("safety_lockout"),rs.getString("change_type")));
+                rs.getBoolean("safety_lockout"),rs.getString("change_type"),rs.getString("state_reason")));
     }
     public List<Command> commands() {
         jdbc.update("UPDATE pump_command SET state='TIMED_OUT' WHERE state IN ('PENDING','SENT','PUBLISH_UNCERTAIN') AND expires_at < CURRENT_TIMESTAMP - INTERVAL '5 seconds'");
@@ -106,14 +106,19 @@ public class PumpService {
             if (timestamp.isAfter(Instant.now().plusSeconds(2))) throw new IllegalArgumentException();
             String state=node.path("reportedState").asText();
             if (!Set.of("ON","OFF").contains(state) || !node.path("safetyLockout").isBoolean()) throw new IllegalArgumentException();
+            String reason=null;
+            if (node.has("stateReason")) {
+                if (!node.path("stateReason").isTextual() || !Set.of("BOOT","COMMAND_ON","COMMAND_OFF","LOCKOUT_RESET","TIMER_EXPIRED","CONNECTION_LOST","DEVICE_FAULT").contains(node.path("stateReason").asText())) throw new IllegalArgumentException();
+                reason=node.path("stateReason").asText();
+            }
             if (topic.equals("smartfarm/FARM001/PUMP01/status")) {
                 if (!node.path("connection").asText().equals("ONLINE") || timestamp.isBefore(Instant.now().minusSeconds(15))) throw new IllegalArgumentException();
                 jdbc.update("""
-                    INSERT INTO pump_status(singleton,boot_id,sequence,observed_at,reported_state,safety_lockout) VALUES(1,?,?,?,?,?)
+                    INSERT INTO pump_status(singleton,boot_id,sequence,observed_at,reported_state,safety_lockout,state_reason) VALUES(1,?,?,?,?,?,?)
                     ON CONFLICT(singleton) DO UPDATE SET boot_id=EXCLUDED.boot_id,sequence=EXCLUDED.sequence,
-                    observed_at=EXCLUDED.observed_at,received_at=CURRENT_TIMESTAMP,reported_state=EXCLUDED.reported_state,safety_lockout=EXCLUDED.safety_lockout
+                    observed_at=EXCLUDED.observed_at,received_at=CURRENT_TIMESTAMP,reported_state=EXCLUDED.reported_state,safety_lockout=EXCLUDED.safety_lockout,state_reason=EXCLUDED.state_reason
                     WHERE EXCLUDED.observed_at >= pump_status.observed_at AND (EXCLUDED.boot_id <> pump_status.boot_id OR EXCLUDED.sequence > pump_status.sequence)
-                    """,boot,node.path("sequence").asLong(),Timestamp.from(timestamp),state,node.path("safetyLockout").asBoolean());
+                    """,boot,node.path("sequence").asLong(),Timestamp.from(timestamp),state,node.path("safetyLockout").asBoolean(),reason);
             } else if (topic.equals("smartfarm/FARM001/PUMP01/ack")) {
                 if (!node.path("commandId").asText().matches("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")) throw new IllegalArgumentException();
                 UUID command=UUID.fromString(node.path("commandId").asText());

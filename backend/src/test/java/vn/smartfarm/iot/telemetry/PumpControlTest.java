@@ -59,6 +59,17 @@ class PumpControlTest {
         pump.receive("smartfarm/FARM001/PUMP01/status",payload.getBytes());
         assertEquals(before+2,pump.stateHistory().size());
     }
+    @Test void recordsDeviceReasonAndRejectsUnknownReason() throws Exception {
+        status("OFF",false);
+        String payload="{\"schemaVersion\":1,\"deviceId\":\"PUMP01\",\"bootId\":\"ab6cfc5e-18ff-4a01-852b-03604df6b52f\",\"sequence\":2,\"timestamp\":\""+Instant.now()+"\",\"reportedState\":\"OFF\",\"safetyLockout\":false,\"connection\":\"ONLINE\",\"stateReason\":\"TIMER_EXPIRED\"}";
+        pump.receive("smartfarm/FARM001/PUMP01/status",payload.getBytes());
+        assertEquals("TIMER_EXPIRED",pump.stateHistory().get(0).stateReason());
+        int count=pump.stateHistory().size();
+        pump.receive("smartfarm/FARM001/PUMP01/status",payload.replace("\"sequence\":2","\"sequence\":3").getBytes());
+        assertEquals(count,pump.stateHistory().size());
+        String invalid=payload.replace("TIMER_EXPIRED","FAKE_REASON");
+        assertThrows(IllegalArgumentException.class,()->pump.receive("smartfarm/FARM001/PUMP01/status",invalid.getBytes()));
+    }
     @Test void acceptsOneHourTimerAndPersistsDuration() throws Exception {
         status("OFF",false);
         var command=pump.create(new PumpService.Request("ON",3600));

@@ -50,6 +50,7 @@ class RelaySafety {
   }
   bool isOn() const { return running; }
   bool lockout() const { return locked; }
+  void stop() { running = false; }
   void trip() { running = false; locked = true; }
   void fail(const char* id, const char* error) {
     trip();

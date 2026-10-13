@@ -1,5 +1,25 @@
 # Nhật ký xây dựng Smart Farm
 
+## Lý do trạng thái do firmware báo
+
+Người dùng xác nhận có lịch sử trạng thái sau bản V6. Bổ sung stateReason
+trên topic PUMP01/status hiện có; không thêm quyền AWS. BOOT, COMMAND_ON,
+COMMAND_OFF, LOCKOUT_RESET, TIMER_EXPIRED, CONNECTION_LOST, DEVICE_FAULT.
+Backend kiểm tra enum, V7 lưu lý do trong status/history. Firmware cũ không
+có field vẫn được nhận, lịch sử cũ giữ null thay vì đoán lý do.
+
+Timer callback cắt GPIO ngay, gửi nguyên nhân qua latch cho Arduino loop;
+tách timer cutoff khỏi network fault để hết giờ không bị khóa an toàn.
+Mất MQTT khi GPIO đang ON cắt ngay, loop khóa và giữ CONNECTION_LOST;
+status sau reconnect mang lý do. Không có status trong lúc offline, không
+cam kết nhật ký bền vững trên thiết bị: reboot lúc offline có thể mất lý do.
+Nhiều thay đổi nhanh trước status có thể chỉ ghi được trạng thái cuối cùng;
+chưa phải event outbox bảo đảm mọi sự kiện. Không thay TTL/dedup/cutoff.
+Cloud checks: 19 Java tests với PostgreSQL đạt, native safety assertions đạt,
+frontend lint/build và UI fixture hiển thị lý do đạt, ESP32 build SUCCESS.
+Thời điểm status là lúc báo, không phải timestamp sự cố offline.
+Chờ user kiểm tra live timer/manual/network sau build và merge lại firmware.
+
 ## Người dùng xác nhận công tắc/hẹn giờ; thêm lịch sử trạng thái
 
 Người dùng báo kiểm tra công tắc và hẹn giờ thành công trên Windows/Wokwi.

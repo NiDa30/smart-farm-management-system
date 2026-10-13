@@ -175,3 +175,19 @@ Sau khi công tắc/hẹn giờ được người dùng xác nhận, bổ sung A
 Lịch sử giữ trong PostgreSQL qua restart backend, không tự xóa khi refresh.
 Đây là lịch sử quan sát, chưa phân biệt tắt bằng timer, lệnh OFF hay mất mạng.
 Cần sự kiện có lý do từ firmware để kết luận; không gán lý do bằng suy đoán.
+
+## Lý do đổi trạng thái
+
+stateReason trong status gửi lý do từ firmware. V7 lưu cùng status được chấp
+nhận và UI dịch sang tiếng Việt. Tắt thủ công: COMMAND_OFF; timer: TIMER_EXPIRED;
+mất MQTT khi đang ON: CONNECTION_LOST (chỉ gửi sau nối lại). Timer không khóa;
+mất kết nối đang ON thì khóa, cần reset sau status OFF mới. Không phải mọi
+ngắt kết nối đều có lý do tắt vì đèn có thể đã OFF từ trước.
+
+Kiểm tra live: ON 3 giây chờ tự tắt, ON 10 giây rồi OFF, ON 30 giây rồi
+dừng gateway Wokwi trước hạn, chạy gateway lại. Đèn phải OFF khi mất mạng;
+sau nối lại lịch sử phải báo mất kết nối và khóa. Không chạy check_device_connection
+cùng Wokwi vì cùng client ENV01 sẽ đẩy nhau khỏi MQTT.
+
+Lý do trong RAM không tồn tại qua reboot; chưa có outbox cho mọi sự kiện.
+Các dòng lịch sử cũ chưa có lý do không được tự gán nguyên nhân.

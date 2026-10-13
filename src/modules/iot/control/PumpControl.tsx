@@ -3,7 +3,7 @@ import { Power, ShieldCheck, RefreshCw } from 'lucide-react';
 
 interface PumpStatus { deviceId: 'PUMP01'; reportedState: 'ON' | 'OFF' | 'UNKNOWN'; safetyLockout: boolean; fresh: boolean; controlEnabled: boolean; observedAt: string | null }
 interface Command { commandId: string; action: string; durationSeconds: number | null; issuedAt: string; state: string; reportedState: string | null; errorCode: string | null }
-interface StateChange { id: number; observedAt: string; reportedState: string; safetyLockout: boolean; changeType: string }
+interface StateChange { id: number; observedAt: string; reportedState: string; safetyLockout: boolean; changeType: string; stateReason?: string | null }
 const API = '/api/v1/actuators/PUMP01';
 export const PumpControl: React.FC = () => {
   const [status, setStatus] = useState<PumpStatus | null>(null);
@@ -62,6 +62,7 @@ export const PumpControl: React.FC = () => {
     } catch (error) { setError(error instanceof Error ? error.message : 'Không gửi được lệnh.'); }
     finally { setSending(false); setRefresh(value => value + 1); }
   };
+  const reasons: Record<string,string> = { BOOT: 'Khởi động thiết bị', COMMAND_ON: 'Nhận lệnh bật', COMMAND_OFF: 'Tắt thủ công', LOCKOUT_RESET: 'Reset khóa', TIMER_EXPIRED: 'Hết thời gian hẹn', CONNECTION_LOST: 'Mất kết nối khi đang bật', DEVICE_FAULT: 'Lỗi thiết bị' };
   const labels: Record<string,string> = { PENDING: 'Đang gửi', SENT: 'Đã gửi, chờ ACK', EXECUTED: 'Thiết bị đã ACK', FAILED: 'Thiết bị từ chối', TIMED_OUT: 'Quá hạn ACK', PUBLISH_UNCERTAIN: 'Chưa xác nhận gửi' };
   return <div className="max-w-5xl mx-auto space-y-5">
     <header><h1 className="text-xl font-bold flex gap-2 items-center"><Power className="w-5 h-5 text-emerald-600" /> Điều khiển PUMP01</h1><p className="text-sm text-slate-500 mt-1">Demo GPIO26 trên Wokwi · FARM001 / ENV01</p></header>
@@ -99,11 +100,12 @@ export const PumpControl: React.FC = () => {
     </section>
     <section className="bg-white border rounded-xl p-4 space-y-3">
       <h2 className="font-semibold">Lịch sử trạng thái thiết bị</h2>
-      <p className="text-xs text-slate-500">Ghi nhận khi trạng thái thay đổi hoặc thiết bị khởi động lại; chưa xác định nguyên nhân tự tắt hay mất mạng.</p>
+      <p className="text-xs text-slate-500">Lý do do thiết bị báo. Mất kết nối chỉ được báo sau khi thiết bị nối lại; dữ liệu cũ có thể chưa có lý do.</p>
       {!stateHistory.length && <p className="text-sm text-slate-500">Chưa có thay đổi được ghi nhận.</p>}
       {stateHistory.map(change => <div key={change.id} className="border-t pt-2 text-sm flex flex-wrap gap-3">
         <time>{new Date(change.observedAt).toLocaleString('vi-VN')}</time>
         <span>{change.reportedState === 'ON' ? 'Bật' : 'Tắt'}</span>
+        <span>{change.stateReason ? reasons[change.stateReason] ?? 'Chưa xác định lý do' : 'Chưa có lý do'}</span>
         <span>{change.safetyLockout ? 'Có khóa an toàn' : 'Không khóa'}</span>
         <span>{change.changeType === 'NEW_BOOT' ? 'Thiết bị khởi động lại' : change.changeType === 'FIRST_STATUS' ? 'Trạng thái đầu tiên' : 'Trạng thái thay đổi'}</span>
       </div>)}

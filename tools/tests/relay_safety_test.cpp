@@ -39,6 +39,10 @@ int main() {
   assert(!extended.tickSafety(3599999,true));
   assert(extended.tickSafety(3600000,true));
   assert(!extended.isOn());
+  RelaySafety cutoff;
+  assert(!cutoff.apply("cutoff",RelaySafety::ON,3,epoch,epoch+10,epoch,0));
+  cutoff.stop();
+  assert(!cutoff.isOn() && !cutoff.lockout()); // timer is not a network fault
   RelaySafety crowded;
   assert(!crowded.apply("first",RelaySafety::ON,30,epoch,epoch+10,epoch,0));
   for(int i=0;i<31;i++) {
