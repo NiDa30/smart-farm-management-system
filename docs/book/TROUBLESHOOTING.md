@@ -31,6 +31,15 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 
 ## Quy trình chẩn đoán cho sách
 
+### Backend echo đạt nhưng thiếu telemetry
+
+Ngày 13/10/2026: Maven build và WSS_PUBACK_ECHO_PASS đạt, probe 30 giây báo
+Insufficient device telemetry. Kiểm tra thiết bị/gateway đang chạy, Test Client
+có gói mới trên đúng topic và số TELEMETRY_PACKETS trước exception. Lần retry
+người dùng cung cấp TELEMETRY_PACKETS=5 và BUILD SUCCESS. Nguyên nhân lần đầu
+chưa xác định; không gọi là lỗi build hoặc khẳng định policy sai khi echo đã
+đạt. Threshold 30 giây là 4 gói; gate 300 giây là 58 gói. Chưa xác nhận gate dài.
+
 ### Retained Last Will cần iot:RetainPublish
 
 **Kết quả xác nhận:** sau khi cập nhật active policy, người dùng chạy probe có

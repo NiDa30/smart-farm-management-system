@@ -1,5 +1,26 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 15:20 (Việt Nam) — Backend nhận telemetry, probe ngắn đạt
+
+Người dùng xác nhận JDK/javac Temurin 21.0.12.1. Khi tạo backend IAM inline
+policy, UI báo exceeding limit với bản đầy đủ; hướng dẫn dùng policy tối thiểu
+cho Connect backend client, Subscribe/Receive đúng ENV01 telemetry và echo,
+Publish echo. Cần giữ quyền subscribe exact topic: dấu + trong IAM resource
+không thay thế wildcard IAM để khớp subscription exact của probe. Runtime
+quyền điều khiển pump chưa được xác nhận cấp trong policy tối thiểu.
+
+Lần probe trước WSS echo đạt nhưng kết thúc Insufficient device telemetry;
+không có số gói được gửi lại, nguyên nhân thiếu chưa xác định. Sau hướng dẫn
+giữ Wokwi/gateway chạy và kiểm tra live data, người dùng chạy lại: build/test
+backend đạt (1 test), WSS_PUBACK_ECHO_PASS, TELEMETRY_PACKETS=5 trong 30 giây,
+Maven BUILD SUCCESS; kết thúc 15:20:54 GMT+7, runtime 32.966 giây. Không kết luận
+chắc chắn lần lỗi trước do simulator dừng vì chưa có bằng chứng.
+
+Mốc đã có bằng chứng: Wokwi → AWS IoT → backend local nhận gói. Chưa có
+300-second observation, schema validation/unique counting trong Java probe,
+persistence/UI/control/ACK end-to-end. Tiếp theo chạy probe default 300 giây,
+threshold 58 gói; đếm packet không phải đầy đủ nghiệm thu dữ liệu.
+
 ## Chuyển sang backend — người dùng báo test đã hoàn tất
 
 Người dùng nói đã test xong Wokwi/AWS và yêu cầu tiếp tục. Ghi nhận hoàn tất theo

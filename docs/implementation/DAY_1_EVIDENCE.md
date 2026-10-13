@@ -2,6 +2,13 @@
 
 ## Subsequent local execution update
 
+User-provided Windows backend output on 13/10/2026 confirms JDK 21.0.12.1,
+Maven verification (1 test passed), WSS_PUBACK_ECHO_PASS and
+TELEMETRY_PACKETS=5 over a 30-second probe, followed by BUILD SUCCESS.
+An earlier insufficient-telemetry run was followed by this successful retry;
+its cause was not established. The 300-second gate and payload/sensor evidence
+remain outstanding; backend persistence/control/UI are not yet implemented.
+
 Further user-provided Wokwi serial output confirms repeated telemetry queued and
 QoS1 PUBACK callbacks after adding scoped iot:RetainPublish to the active device
 policy. The earlier retained-LWT CONNECT failure was reproduced and resolved
