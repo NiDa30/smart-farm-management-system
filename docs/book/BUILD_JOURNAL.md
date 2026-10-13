@@ -1,5 +1,15 @@
 # Nhật ký xây dựng Smart Farm
 
+## MQTT lỗi vẫn còn sau thử gateway
+
+Người dùng gửi log sau bước private gateway: Wi-Fi/NTP wait rồi MQTT receive
+errno=119, connect failed lặp lại. Không xác nhận gateway là nguyên nhân hay
+giải pháp. Probe Windows trước không có LWT; firmware có retained QoS1 LWT
+trên ENV01/status. Bổ sung --with-will vào probe để đối chiếu CONNECT với LWT,
+không publish telemetry/control; graceful DISCONNECT để tránh phát will khi
+thành công. Nếu mạng ngắt bất thường sau CONNECT, AWS có thể phát OFFLINE will.
+Chưa có kết quả chạy chế độ này; không kết luận lỗi authorization LWT.
+
 ## Chẩn đoán Windows TLS/MQTT thành công
 
 Người dùng cung cấp output check_device_connection.py: endpoint/client ID match,

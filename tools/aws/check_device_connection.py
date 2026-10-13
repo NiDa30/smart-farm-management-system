@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """Check device MQTT authentication locally without publishing or exposing keys."""
 from pathlib import Path
+import argparse
+from datetime import datetime, timezone
+import json
 import re
 import socket
 import ssl
+import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--with-will", action="store_true", help="Match firmware retained QoS1 Last Will on ENV01/status")
+    args = parser.parse_args()
     config = (ROOT / "firmware/esp32/config/config.local.h").read_text()
     endpoint = (ROOT / ".local/aws/endpoint.txt").read_text().strip()
     configured = re.search(r'^\s*#define\s+FARM_AWS_ENDPOINT\s+"([^"]*)"', config, re.M)
@@ -23,11 +30,30 @@ def main():
     context.load_cert_chain(str(data / "device.pem.crt"), str(data / "private.pem.key"))
     print("Local certificate/private key pair loaded", flush=True)
     # MQTT 3.1.1, clean session, keepalive 30s, client ID ENV01; no password.
-    body = b"\x00\x04MQTT\x04\x02\x00\x1e\x00\x05ENV01"
+    flags = 0x2e if args.with_will else 0x02
+    body = b"\x00\x04MQTT\x04" + bytes([flags]) + b"\x00\x1e\x00\x05ENV01"
+    if args.with_will:
+        topic = b"smartfarm/FARM001/ENV01/status"
+        payload = json.dumps({
+            "schemaVersion": 1, "deviceId": "ENV01", "bootId": str(uuid.uuid4()),
+            "sequence": 0, "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "connection": "OFFLINE", "reason": "CONNECTION_LOST",
+        }, separators=(",", ":")).encode()
+        body += len(topic).to_bytes(2, "big") + topic
+        body += len(payload).to_bytes(2, "big") + payload
+        print("Testing firmware-style retained QoS1 Last Will", flush=True)
+    remaining = len(body)
+    encoded_length = bytearray()
+    while True:
+        digit = remaining % 128
+        remaining //= 128
+        encoded_length.append(digit | (0x80 if remaining else 0))
+        if not remaining:
+            break
     with socket.create_connection((endpoint, 8883), timeout=15) as raw:
         with context.wrap_socket(raw, server_hostname=endpoint) as connection:
             print("TLS handshake verified", flush=True)
-            connection.sendall(bytes([0x10, len(body)]) + body)
+            connection.sendall(b"\x10" + encoded_length + body)
             reply = b""
             while len(reply) < 4:
                 chunk = connection.recv(4 - len(reply))
