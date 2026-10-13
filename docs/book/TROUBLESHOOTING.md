@@ -109,3 +109,22 @@ không xóa venv/package đã cài và không tắt xác minh TLS. Nếu còn th
 log cuối đầy đủ trước khi thay đổi proxy/mạng. Chưa xác nhận retry thành công.
 
 Ghi lỗi nguyên văn đã làm sạch, xác định môi trường và bước thất bại, chạy kiểm tra nhỏ có thể phân biệt nguyên nhân, sửa tối thiểu, rồi chạy lại bước đó. Không bỏ TLS verification, không mở toàn bộ IAM để chữa lỗi, không xóa certificate/manifest khi chưa hiểu trạng thái provisioning. Phân biệt lỗi đã tái hiện với giả thuyết; giữ cả bản sửa sai và bản sửa cuối để giải thích bài học.
+
+## CLOCK_SKEW trong Wokwi
+
+Nếu COMMAND_TIME có age âm, đồng hồ ESP32 đang chậm hơn issuedAt. Ví dụ
+age=-9 giải thích vì sao ON bị từ chối và LED vẫn OFF. Đồng bộ Windows time,
+khởi động lại Wokwi; firmware mới yêu cầu NTP cập nhật mỗi 15 giây.
+Để thử mô phỏng, đặt trong config/config.local.h (sau include config.example.h):
+
+```cpp
+#undef FARM_WOKWI_CLOCK_TOLERANCE_SECONDS
+#define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 10
+```
+
+Build lại firmware, merge lại private flash rồi restart simulation. Mặc định
+vẫn 2 giây; dung sai 10 chỉ áp dụng SSID Wokwi-GUEST. Expiry kiểm tra theo
+clock thiết bị nên clock chậm vẫn tạo bất định về độ mới của lệnh; không dùng
+cách này cho bơm thật. Nếu lệch quá 10 giây vẫn từ chối, cần sửa nguồn giờ.
+Thử ON 3 giây một lần: yêu cầu ACK SUCCESS, LED sáng rồi tự tắt. Chưa có
+kết quả live xác nhận bản sửa này.

@@ -134,3 +134,22 @@ OFF trước deadline; lệnh trùng không kéo dài; gateway outage → OFF/lo
 được phát hiện khi đang ON; reconnect không tự bật; reset chỉ khi OFF. Sau đó
 mới đánh dấu gate control live đạt. Safety event v1/SAFETY_TRIP chưa được publish
 và lưu ở bước này; heartbeat/status và command history hiện là evidence chính.
+
+## CLOCK_SKEW trong Wokwi
+
+Nếu COMMAND_TIME có age âm, đồng hồ ESP32 đang chậm hơn issuedAt. Ví dụ
+age=-9 giải thích vì sao ON bị từ chối và LED vẫn OFF. Đồng bộ Windows time,
+khởi động lại Wokwi; firmware mới yêu cầu NTP cập nhật mỗi 15 giây.
+Để thử mô phỏng, đặt trong config/config.local.h (sau include config.example.h):
+
+```cpp
+#undef FARM_WOKWI_CLOCK_TOLERANCE_SECONDS
+#define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 10
+```
+
+Build lại firmware, merge lại private flash rồi restart simulation. Mặc định
+vẫn 2 giây; dung sai 10 chỉ áp dụng SSID Wokwi-GUEST. Expiry kiểm tra theo
+clock thiết bị nên clock chậm vẫn tạo bất định về độ mới của lệnh; không dùng
+cách này cho bơm thật. Nếu lệch quá 10 giây vẫn từ chối, cần sửa nguồn giờ.
+Thử ON 3 giây một lần: yêu cầu ACK SUCCESS, LED sáng rồi tự tắt. Chưa có
+kết quả live xác nhận bản sửa này.

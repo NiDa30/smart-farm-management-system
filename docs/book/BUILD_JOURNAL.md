@@ -1,5 +1,19 @@
 # Nhật ký xây dựng Smart Farm
 
+## Wokwi clock chậm 7–9 giây: NTP và dung sai mô phỏng
+
+Người dùng ghi nhận age=-7 và -9, ON bị CLOCK_SKEW, GPIO vẫn OFF.
+Backend và MQTT đã chuyển lệnh; chưa xác nhận nguyên nhân clock chậm do máy host
+hay thời gian mô phỏng. Firmware yêu cầu SNTP cập nhật mỗi 15 giây thay vì
+chỉ dựa vào lần sync đầu. Thêm FARM_WOKWI_CLOCK_TOLERANCE_SECONDS mặc định 2,
+chỉ dùng khi SSID Wokwi-GUEST; có thể đặt 10 cho mô phỏng. Compile từ chối
+ngoài 0..10; lớp safety cũng clamp tối đa 10. Đây là dung sai thử nghiệm,
+không chứng minh clock đã đúng và không phải cấu hình cho bơm thật.
+
+Kiểm tra native: mặc định từ chối tương lai 9 giây; cấu hình 10 cho phép 9,
+từ chối 11; expiry vẫn bị kiểm tra; ON 3 giây tự OFF theo monotonic timer.
+Timer độc lập và giới hạn duration không thay đổi. Chờ kiểm tra LED/ACK trực tiếp.
+
 ## Wokwi nhận ON nhưng từ chối thời gian
 
 Người dùng cung cấp serial COMMAND_EXECUTED action=ON state=OFF result=EXPIRED.

@@ -7,7 +7,8 @@ class RelaySafety {
  public:
   enum Action { ON, OFF, RESET };
   const char* apply(const char* id, Action action, unsigned seconds,
-                    int64_t issued, int64_t expires, int64_t epoch, uint32_t tick) {
+                    int64_t issued, int64_t expires, int64_t epoch, uint32_t tick,
+                    unsigned futureToleranceSeconds = 2) {
     tickSafety(tick, true);
     for (auto &item : cache) {
       if (item.used && epoch <= item.expires && strcmp(item.id, id) == 0) return item.error;
@@ -15,7 +16,7 @@ class RelaySafety {
     const char* error = nullptr;
     if (epoch < 1700000000) error = "CLOCK_NOT_READY";
     else if (issued <= 0 || expires <= issued || expires - issued > 15) error = "INVALID_LIFETIME";
-    else if (issued > epoch + 2) error = "CLOCK_SKEW";
+    else if (issued > epoch + (futureToleranceSeconds > 10 ? 10 : futureToleranceSeconds)) error = "CLOCK_SKEW";
     else if (expires <= epoch) error = "EXPIRED";
     else if (action == ON && (seconds < 1 || seconds > 30)) error = "INVALID_DURATION";
     else if (action == ON && locked) error = "SAFETY_LOCKOUT";

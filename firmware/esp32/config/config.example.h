@@ -15,3 +15,6 @@
 
 // Set 1 only for the private ENV01 Wokwi relay demo.
 #define FARM_CONTROL_ENABLED 0
+
+// Wokwi-only future issuedAt tolerance; production/default remains 2 seconds.
+#define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 2

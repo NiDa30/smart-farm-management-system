@@ -25,6 +25,15 @@ int main() {
   assert(!relay.tickSafety(100, true));
   assert(relay.tickSafety(500, true));
   assert(!relay.isOn());
+  RelaySafety clock;
+  assert(strcmp(clock.apply("strict",RelaySafety::ON,3,epoch+9,epoch+19,epoch,0),"CLOCK_SKEW")==0);
+  assert(!clock.isOn());
+  assert(!clock.apply("simulation",RelaySafety::ON,3,epoch+9,epoch+19,epoch,0,10));
+  assert(clock.tickSafety(3000,true));
+  assert(!clock.isOn());
+  assert(strcmp(clock.apply("beyond",RelaySafety::ON,3,epoch+11,epoch+21,epoch,3000,10),"CLOCK_SKEW")==0);
+  assert(strcmp(clock.apply("clamped",RelaySafety::ON,3,epoch+11,epoch+21,epoch,3000,99),"CLOCK_SKEW")==0);
+  assert(strcmp(clock.apply("still-expired",RelaySafety::ON,3,epoch-10,epoch,epoch,3000,10),"EXPIRED")==0);
   RelaySafety crowded;
   assert(!crowded.apply("first",RelaySafety::ON,30,epoch,epoch+10,epoch,0));
   for(int i=0;i<31;i++) {

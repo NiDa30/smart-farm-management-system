@@ -7,6 +7,7 @@
 #include <esp_system.h>
 #include <time.h>
 #include <esp_timer.h>
+#include <esp_sntp.h>
 #include "RelaySafety.h"
 
 #if __has_include("config.local.h")
@@ -18,6 +19,12 @@
 #ifndef FARM_CONTROL_ENABLED
 #define FARM_CONTROL_ENABLED 0
 #endif
+
+#ifndef FARM_WOKWI_CLOCK_TOLERANCE_SECONDS
+#define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 2
+#endif
+static_assert(FARM_WOKWI_CLOCK_TOLERANCE_SECONDS >= 0 && FARM_WOKWI_CLOCK_TOLERANCE_SECONDS <= 10,
+  "Wokwi clock tolerance must be between 0 and 10 seconds");
 
 // Only ENV01 may control PUMP01 in this Wokwi MVP. Default disabled.
 static DHTesp dht;
@@ -125,7 +132,8 @@ static void handleCommand(const CommandPacket &packet) {
     || !doc["issuedAt"].is<const char*>() || !doc["expiresAt"].is<const char*>()) error = "INVALID_COMMAND";
   else error = relay.apply(id, on ? RelaySafety::ON : off ? RelaySafety::OFF : RelaySafety::RESET,
     on ? doc["durationSeconds"].as<unsigned>() : 0,
-    parseUtc(doc["issuedAt"]), parseUtc(doc["expiresAt"]), time(nullptr), millis());
+    parseUtc(doc["issuedAt"]), parseUtc(doc["expiresAt"]), time(nullptr), millis(),
+    strcmp(FARM_WIFI_SSID, "Wokwi-GUEST") == 0 ? FARM_WOKWI_CLOCK_TOLERANCE_SECONDS : 2);
   if (!error && relay.isOn() && !wasOn) {
     esp_timer_stop(relayTimer);
     // Arm independent cutoff before energizing; never renew it on duplicate ON.
@@ -265,6 +273,8 @@ void setup() {
   WiFi.begin(FARM_WIFI_SSID, FARM_WIFI_PASSWORD);
   Serial.println("Wi-Fi connecting");
   configTime(0, 0, "pool.ntp.org", "time.google.com");
+  // Refresh simulated wall time frequently; relay cutoff uses an independent timer.
+  sntp_set_sync_interval(15000);
 }
 
 void loop() {
