@@ -10,7 +10,7 @@ Trạng thái: khung bản thảo. Chỉ viết phần “đã triển khai thà
 6. Firmware ESP32 và Wokwi: cảm biến, ADC, TLS/LittleFS, build, workflow private, telemetry và đo bằng chứng.
 7. Hợp đồng dữ liệu và kết nối backend: schema, timestamp, bootId/sequence, QoS/PUBACK, WSS/SigV4 và phân biệt self-test/live test.
 8. [PostgreSQL và API](CHAPTER_08_LOCAL_DATABASE_API.md): migration, validation, idempotency và query đã có code/tests cloud; Windows live còn chờ sửa Docker. Retention chưa triển khai.
-9. WebSocket và giao diện realtime: kết nối lại, freshness, trạng thái offline, chart — cần triển khai và kiểm chứng.
+9. [Giao diện realtime](CHAPTER_09_REALTIME_FRONTEND.md): polling API, freshness, cached/error và history có code/tests; Windows live còn chờ. WebSocket/chart dài hạn chưa triển khai.
 10. Rule engine và điều khiển an toàn: thời hạn command, thời gian ON giới hạn, relay OFF, ACK và lockout — cần triển khai và kiểm chứng.
 11. Nghiệm thu hệ thống: test matrix, lỗi mạng/certificate/policy, độ trễ, dữ liệu thiếu, bằng chứng end-to-end.
 12. Vận hành và bước tiếp theo: chi phí, observability, credential rotation, rollback, chuyển simulator sang phần cứng thật.

@@ -1,5 +1,21 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 — React Sensor Realtime dùng API backend
+
+Thay màn hình HiveMQ trực tiếp bằng latest/history API PostgreSQL; ba card
+nhiệt độ/độ ẩm/đất, timestamp nguồn/receivedAt, trạng tháifresh/stale/empty/error
+và history15 readings. Bỏ controls browser publish mock và guide HiveMQ cũ
+trong màn hình này; không thay đổi dependency declarations/lockfile ở bước này.
+Vite proxy/api→127.0.0.1:8080. Poll5 giây sau request, timeout8 giây, abort
+unmount; clock freshness30 giây; không đồng nhất freshness với LWT/online.
+
+Lint/build đạt,3 Node/tsx tests đạt. Browser fixture scenarios fresh/stale/503
+cached/invalid/empty/recovery/dedup đạt, không page errors. Lỗi smoke glob đầu
+không bắt /latest được sửa trong harness rồi chạy lại. Proxy thật đến app/DB
+trống trả history[]/latest404 đúng. Cloud MQTT disabled, frontend live Windows
+chưa xác nhận. Thêm chương9; các màn hình/topbar khác vẫn có mock. Không claim
+WebSocket push hoặc full dashboard đã chuyển sang dữ liệu thật.
+
 ## 13/10/2026 — Windows live AWS → PostgreSQL → API xác nhận
 
 Người dùng gọi GET /api/v1/devices/ENV01/telemetry/latest bằng curl --fail và
