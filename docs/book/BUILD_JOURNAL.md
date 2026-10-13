@@ -1,5 +1,16 @@
 # Nhật ký xây dựng Smart Farm
 
+## Wokwi mount/ready, MQTT connect bị ngắt
+
+Người dùng cung cấp log: LittleFS mounted, AWS endpoint configured, Wi-Fi and
+time ready, sau đó MQTT transport_read errno=119 và connect failed. Certificate
+Active được xác nhận qua ảnh; người dùng báo client ID/policy đầy đủ, chưa có
+bằng chứng JSON đối chiếu trực tiếp. Chưa kết luận lỗi policy/TLS/network.
+Thêm check_device_connection.py dùng Python stdlib TLS xác minh CA/hostname,
+certificate pair và MQTT CONNECT ENV01 trên Windows để phân biệt simulator với
+AWS/authentication. Không publish/control. Dừng simulator trước vì trùng client
+ID có thể ngắt phiên cũ. Chưa có kết quả live của phép thử này.
+
 ## 13/10/2026 — Image ghép boot, chờ chẩn đoán Wi-Fi/NTP/MQTT
 
 Người dùng gửi log Wokwi mới chỉ có bootloader đến entry; không thấy lỗi
