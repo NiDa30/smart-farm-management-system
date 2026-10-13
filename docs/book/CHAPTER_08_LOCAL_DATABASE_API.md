@@ -2,7 +2,7 @@
 
 **Bản thảo thực hành, cập nhật 13/10/2026.** Code và kiểm tra PostgreSQL/API đã
 đạt trong cloud. PostgreSQL trên Windows đã Healthy sau khi vượt qua lỗi Docker;
-chưa có bằng chứng AWS → PostgreSQL → API live trên máy người dùng.
+người dùng đã cung cấp response API có telemetry live lưu trong database.
 
 ## Vì sao cần bước này?
 
@@ -123,6 +123,34 @@ curl --fail 'http://127.0.0.1:8080/api/v1/devices/ENV01/telemetry?limit=10'
 Latest trả404 nếu chưa có reading. History trả[] khi chưa có dữ liệu; response
 reading chứa id, farmId, telemetry và receivedAt. Không mô tả response có dữ
 liệu thật cho đến khi đã quan sát được trên máy triển khai.
+
+### Kết quả thực tế trên Windows
+
+Sau khi chạy backend, người dùng gọi latest và nhận response thành công:
+
+```json
+{
+  "id": 5,
+  "farmId": "FARM001",
+  "telemetry": {
+    "schemaVersion": 1,
+    "deviceId": "ENV01",
+    "bootId": "ab6cfc5e-18ff-4a01-852b-03604df6b52f",
+    "sequence": 15,
+    "timestamp": "2026-10-13T09:06:14Z",
+    "temperature": 24.0,
+    "humidity": 40.0,
+    "soilMoisture": 100.0,
+    "uptimeMs": 64419
+  },
+  "receivedAt": "2026-10-13T09:06:19.775305Z"
+}
+```
+
+Sample chứng minh ingest và read API có reading; không chứng minh mọi gói đều
+được lưu, restart vẫn giữ dữ liệu hoặc frontend đã dùng API. Soil100% phù hợp
+công thức potentiometer low=wet; không coi là phép đo đất vật lý đã hiệu chuẩn.
+timestamp và receivedAt dùng UTC; không suy ra SLA độ trễ từ một sample.
 
 Đổi sensor trong Wokwi, chờ telemetry mới, gọi API để đối chiếu. Sau restart
 backend/database, history phải còn reading cũ. Kiểm tra cùng identity đến lại

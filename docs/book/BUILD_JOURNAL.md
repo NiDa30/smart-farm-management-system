@@ -1,5 +1,17 @@
 # Nhật ký xây dựng Smart Farm
 
+## 13/10/2026 — Windows live AWS → PostgreSQL → API xác nhận
+
+Người dùng gọi GET /api/v1/devices/ENV01/telemetry/latest bằng curl --fail và
+nhận reading id5, farmIdFARM001, deviceIdENV01, schemaVersion1, sequence15,
+timestamp2026-10-13T09:06:14Z, temperature24, humidity40, soilMoisture100,
+uptimeMs64419; receivedAt2026-10-13T09:06:19.775305Z. bootId có dạng UUID.
+Đây là bằng chứng dữ liệu live qua ingest/storage/read API trên Windows theo
+đầu ra người dùng; không phải fixture cloud. Chênh timestamp nguồn và receivedAt
+khoảng5.775 giây trong sample, không coi là đo độ trễ mạng chuẩn vì clock và
+simulation timing chưa được đối chiếu. Chưa có sample sau đổi sensor, history,
+restart persistence hoặc frontend API integration từ người dùng.
+
 ## Windows PostgreSQL Healthy — Docker không còn chặn triển khai
 
 Người dùng cung cấp output `docker compose --env-file .local/postgres/db.env
