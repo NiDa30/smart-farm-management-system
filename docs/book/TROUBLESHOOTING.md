@@ -37,6 +37,10 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 LWT và nhận MQTT CONNECT accepted. Bản sửa quyền giải quyết được phép thử tái
 hiện trên Windows. Wokwi và telemetry vẫn cần kiểm chứng riêng.
 
+**Bằng chứng tiếp theo:** người dùng cung cấp Wokwi serial có Telemetry queued
+và PUBACK lặp lại. Lỗi kết nối simulator đã được giải quyết sau sửa quyền;
+payload AWS, thay đổi sensor và backend vẫn chưa được nghiệm thu.
+
 MQTT CONNECT không LWT được AWS chấp nhận trên Windows; cùng certificate/client
 ID với QoS1 retained LWT bị server đóng trước CONNACK. Device policy ban đầu chỉ
 có iot:Publish, thiếu iot:RetainPublish cho ENV01/status. Sửa renderer và thêm

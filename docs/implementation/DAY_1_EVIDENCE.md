@@ -2,6 +2,13 @@
 
 ## Subsequent local execution update
 
+Further user-provided Wokwi serial output confirms repeated telemetry queued and
+QoS1 PUBACK callbacks after adding scoped iot:RetainPublish to the active device
+policy. The earlier retained-LWT CONNECT failure was reproduced and resolved
+with the Windows TLS probe. MQTT Test Client payload, sensor variation,
+five-minute observation and backend receive remain outstanding. PUBACK callbacks
+include status publishes, so their count is not a telemetry packet count.
+
 On 13/10/2026 the user supplied Windows firmware build success output:
 esptool.py 4.9.0 created the ESP32 image, `[SUCCESS] Took 97.88 seconds`.
 This supersedes the previous unverified local firmware compile status. Cloud

@@ -1,5 +1,15 @@
 # Nhật ký xây dựng Smart Farm
 
+## Wokwi telemetry được broker xác nhận QoS1
+
+Người dùng cung cấp serial log Wokwi lặp `Telemetry queued; wait for PUBACK`
+và `MQTT QoS1 PUBACK received` sau sửa RetainPublish. Đây là bằng chứng runtime
+publish và QoS1 acknowledgement; callback hiện không phân biệt ACK telemetry với
+ACK status, nên không dùng tổng số PUBACK làm số telemetry. Chưa có payload từ
+MQTT Test Client, thời gian phiên 5 phút, biến thiên sensor hoặc backend receive.
+Tiếp theo subscribe ENV01/telemetry trên AWS, ghi sample đã làm sạch và quan sát
+sensor thay đổi. Không tuyên bố toàn bộ Day 1/end-to-end đã hoàn thành.
+
 ## Xác nhận sửa RetainPublish thành công trên Windows
 
 Sau khi thêm iot:RetainPublish cho ENV01/status và lưu policy version mới làm
