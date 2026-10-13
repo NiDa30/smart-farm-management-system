@@ -33,6 +33,10 @@ Các ghi nhận dưới đây dựa trên đầu ra trong cuộc trò chuyện v
 
 ### 13/10/2026 — PlatformIO mirror TLS và tải bị ngắt
 
+Kết quả sau đó: người dùng chạy lại build và báo SUCCESS sau 97.88 giây,
+esptool 4.9.0 tạo image ESP32 thành công. Retry đủ để hoàn tất build; không có
+bằng chứng cần tắt TLS hoặc sửa source. Nguyên nhân lần abort vẫn chưa xác định.
+
 Windows: mirror sin1.contabostorage.com báo SSL WRONG_VERSION_NUMBER. Framework
 vẫn cài thành công sau khi PlatformIO chọn mirror khác. tool-esptoolpy đang tải
 59% rồi báo Aborted; nguyên nhân abort chưa xác định. Không phải bằng chứng lỗi

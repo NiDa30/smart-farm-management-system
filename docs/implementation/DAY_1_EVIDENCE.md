@@ -2,6 +2,12 @@
 
 ## Subsequent local execution update
 
+On 13/10/2026 the user supplied Windows firmware build success output:
+esptool.py 4.9.0 created the ESP32 image, `[SUCCESS] Took 97.88 seconds`.
+This supersedes the previous unverified local firmware compile status. Cloud
+registry access was not revalidated. Private LittleFS loading, Wokwi execution,
+MQTT TLS/PUBACK and telemetry remain unverified.
+
 The report below records the original cloud baseline, not the latest overall
 project state. Branch `feat/day1-iot-foundation` was subsequently committed/pushed.
 The user supplied successful AWS provisioning output from their Windows machine:

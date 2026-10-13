@@ -2,6 +2,13 @@
 
 ## 13/10/2026 — Tải toolchain firmware trên Windows (chưa build xong)
 
+**Cập nhật sau retry:** người dùng cung cấp đầu ra build thành công:
+`esptool.py v4.9.0`, `Successfully created esp32 image`,
+`[SUCCESS] Took 97.88 seconds`. Firmware ELF/bin đã được tạo trên Windows.
+Mốc này xác nhận compile/package, không xác nhận LittleFS, Wokwi runtime hoặc
+MQTT TLS/telemetry. Bước tiếp theo chuyển sang Wokwi local/private và kiểm tra
+filesystem provisioning; giữ phần lỗi tải bên dưới làm lịch sử.
+
 Người dùng cung cấp đầu ra PlatformIO: toolchain-xtensa-esp32 8.4.0+2021r2-patch5
 đã cài. Mirror sin1.contabostorage.com gặp SSL WRONG_VERSION_NUMBER; PlatformIO
 tự chuyển mirror và cài framework-arduinoespressif32 3.20017.241212+sha.dcc1105b
