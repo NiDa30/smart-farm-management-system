@@ -2,6 +2,13 @@
 
 ## 13/10/2026 — Wokwi khởi động firmware, thiếu partition LittleFS
 
+Kiểm tra tiếp theo do người dùng cung cấp: partitions.bin có nvs 0x9000/0x5000,
+otadata 0xe000/0x2000, app0 0x10000/0x140000, app1 0x150000/0x140000,
+spiffs 0x290000/0x160000 và coredump 0x3f0000/0x10000. Partition filesystem
+đã tồn tại trong build output; không cần đổi tên hoặc layout để chữa log.
+Simulator chưa được xác nhận đã nạp partition table/image này. Bước tiếp theo
+là tạo LittleFS riêng tư, rồi ghép flash tại offsets đã kiểm tra.
+
 Người dùng cài Wokwi extension VS Code, kích hoạt license và cung cấp boot log
 ESP32. Firmware khởi động, báo `partition "spiffs" could not be found`,
 `Mounting LittleFS failed! Error: 261`, rồi giữ relay OFF vì không đọc được
