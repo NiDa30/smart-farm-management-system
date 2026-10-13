@@ -1,5 +1,18 @@
 # Nhật ký xây dựng Smart Farm
 
+## Chẩn đoán Windows TLS/MQTT thành công
+
+Người dùng cung cấp output check_device_connection.py: endpoint/client ID match,
+certificate/private key loaded, TLS handshake verified, MQTT CONNECT accepted
+(ENV01), không publish. Xác nhận authentication CONNECT từ Windows bằng các
+file hiện tại; không chứng minh quyền publish/LWT hoặc Wokwi TLS đã đúng.
+Hướng chẩn đoán tiếp: dùng private Wokwi gateway qua mạng Windows đã hoạt động,
+so sánh với đường mạng simulator hiện tại. Đây là phép thử, chưa kết luận public
+gateway là nguyên nhân. README chính thức wokwi/wokwigw xác nhận chạy wokwigw
+và cấu hình [net] gateway="ws://localhost:9011" cho VS Code. Không cần bridge
+mode/TAP driver. Nếu vẫn lỗi, kiểm tra sự khác biệt MQTT CONNECT/LWT trong
+firmware so với probe không có LWT.
+
 ## Wokwi mount/ready, MQTT connect bị ngắt
 
 Người dùng cung cấp log: LittleFS mounted, AWS endpoint configured, Wi-Fi and
