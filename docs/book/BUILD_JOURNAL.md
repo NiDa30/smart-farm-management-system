@@ -1,5 +1,22 @@
 # Nhật ký xây dựng Smart Farm
 
+## Tổng quan IoT dùng dữ liệu backend
+
+Từ bbbd231, thay IoTDashboard mock bằng GET /api/v1/dashboard/overview, chỉ
+đọc. Ghép monitoring, registry/areas, alert, rule state và Event Log. Read-only
+REPEATABLE_READ giữ tổng/preview nhất quán trong DB. Không gọi command timeout,
+không quick-toggle hoặc bật rule từ dashboard. PUMP01 không tính là cảm biến.
+Trung bình khu vực chỉ dùng sensor có số đo mới trong 30 giây, mẫu cũ không làm sai trung bình,
+không còn mẫu mới trả dấu —. Rule vẫn dùng 15 giây; không nới safety gate.
+
+Preview 5 alert khác tổng tất cả alert, 8 sự kiện trong 24 giờ phân biệt giờ nguồn và
+backend. API lỗi không giữ khẳng định trạng thái hiện tại. Không tạo số pin,
+pH, van hoặc lưu lượng giả. Không đổi schema/firmware/IAM/dependency.
+Cloud: 64 backend tests đạt không skip; 7 browser fixtures và 9 unit frontend đạt;
+full-app smoke qua menu/proxy/Spring/PostgreSQL thật đạt, MQTT/control=false.
+Nghiệm thu automation/GPIO vẫn tách riêng, không đánh dấu từ seed/fixtures.
+Chương16 và báo cáo IOT_DASHBOARD_REPORT ghi cách chạy và giới hạn.
+
 ## Giám sát registry, dữ liệu và kết nối backend
 
 Tiếp tục từ070e37d: thay DeviceMonitor mock bằng GET /api/v1/monitoring.

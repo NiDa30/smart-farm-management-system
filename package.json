@@ -11,7 +11,8 @@
     "lint": "tsc --noEmit",
     "test:automation": "playwright test --config playwright.automation.config.ts",
     "test:events": "playwright test --config playwright.events.config.ts",
-    "test:monitoring": "playwright test --config playwright.monitoring.config.ts"
+    "test:monitoring": "playwright test --config playwright.monitoring.config.ts",
+    "test:dashboard": "playwright test --config playwright.dashboard.config.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -39,3 +39,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Bàn giao Event Log cloud](../implementation/LOCAL_EVENT_LOG_REPORT.md)
 
 - [Giám sát thiết bị thật](CHAPTER_15_DEVICE_MONITORING.md)
+
+- [Tổng quan IoT thật](CHAPTER_16_IOT_OVERVIEW.md)

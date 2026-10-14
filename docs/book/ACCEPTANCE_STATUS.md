@@ -33,6 +33,7 @@ Lượt helper cũ 4 đạt/37 skip là lịch sử, không thay kết quả ki�
 | Quy tắc tưới tự động | Tests transport giả lập/PostgreSQL và 13 browser fixtures đạt; người dùng xác nhận bước bật tự động hoạt động | **Chưa nghiệm thu đầy đủ AWS/Wokwi** cho OFF sớm, cooldown, timer và restart giữa run |
 | Nhật ký sự kiện | API/UI, 5 backend tests, 7 browser fixtures và smoke toàn ứng dụng với PostgreSQL test đạt | Chưa kiểm tra Event Log trên dữ liệu Windows/AWS của người dùng; không phải immutable audit log |
 | Giám sát thiết bị | API/UI đọc registry, số đo, status, cảnh báo và lifecycle MQTT backend; cloud unit/integration/browser/smoke đạt | Chưa subscribe heartbeat mọi sensor; không chứng minh online/offline vật lý. Windows/AWS live còn chờ |
+| Tổng quan IoT | Snapshot registry/monitoring/alert/rule/events thật; cloud 64 backend, 7 dashboard browser và 9 unit frontend đạt; full-app smoke đạt | MQTT/control tắt trong cloud; chưa nghiệm thu Windows/AWS live cho dashboard |
 | NVS và phục hồi mạng | Restart simulation từng cần thiết khi gateway restart không phục hồi phiên | **NVS chưa làm**; restart mất RAM, không phải bằng chứng reconnect thành công |
 
 Tests với MQTT mock, API fixture, dữ liệu SQL thử hoặc native safety assertions
