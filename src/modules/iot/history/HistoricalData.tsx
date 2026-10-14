@@ -1,265 +1,85 @@
-import React, { useState } from 'react';
-import {
-  Calendar,
-  Check,
-  ChevronDown,
-  Download,
-  Filter,
-  History,
-  Info,
-  Layers,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
-} from 'lucide-react';
-import { useApp } from '../../../context/AppContext';
+import React, { useEffect, useState } from 'react';
+import { Download, History, RefreshCw } from 'lucide-react';
+import { fetchRegistry, parseReading, SensorSummary, TelemetryReading } from '../realtime/telemetryApi';
 
 export const HistoricalData: React.FC = () => {
-  const { iotDevices, automationExecutions } = useApp();
-
-  // Multi-sensor selection (e.g. SM-01, SM-02, SM-03)
-  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([
-    'SM-01',
-    'SM-02',
-    'SM-03',
-  ]);
-  const [selectedMetric, setSelectedMetric] = useState<'SOIL_MOISTURE' | 'SOIL_PH' | 'TEMP'>('SOIL_MOISTURE');
-  const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d' | '30d'>('24h');
-
-  const availableSensors = iotDevices.filter((d) => d.type === 'SENSOR');
-
-  const toggleSensor = (id: string) => {
-    if (selectedDeviceIds.includes(id)) {
-      if (selectedDeviceIds.length > 1) {
-        setSelectedDeviceIds(selectedDeviceIds.filter((d) => d !== id));
-      }
-    } else {
-      setSelectedDeviceIds([...selectedDeviceIds, id]);
-    }
+  const [sensors, setSensors] = useState<SensorSummary[]>([]);
+  const [device, setDevice] = useState('');
+  const [hours, setHours] = useState(1);
+  const [metric, setMetric] = useState<'temperature' | 'humidity' | 'soilMoisture'>('temperature');
+  const [rows, setRows] = useState<TelemetryReading[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [refresh, setRefresh] = useState(0);
+  const [range, setRange] = useState<{ start: number; end: number } | null>(null);
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    fetchRegistry(controller.signal).then(value => { if (!active) return; setSensors(value.sensors); setDevice(value.sensors[0]?.deviceId ?? ''); setLoading(false); })
+      .catch(() => { if (!active) return; setError('Không tải được danh sách cảm biến. Kiểm tra backend và tải lại trang.'); setLoading(false); });
+    return () => { active=false; clearTimeout(timeout); controller.abort(); };
+  }, []);
+  useEffect(() => {
+    if (!device) return;
+    let active = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    setLoading(true); setError(''); setRows([]);
+    const end = Date.now(), start = end - hours * 3600000;
+    const query = new URLSearchParams({ from: new Date(start).toISOString(), to: new Date(end).toISOString(), limit: '1000' });
+    fetch(`/api/v1/devices/${encodeURIComponent(device)}/telemetry?${query}`, { signal: controller.signal, cache: 'no-store' })
+      .then(async response => {
+        if (!response.ok) throw new Error();
+        const value: unknown = await response.json();
+        if (!Array.isArray(value)) throw new Error();
+        const readings = value.map(parseReading);
+        if (readings.some(row => row.telemetry.deviceId !== device || Date.parse(row.telemetry.timestamp) < start || Date.parse(row.telemetry.timestamp) > end)) throw new Error();
+        const unique = [...new Map(readings.map(row => [row.id, row])).values()].sort((a,b) => Date.parse(a.telemetry.timestamp)-Date.parse(b.telemetry.timestamp) || a.id-b.id);
+        if (active) { setRows(unique); setRange({ start, end }); }
+      }).catch(() => { if (active) setError('Không tải được lịch sử. Kiểm tra backend rồi nhấn Làm mới.'); })
+      .finally(() => { clearTimeout(timeout); if (active) setLoading(false); });
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
+  }, [device, hours, refresh]);
+  const titles = { temperature: 'Nhiệt độ (°C)', humidity: 'Độ ẩm không khí (%)', soilMoisture: 'Độ ẩm đất (%)' };
+  const values = rows.map(row => row.telemetry[metric]);
+  const min = values.length ? Math.min(...values) : 0;
+  const max = values.length ? Math.max(...values) : 0;
+  const average = values.length ? values.reduce((sum,v) => sum+v,0)/values.length : 0;
+  const exportCsv = () => {
+    const csv = ['deviceId,timestamp,receivedAt,temperature,humidity,soilMoisture,bootId,sequence', ...rows.map(({ telemetry: t, receivedAt }) => [t.deviceId,t.timestamp,receivedAt,t.temperature,t.humidity,t.soilMoisture,t.bootId,t.sequence].join(','))].join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a'); link.href=url; link.download=`${device}-${hours}h.csv`; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
   };
-
-  // Mock historical data points for the 3 sensors over 24h
-  const timeLabels = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
-  const sensorDatasets: { [key: string]: { name: string; color: string; values: number[] } } = {
-    'SM-01': {
-      name: 'SM-01 (Khu A Lô 1)',
-      color: '#10B981', // emerald
-      values: [42, 41, 40, 39, 37, 36, 44, 41],
-    },
-    'SM-02': {
-      name: 'SM-02 (Khu A Lô 2)',
-      color: '#06B6D4', // cyan
-      values: [36, 35, 34, 33, 31, 30, 41, 38],
-    },
-    'SM-03': {
-      name: 'SM-03 (Khu A Lô 3)',
-      color: '#F59E0B', // amber
-      values: [33, 32, 31, 29, 28, 27, 43, 39],
-    },
-    'SM-04': {
-      name: 'SM-04 (Khu Nam)',
-      color: '#8B5CF6', // purple
-      values: [48, 47, 46, 45, 44, 43, 46, 45],
-    },
-  };
-
-  return (
-    <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b border-slate-200">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <History className="w-5 h-5 text-emerald-600" />
-            <span>Phân tích Lịch sử Dữ liệu & So sánh Đa Sensor</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Đối chiếu biến thiên chỉ số theo thời gian, phát hiện sensor bị trôi dạt (drift) và kiểm chứng hiệu quả tưới
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Time Range Selector */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-            {(['1h', '24h', '7d', '30d'] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setTimeRange(r)}
-                className={`px-3 py-1 rounded font-mono ${
-                  timeRange === r
-                    ? 'bg-white shadow-2xs font-bold text-emerald-700'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => alert('Xuất file CSV dữ liệu lịch sử')}
-            className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-1.5"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Xuất CSV</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Sensor Selection Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-700">Chọn Sensors so sánh:</span>
-            <div className="flex flex-wrap items-center gap-2">
-              {['SM-01', 'SM-02', 'SM-03', 'SM-04'].map((sId) => {
-                const isSelected = selectedDeviceIds.includes(sId);
-                const info = sensorDatasets[sId];
-                return (
-                  <button
-                    key={sId}
-                    onClick={() => toggleSensor(sId)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all border ${
-                      isSelected
-                        ? 'border-transparent text-white shadow-2xs'
-                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-                    }`}
-                    style={{ backgroundColor: isSelected ? info.color : undefined }}
-                  >
-                    {isSelected && <Check className="w-3 h-3" />}
-                    <span>{info.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="text-xs text-slate-500 flex items-center gap-2">
-            <span>Chỉ số:</span>
-            <select
-              value={selectedMetric}
-              onChange={(e) => setSelectedMetric(e.target.value as any)}
-              className="px-2 py-1 rounded border border-slate-200 bg-white font-medium"
-            >
-              <option value="SOIL_MOISTURE">Độ ẩm đất (%)</option>
-              <option value="SOIL_PH">Độ chua đất (pH)</option>
-              <option value="TEMP">Nhiệt độ (°C)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Historical Compare Chart Box */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs p-5 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">
-              Biểu đồ So sánh Độ ẩm đất đa điểm ({timeRange})
-            </h2>
-            <p className="text-xs text-slate-500">
-              Đường kẻ ngang đỏ: Ngưỡng kích hoạt tưới nhỏ giọt tự động (&lt; 30%)
-            </p>
-          </div>
-
-          {/* Legend */}
-          <div className="flex items-center gap-4 text-xs">
-            {selectedDeviceIds.map((id) => (
-              <div key={id} className="flex items-center gap-1.5">
-                <span
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: sensorDatasets[id]?.color }}
-                />
-                <span className="font-mono text-slate-700">{id}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-1.5">
-              <span className="w-4 h-0.5 bg-rose-500 border border-dashed border-rose-500" />
-              <span className="text-rose-600 font-semibold text-[11px]">Ngưỡng 30%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Visual Chart Canvas Representation */}
-        <div className="relative pt-6 pb-2 bg-slate-950 rounded-xl p-4 text-white font-mono">
-          {/* Threshold Line at 30% */}
-          <div
-            className="absolute left-10 right-4 border-b border-dashed border-rose-500/70 pointer-events-none flex items-center justify-end"
-            style={{ bottom: `${(30 / 60) * 100}%` }}
-          >
-            <span className="text-[10px] text-rose-400 font-bold bg-slate-900 px-1 -translate-y-2">
-              Ngưỡng tưới: 30%
-            </span>
-          </div>
-
-          {/* Automation Event Marker at 16:30 */}
-          <div
-            className="absolute top-2 bottom-10 w-0.5 bg-indigo-500/80 border-l border-indigo-400 pointer-events-none"
-            style={{ left: '76%' }}
-          >
-            <div className="bg-indigo-600 text-[10px] px-1.5 py-0.5 rounded text-white font-sans font-semibold whitespace-nowrap absolute -top-1 -translate-x-1/2">
-              ⚡ 16:30 Tưới Khu A (12m)
-            </div>
-          </div>
-
-          {/* Grid lines and curves */}
-          <div className="h-64 flex items-end justify-between px-6 pt-10">
-            {timeLabels.map((lbl, idx) => (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                <div className="w-full flex items-end justify-center gap-1.5 h-48">
-                  {selectedDeviceIds.map((sId) => {
-                    const val = sensorDatasets[sId]?.values[idx] || 35;
-                    const heightPercent = (val / 60) * 100;
-                    return (
-                      <div
-                        key={sId}
-                        title={`${sensorDatasets[sId].name}: ${val}% lúc ${lbl}`}
-                        className="w-3 rounded-t transition-all hover:brightness-125 cursor-pointer"
-                        style={{
-                          height: `${heightPercent}%`,
-                          backgroundColor: sensorDatasets[sId].color,
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-                <span className="text-[10px] text-slate-400">{lbl}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Statistical Insights Card */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-          <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-            <span className="text-slate-400 block text-[10px]">Cảm biến SM-03 (Lô A3)</span>
-            <div className="font-bold text-slate-800 text-sm mt-0.5">
-              Tụt nhanh nhất (-6% trong 6h)
-            </div>
-            <p className="text-slate-500 mt-1 text-[11px]">
-              Vùng rễ đất cát pha thoát nước nhanh, cần bổ sung vật liệu giữ ẩm xơ dừa.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-            <span className="text-slate-400 block text-[10px]">Độ đồng đều độ ẩm (Consistency)</span>
-            <div className="font-bold text-emerald-700 text-sm mt-0.5">
-              Độ lệch chuẩn: ±3.4% (Tốt)
-            </div>
-            <p className="text-slate-500 mt-1 text-[11px]">
-              Các van nhỏ giọt bù áp hoạt động đồng bộ, không phát hiện nghẽn đầu béc.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-            <span className="text-slate-400 block text-[10px]">Hiệu quả tưới chu kỳ 16:30</span>
-            <div className="font-bold text-slate-800 text-sm mt-0.5">
-              Độ ẩm phục hồi +14% sau 25 phút
-            </div>
-            <p className="text-slate-500 mt-1 text-[11px]">
-              Nước ngấm đều xuống tầng rễ 30cm, lượng nước tiêu hao 4.05 m³.
-            </p>
-          </div>
-        </div>
-      </div>
+  const low = min-1, high=max+1;
+  const x = (row: TelemetryReading) => 50 + (Date.parse(row.telemetry.timestamp)-(range?.start ?? 0))/((range?.end ?? 1)-(range?.start ?? 0))*900;
+  const y = (row: TelemetryReading) => 210-(row.telemetry[metric]-low)/(high-low)*180;
+  const path = rows.map((row,index) => `${index === 0 || Date.parse(row.telemetry.timestamp)-Date.parse(rows[index-1].telemetry.timestamp)>30000 ? 'M' : 'L'} ${x(row)} ${y(row)}`).join(' ');
+  return <div className="max-w-6xl mx-auto space-y-5">
+    <h1 className="text-xl font-bold flex items-center gap-2"><History /> Lịch sử cảm biến</h1>
+    <div className="bg-white border rounded-xl p-4 flex flex-wrap gap-4 items-end">
+      <label>Cảm biến<select aria-label="Cảm biến" value={device} onChange={event => setDevice(event.target.value)} className="block border rounded p-2">{sensors.map(sensor => <option key={sensor.deviceId} value={sensor.deviceId}>{sensor.name} · {sensor.deviceId}</option>)}</select></label>
+      <label>Khoảng thời gian<select aria-label="Khoảng thời gian" value={hours} onChange={event => setHours(Number(event.target.value))} className="block border rounded p-2"><option value={1}>1 giờ</option><option value={24}>24 giờ</option></select></label>
+      <label>Chỉ số<select aria-label="Chỉ số" value={metric} onChange={event => setMetric(event.target.value as typeof metric)} className="block border rounded p-2">{Object.entries(titles).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+      <button disabled={loading || !device} onClick={() => setRefresh(v => v+1)} className="border rounded p-2 disabled:opacity-40 flex gap-2"><RefreshCw size={18} />Làm mới</button>
+      <button disabled={loading || !!error || !rows.length} onClick={exportCsv} className="border rounded p-2 disabled:opacity-40 flex gap-2"><Download size={18} />Xuất CSV</button>
     </div>
-  );
+    {loading && <p role="status">Đang tải lịch sử…</p>}
+    {error && <p role="alert" className="text-rose-700">{error}</p>}
+    {!loading && !error && !rows.length && <p>Chưa có dữ liệu trong khoảng đã chọn.</p>}
+    {!loading && !error && rows.length > 0 && <>
+      <p>{rows.length} mẫu · Thấp nhất {min.toFixed(1)} · Trung bình {average.toFixed(1)} · Cao nhất {max.toFixed(1)} ({titles[metric]})</p>
+      {rows.length >= 1000 && <p className="text-amber-800">Đang hiển thị tối đa 1000 mẫu mới nhất trong khoảng đã chọn. Thống kê và CSV chỉ gồm các mẫu này, chưa phải toàn bộ khoảng thời gian.</p>}
+      <div className="bg-white border rounded-xl p-4">
+        <svg viewBox="0 0 1000 250" role="img" aria-label={`Biểu đồ ${titles[metric]}`} className="w-full">
+          <line x1="50" y1="210" x2="950" y2="210" stroke="#94a3b8" /><text x="0" y="35" fontSize="12">{high.toFixed(1)}</text><text x="0" y="210" fontSize="12">{low.toFixed(1)}</text>
+          <path d={path} fill="none" stroke="#059669" strokeWidth="2" />
+          {rows.map(row => <circle key={row.id} cx={x(row)} cy={y(row)} r="2" fill="#059669"><title>{new Date(row.telemetry.timestamp).toLocaleString('vi-VN')}: {row.telemetry[metric]}</title></circle>)}
+          <text x="50" y="240" fontSize="12">{range && new Date(range.start).toLocaleString('vi-VN')}</text><text x="950" y="240" fontSize="12" textAnchor="end">{range && new Date(range.end).toLocaleString('vi-VN')}</text>
+        </svg>
+        <p className="text-xs text-slate-500">Trục thời gian theo timestamp thiết bị. Khoảng cách trên 30 giây không nối đường; không nội suy dữ liệu bị thiếu. Nhấn Làm mới để lấy dữ liệu mới.</p>
+      </div>
+      <div className="bg-white border rounded-xl max-h-96 overflow-auto"><table className="w-full text-sm text-left"><thead><tr><th className="p-3">Thời gian thiết bị</th><th>Nhiệt độ °C</th><th>Độ ẩm %</th><th>Độ ẩm đất %</th></tr></thead><tbody>{[...rows].reverse().map(row => <tr key={row.id} className="border-t"><td className="p-3">{new Date(row.telemetry.timestamp).toLocaleString('vi-VN')}</td><td>{row.telemetry.temperature}</td><td>{row.telemetry.humidity}</td><td>{row.telemetry.soilMoisture}</td></tr>)}</tbody></table></div>
+    </>}
+  </div>;
 };

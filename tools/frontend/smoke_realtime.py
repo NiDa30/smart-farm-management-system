@@ -14,6 +14,12 @@ def reading():
         'sequence':15,'timestamp':stamp.isoformat(),'temperature':24,'humidity':40,
         'soilMoisture':100,'uptimeMs':64419}}
 def respond(route):
+    if route.request.url.endswith('/areas'):
+        route.fulfill(status=200, content_type='application/json', body=json.dumps([{'id':'AREA001','name':'Khu mặc định'}]))
+        return
+    if route.request.url.endswith('/sensors'):
+        route.fulfill(status=200, content_type='application/json', body=json.dumps([{'deviceId':'ENV01','name':'Sensor ENV01','areaId':'AREA001','sensorType':'ENVIRONMENT','latest':None if phase=='empty' else reading()}]))
+        return
     if phase == 'error':
         route.fulfill(status=503, content_type='application/json', body='{}')
     elif phase == 'empty':
@@ -33,14 +39,14 @@ with sync_playwright() as p:
     page = browser.new_page(viewport={'width':1360,'height':900})
     errors = []
     page.on('pageerror', lambda error: errors.append(str(error)))
-    page.route('**/api/v1/devices/ENV01/telemetry**', respond)
+    page.route('**/api/v1/**', respond)
     page.goto(os.environ.get('FRONTEND_URL', 'http://127.0.0.1:3000'))
     page.get_by_role('button', name='IoT & Tự động hóa').click()
     page.get_by_role('button', name='Sensor Realtime', exact=True).click()
     expect(page.get_by_role('status')).to_have_text('Dữ liệu mới')
     expect(page.get_by_test_id('Nhiệt độ')).to_have_text('24')
     expect(page.get_by_test_id('Độ ẩm đất')).to_have_text('100')
-    expect(page.locator('tbody tr')).to_have_count(1)
+    expect(page.get_by_test_id('sensor-detail').locator('tbody tr')).to_have_count(1)
     for next_phase, label in [('stale','Dữ liệu đã cũ'),('error','Không kết nối được backend'),('invalid','Không kết nối được backend'),('empty','Chưa có reading'),('fresh','Dữ liệu mới')]:
         phase = next_phase
         page.get_by_role('button', name='Làm mới').click()

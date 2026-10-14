@@ -13,7 +13,10 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/v1/devices/{deviceId}/telemetry")
 public class TelemetryController {
     private final TelemetryRepository repository;
-    public TelemetryController(TelemetryRepository repository) { this.repository = repository; }
+    private final vn.smartfarm.iot.registry.SensorRegistry registry;
+    public TelemetryController(TelemetryRepository repository, vn.smartfarm.iot.registry.SensorRegistry registry) {
+        this.repository = repository; this.registry = registry;
+    }
 
     @GetMapping("/latest")
     public ResponseEntity<TelemetryRepository.Reading> latest(@PathVariable String deviceId) {
@@ -34,7 +37,7 @@ public class TelemetryController {
         }
         return repository.history(deviceId, start, end, limit);
     }
-    private static void checkDevice(String device) {
-        if (!"ENV01".equals(device)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+    private void checkDevice(String device) {
+        if (registry.find(device).isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
 }

@@ -6,6 +6,9 @@
 #include <mqtt_client.h>
 #include <esp_system.h>
 #include <time.h>
+#include <esp_timer.h>
+#include <esp_sntp.h>
+#include "RelaySafety.h"
 
 #if __has_include("config.local.h")
 #include "config.local.h"
@@ -13,12 +16,82 @@
 #include "config.example.h"
 #endif
 
-// Day 1: transport/telemetry spike. No command handler; relay stays OFF.
+#ifndef FARM_CONTROL_ENABLED
+#define FARM_CONTROL_ENABLED 0
+#endif
+
+#ifndef FARM_WATER_INTERLOCK_ENABLED
+#define FARM_WATER_INTERLOCK_ENABLED 0
+#endif
+#ifndef FARM_WATER_LEVEL_PIN
+#define FARM_WATER_LEVEL_PIN 27
+#endif
+static_assert(FARM_WATER_INTERLOCK_ENABLED == 0 || FARM_WATER_INTERLOCK_ENABLED == 1,
+  "Water interlock must be 0 or 1");
+static_assert(!FARM_WATER_INTERLOCK_ENABLED ||
+  (FARM_WATER_LEVEL_PIN != FARM_RELAY_PIN && FARM_WATER_LEVEL_PIN != FARM_DHT_PIN && FARM_WATER_LEVEL_PIN != FARM_SOIL_PIN),
+  "Water switch must use a separate GPIO");
+
+#ifndef FARM_WOKWI_CLOCK_TOLERANCE_SECONDS
+#define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 2
+#endif
+static_assert(FARM_WOKWI_CLOCK_TOLERANCE_SECONDS >= 0 && FARM_WOKWI_CLOCK_TOLERANCE_SECONDS <= 10,
+  "Wokwi clock tolerance must be between 0 and 10 seconds");
+
+// Only ENV01 may control PUMP01 in this Wokwi MVP. Default disabled.
 static DHTesp dht;
 static esp_mqtt_client_handle_t client = nullptr;
 static volatile bool connected = false;
 static String ca, certificate, privateKey, uri, telemetryTopic, statusTopic;
 static char bootId[37];
+static RelaySafety relay;
+static bool controlEnabled = false;
+static String commandTopic, pumpStatusTopic, ackTopic, activeCommand;
+struct CommandPacket { char payload[769]; bool retained; };
+static QueueHandle_t commandQueue;
+static esp_timer_handle_t relayTimer;
+static portMUX_TYPE relayMux = portMUX_INITIALIZER_UNLOCKED;
+enum OffCause { NO_CAUSE, TIMER_CAUSE, NETWORK_CAUSE };
+static volatile OffCause offCause = NO_CAUSE;
+static const char* stateReason = "BOOT";
+static volatile bool forcedOff = false, controlFault = false;
+
+static bool waterPresent() {
+  return !FARM_WATER_INTERLOCK_ENABLED || digitalRead(FARM_WATER_LEVEL_PIN) == LOW;
+}
+
+// Loop-owned state; runs before commands and network/sample work. An open wire
+// has the same safe effect as an empty reservoir. No automatic recovery to ON.
+static bool checkWaterSupply() {
+  if (!controlEnabled || !FARM_WATER_INTERLOCK_ENABLED) return false;
+  const bool present = waterPresent();
+  const bool changed = relay.setWaterAvailable(present);
+  if (!present) {
+    portENTER_CRITICAL(&relayMux);
+    forcedOff = true;
+    digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
+    portEXIT_CRITICAL(&relayMux);
+    stateReason = "WATER_LOW";
+    activeCommand = "";
+    esp_timer_stop(relayTimer);
+  }
+  if (changed) Serial.println(present ? "WATER_RESTORED; reset lockout required" : "WATER_LOW; relay OFF and locked");
+  return changed;
+}
+
+static void forceRelayOff(void*) {
+  portENTER_CRITICAL(&relayMux);
+  forcedOff = true;
+  offCause = TIMER_CAUSE;
+  digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
+  portEXIT_CRITICAL(&relayMux);
+}
+static void applyRelayOutput() {
+  portENTER_CRITICAL(&relayMux);
+  digitalWrite(FARM_RELAY_PIN, controlEnabled && connected && !forcedOff && waterPresent() && relay.isOn()
+    ? !FARM_RELAY_OFF_LEVEL : FARM_RELAY_OFF_LEVEL);
+  portEXIT_CRITICAL(&relayMux);
+}
 static uint32_t sequence = 0, lastSample = 0, lastHeartbeat = 0, lastWifiAttempt = 0;
 
 static String readPem(const char *path) {
@@ -53,13 +126,126 @@ static void publishStatus() {
   esp_mqtt_client_publish(client, statusTopic.c_str(), payload.c_str(), 0, 1, 1);
 }
 
-static void mqttEvent(void *, esp_event_base_t, int32_t id, void *) {
+static void publishPumpStatus() {
+  if (!controlEnabled || !connected) return;
+  JsonDocument doc;
+  base(doc); doc["deviceId"] = "PUMP01";
+  doc["connection"] = "ONLINE";
+  doc["reportedState"] = relay.isOn() && !forcedOff ? "ON" : "OFF";
+  doc["safetyLockout"] = relay.lockout();
+  doc["stateReason"] = stateReason;
+  if (activeCommand.length()) doc["activeCommandId"] = activeCommand; else doc["activeCommandId"] = nullptr;
+  String payload; serializeJson(doc, payload);
+  esp_mqtt_client_publish(client, pumpStatusTopic.c_str(), payload.c_str(), 0, 1, 0);
+}
+static bool validUuid(const char* value) {
+  if (!value || strlen(value) != 36) return false;
+  for (int i=0; i<36; i++) {
+    if (i==8 || i==13 || i==18 || i==23) { if (value[i]!='-') return false; }
+    else if (!isxdigit((unsigned char)value[i])) return false;
+  }
+  return true;
+}
+static int64_t parseUtc(const char* value) {
+  if (!value || strlen(value)!=20) return 0;
+  struct tm tm = {};
+  const char* end = strptime(value, "%Y-%m-%dT%H:%M:%SZ", &tm);
+  return end && !*end ? (int64_t)mktime(&tm) : 0;
+}
+static void handleCommand(const CommandPacket &packet) {
+  JsonDocument doc;
+  if (deserializeJson(doc, packet.payload)) { Serial.println("Command rejected: JSON"); return; }
+  const char* id = doc["commandId"] | "";
+  if (!validUuid(id)) { Serial.println("Command rejected: ID"); return; }
+  const char* action = doc["action"] | "";
+  const bool on = strcmp(action,"ON")==0;
+  const bool off = strcmp(action,"OFF")==0;
+  const bool reset = strcmp(action,"RESET_LOCKOUT")==0;
+  const char* error = nullptr;
+  checkWaterSupply();
+  bool wasOn = relay.isOn();
+  if (packet.retained) error = "RETAINED_COMMAND";
+  else if (!doc.is<JsonObject>() || doc.size() != (on ? 7 : 6)
+    || !doc["schemaVersion"].is<int>() || doc["schemaVersion"].as<int>() != 1
+    || strcmp(doc["deviceId"] | "", "PUMP01") != 0 || (!on && !off && !reset)
+    || (on && !doc["durationSeconds"].is<unsigned>())
+    || (!on && !doc["durationSeconds"].isUnbound())
+    || !doc["issuedAt"].is<const char*>() || !doc["expiresAt"].is<const char*>()) error = "INVALID_COMMAND";
+  else error = relay.apply(id, on ? RelaySafety::ON : off ? RelaySafety::OFF : RelaySafety::RESET,
+    on ? doc["durationSeconds"].as<unsigned>() : 0,
+    parseUtc(doc["issuedAt"]), parseUtc(doc["expiresAt"]), time(nullptr), millis(),
+    strcmp(FARM_WIFI_SSID, "Wokwi-GUEST") == 0 ? FARM_WOKWI_CLOCK_TOLERANCE_SECONDS : 2);
+  if (!error && relay.isOn() && !wasOn) {
+    esp_timer_stop(relayTimer);
+    // Arm independent cutoff before energizing; never renew it on duplicate ON.
+    if (esp_timer_start_once(relayTimer, uint64_t(doc["durationSeconds"].as<unsigned>()) * 1000000) != ESP_OK) {
+      relay.fail(id,"DEVICE_FAULT"); error = "DEVICE_FAULT";
+    } else {
+      portENTER_CRITICAL(&relayMux);
+      if (connected) { forcedOff = false; offCause = NO_CAUSE; }
+      portEXIT_CRITICAL(&relayMux);
+      activeCommand = id;
+    }
+  }
+  if (!relay.isOn()) { esp_timer_stop(relayTimer); activeCommand = ""; }
+  if (!connected) { relay.fail(id,"CONNECTION_LOST"); error = "CONNECTION_LOST"; }
+  // Recheck after parsing/arming so a switch change cannot energize the output.
+  checkWaterSupply();
+  if (!waterPresent() && (on || reset)) { relay.fail(id,"WATER_LOW"); error = "WATER_LOW"; }
+  if (!relay.isOn()) activeCommand = "";
+  if (!error) {
+    if (on && relay.isOn() && !wasOn) stateReason = "COMMAND_ON";
+    else if (off) stateReason = "COMMAND_OFF";
+    else if (reset) stateReason = "LOCKOUT_RESET";
+  } else if (strcmp(error,"DEVICE_FAULT")==0) stateReason = "DEVICE_FAULT";
+  else if (strcmp(error,"CONNECTION_LOST")==0) stateReason = "CONNECTION_LOST";
+  if (!waterPresent()) stateReason = "WATER_LOW";
+  applyRelayOutput();
+  if (error && (strcmp(error,"EXPIRED")==0 || strcmp(error,"CLOCK_SKEW")==0 || strcmp(error,"INVALID_LIFETIME")==0 || strcmp(error,"CLOCK_NOT_READY")==0)) {
+    int64_t epoch=time(nullptr), issued=parseUtc(doc["issuedAt"] | ""), expires=parseUtc(doc["expiresAt"] | "");
+    Serial.printf("COMMAND_TIME now=%lld issued=%lld expires=%lld age=%lld remaining=%lld\n",
+      (long long)epoch,(long long)issued,(long long)expires,(long long)(epoch-issued),(long long)(expires-epoch));
+  }
+  JsonDocument ack;
+  base(ack); ack["deviceId"] = "PUMP01"; ack["commandId"] = id;
+  ack["stage"] = "EXECUTED"; ack["status"] = error ? "FAILED" : "SUCCESS";
+  ack["reportedState"] = relay.isOn() && !forcedOff ? "ON" : "OFF";
+  ack["safetyLockout"] = relay.lockout();
+  if (error) ack["errorCode"] = error; else ack["errorCode"] = nullptr;
+  String payload; serializeJson(ack,payload);
+  esp_mqtt_client_publish(client, ackTopic.c_str(), payload.c_str(), 0, 1, 0);
+  Serial.printf("COMMAND_EXECUTED action=%s state=%s result=%s\n",(on ? "ON" : off ? "OFF" : reset ? "RESET_LOCKOUT" : "INVALID"),relay.isOn() && !forcedOff ? "ON":"OFF",error ? error:"SUCCESS");
+  publishPumpStatus();
+}
+
+static void mqttEvent(void *, esp_event_base_t, int32_t id, void *eventData) {
+  auto event = static_cast<esp_mqtt_event_handle_t>(eventData);
   if (id == MQTT_EVENT_CONNECTED) {
+    portENTER_CRITICAL(&relayMux);
     connected = true;
+    portEXIT_CRITICAL(&relayMux);
+    if (controlEnabled) esp_mqtt_client_subscribe(client, commandTopic.c_str(), 1);
     Serial.println("AWS MQTT connected (TLS verified)");
   } else if (id == MQTT_EVENT_DISCONNECTED || id == MQTT_EVENT_ERROR) {
+    portENTER_CRITICAL(&relayMux);
     connected = false;
+    if (digitalRead(FARM_RELAY_PIN) != FARM_RELAY_OFF_LEVEL) offCause = NETWORK_CAUSE;
+    forcedOff = true;
+    digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
+    portEXIT_CRITICAL(&relayMux);
     Serial.println("AWS MQTT unavailable; check endpoint/cert/policy/network");
+  } else if (id == MQTT_EVENT_DATA && controlEnabled) {
+    if (event->current_data_offset == 0 && event->data_len == event->total_data_len
+        && event->data_len > 0 && event->data_len <= 768
+        && event->topic_len == (int)commandTopic.length()
+        && strncmp(event->topic, commandTopic.c_str(), event->topic_len)==0) {
+      CommandPacket packet = {};
+      memcpy(packet.payload,event->data,event->data_len); packet.retained = event->retain;
+      if (xQueueSend(commandQueue,&packet,0)!=pdTRUE) {
+        portENTER_CRITICAL(&relayMux); controlFault=true; portEXIT_CRITICAL(&relayMux);
+        forceRelayOff(nullptr);
+      }
+    }
   } else if (id == MQTT_EVENT_PUBLISHED) {
     Serial.println("MQTT QoS1 PUBACK received");
   }
@@ -108,7 +294,21 @@ void setup() {
   digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
   pinMode(FARM_RELAY_PIN, OUTPUT);
   Serial.begin(115200);
-  Serial.println("SmartFarm Day1 starting; relay OFF");
+  Serial.println("SmartFarm starting; relay OFF");
+  setenv("TZ","UTC0",1); tzset();
+  commandQueue = xQueueCreate(8,sizeof(CommandPacket));
+  esp_timer_create_args_t timerArgs = {};
+  timerArgs.callback = forceRelayOff; timerArgs.name = "relay_cutoff";
+  bool timerReady = esp_timer_create(&timerArgs,&relayTimer)==ESP_OK;
+  controlEnabled = FARM_CONTROL_ENABLED == 1 && strcmp(FARM_DEVICE_ID,"ENV01")==0 && strcmp(FARM_ID,"FARM001")==0 && commandQueue && timerReady;
+  commandTopic = String("smartfarm/") + FARM_ID + "/PUMP01/command";
+  ackTopic = String("smartfarm/") + FARM_ID + "/PUMP01/ack";
+  pumpStatusTopic = String("smartfarm/") + FARM_ID + "/PUMP01/status";
+  Serial.println(controlEnabled ? "Wokwi relay control enabled" : "Relay control disabled");
+  if (FARM_WATER_INTERLOCK_ENABLED) pinMode(FARM_WATER_LEVEL_PIN, INPUT_PULLUP);
+  if (FARM_WATER_INTERLOCK_ENABLED) Serial.printf("Water interlock enabled: GPIO%d closed=water, open=dry\n", FARM_WATER_LEVEL_PIN);
+  else Serial.println("Water interlock disabled: set FARM_WATER_INTERLOCK_ENABLED=1 and rebuild");
+  checkWaterSupply();
   uint8_t id[16];
   esp_fill_random(id, sizeof(id));
   id[6] = (id[6] & 0x0f) | 0x40;
@@ -129,11 +329,35 @@ void setup() {
   WiFi.begin(FARM_WIFI_SSID, FARM_WIFI_PASSWORD);
   Serial.println("Wi-Fi connecting");
   configTime(0, 0, "pool.ntp.org", "time.google.com");
+  // Refresh simulated wall time frequently; relay cutoff uses an independent timer.
+  sntp_set_sync_interval(15000);
 }
 
 void loop() {
-  digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
   const uint32_t now = millis();
+  bool link = connected && WiFi.status() == WL_CONNECTED;
+  bool fault;
+  portENTER_CRITICAL(&relayMux); fault=controlFault; controlFault=false; portEXIT_CRITICAL(&relayMux);
+  if (fault) { relay.trip(); stateReason="DEVICE_FAULT"; activeCommand=""; esp_timer_stop(relayTimer); }
+  bool wasRunning = relay.isOn();
+  OffCause cause;
+  portENTER_CRITICAL(&relayMux); cause=offCause; offCause=NO_CAUSE; portEXIT_CRITICAL(&relayMux);
+  if (wasRunning && cause == TIMER_CAUSE) { relay.stop(); stateReason="TIMER_EXPIRED"; }
+  else if (wasRunning && (cause == NETWORK_CAUSE || !link || forcedOff)) { relay.trip(); stateReason="CONNECTION_LOST"; }
+  bool stopped = relay.tickSafety(now, link);
+  if (stopped && wasRunning) stateReason="TIMER_EXPIRED";
+  stopped = stopped || (wasRunning && !relay.isOn());
+  bool waterChanged = checkWaterSupply();
+  stopped = stopped || (wasRunning && !relay.isOn());
+  applyRelayOutput();
+  if (stopped) { activeCommand = ""; esp_timer_stop(relayTimer); publishPumpStatus(); Serial.printf("RELAY_OFF reason=%s\n",stateReason); }
+  else if (waterChanged) publishPumpStatus();
+  static uint32_t lastPumpStatus = 0;
+  if (controlEnabled && link && now-lastPumpStatus>=5000) { lastPumpStatus=now; publishPumpStatus(); }
+  if (controlEnabled && link) {
+    CommandPacket packet;
+    if (xQueueReceive(commandQueue,&packet,0)==pdTRUE) handleCommand(packet);
+  }
   static uint32_t lastDiagnostic = 0;
   if (!client && now - lastDiagnostic >= 10000) {
     lastDiagnostic = now;

@@ -12,3 +12,15 @@
 // Calibrate for the actual sensor. Wokwi potentiometer: low=wet, high=dry.
 #define FARM_SOIL_WET_ADC 0
 #define FARM_SOIL_DRY_ADC 4095
+
+// Set 1 only for the private ENV01 Wokwi relay demo.
+#define FARM_CONTROL_ENABLED 0
+
+// Wokwi float switch: GPIO27 -> switch common (2), terminal 1 -> GND.
+// Closed to GND = water present; open/disconnected = dry. Never wire 5V to GPIO.
+// Existing config.local.h files must explicitly opt in to this new interlock.
+#define FARM_WATER_INTERLOCK_ENABLED 1
+#define FARM_WATER_LEVEL_PIN 27
+
+// Wokwi-only future issuedAt tolerance; production/default remains 2 seconds.
+#define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 2

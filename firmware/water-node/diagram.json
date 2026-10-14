@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "author": "Smart Farm",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 100,
+      "left": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "float_low",
+      "top": -40,
+      "left": -110,
+      "attrs": {
+        "value": "",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "float_high",
+      "top": -40,
+      "left": 80,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-clock-generator",
+      "id": "flow_clock",
+      "top": -40,
+      "left": 280,
+      "attrs": {
+        "frequency": "45"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "flow_gate",
+      "top": 50,
+      "left": 280,
+      "attrs": {
+        "value": "",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "fault_led",
+      "top": 210,
+      "left": 290,
+      "attrs": {
+        "color": "red",
+        "label": "FAULT / WARMUP"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "fault_r",
+      "top": 180,
+      "left": 250,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label0",
+      "top": -115,
+      "left": -145,
+      "attrs": {
+        "text": "PHAO LOW - GPIO27\nTRAI: co nuoc | PHAI: can"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label1",
+      "top": -115,
+      "left": 55,
+      "attrs": {
+        "text": "PHAO HIGH - GPIO14\nTRAI: co nuoc | PHAI: can"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label2",
+      "top": -115,
+      "left": 270,
+      "attrs": {
+        "text": "FLOW - GPIO25\n45 Hz / 450 pulse/L = ~6 L/min"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label3",
+      "top": 85,
+      "left": 260,
+      "attrs": {
+        "text": "FLOW GATE\nTRAI: xung | PHAI: 0 xung"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label4",
+      "top": 370,
+      "left": -90,
+      "attrs": {
+        "text": "WATER01 - monitoring only\nKhong dieu khien PUMP01; khong do phan tram bon\nClock la tin hieu mo phong, khong phai nuoc that"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "float_low:2",
+      "esp:27",
+      "blue",
+      []
+    ],
+    [
+      "float_low:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "float_high:2",
+      "esp:14",
+      "blue",
+      []
+    ],
+    [
+      "float_high:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "flow_clock:CLK",
+      "flow_gate:1",
+      "green",
+      []
+    ],
+    [
+      "flow_gate:2",
+      "esp:25",
+      "green",
+      []
+    ],
+    [
+      "flow_gate:3",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:2",
+      "fault_r:1",
+      "red",
+      []
+    ],
+    [
+      "fault_r:2",
+      "fault_led:A",
+      "red",
+      []
+    ],
+    [
+      "fault_led:C",
+      "esp:GND.1",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

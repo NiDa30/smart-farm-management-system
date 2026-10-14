@@ -16,7 +16,7 @@ The diagnostic topic belongs only to the backend, carries a random echo token an
 
 JSON Schemas and examples in this directory define wire structure, not business execution. Consumers must enable `date-time`/UUID format checking and reject non-finite numbers and packets >8KB. Additional runtime validation: timestamp UTC, future skew≤10s, device/farm from topic matches registered ownership, expiresAt>issuedAt, ON not expired, bootId+sequence dedupe/order, only trusted fresh data can trigger rules. No command from browser directly to MQTT.
 
-Telemetry every5s, freshness15s, heartbeat10s, offline30s, command timeout10s. Low soil30%, clear/stop35%, normal duration20s, firmware hard cap30s, cooldown60s. Durations are **seconds**. OFF/RESET_LOCKOUT must not contain durationSeconds.
+Telemetry every5s, freshness15s, heartbeat10s, offline30s, command timeout10s. Low soil30%, clear/stop35%, normal duration20s, Wokwi manual control hard cap3600s (60 minutes; automatic watering should retain its own shorter limit), cooldown60s. Durations are **seconds**. OFF/RESET_LOCKOUT must not contain durationSeconds.
 
 Command lifecycle: PENDING(DB accepted) → SENT(broker PUBACK) → ACKNOWLEDGED(matching device ACK) → SUCCESS(EXECUTED SUCCESS). FAILED/TIMEOUT are terminal. PUBACK is not execution proof; late ACK gets its own event and reported-state reconciliation. Duplicate ON cannot extend timer. RESET_LOCKOUT only resets in confirmed OFF state and requires device execution ACK; no implicit ON.
 

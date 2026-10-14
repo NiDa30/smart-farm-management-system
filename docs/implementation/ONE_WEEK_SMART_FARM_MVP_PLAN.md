@@ -1,5 +1,12 @@
 # ONE WEEK SMART FARM MVP PLAN
 
+> Lưu ý 14/10/2026: đây là kế hoạch/audit lịch sử ngày 11/10. Nhiều phần đã
+> được code sau mốc đó; không dùng “chưa implement” bên dưới làm trạng thái
+> hiện tại. Xem [bảng nghiệm thu](../book/ACCEPTANCE_STATUS.md) và
+> [ý tưởng/lộ trình nông nghiệp mới](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md).
+> Danh mục 5 node mục tiêu mới không phải phạm vi được nghiệm thu trong 7 ngày cũ.
+
+
 Ngày audit: 11/10/2026 (Asia/Ho_Chi_Minh). Repository: `NiDa30/smart-farm-management-system`, HEAD `5848a623d73390f914f423e8147f91147474c690`.
 
 **Trạng thái: kế hoạch triển khai, chưa implement.** Những API, bảng, cấu hình AWS và firmware dưới đây là thiết kế đề xuất, không phải năng lực đã có. Hai tài liệu kế hoạch là thay đổi duy nhất trong lượt lập kế hoạch này.

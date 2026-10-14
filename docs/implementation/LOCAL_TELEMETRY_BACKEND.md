@@ -1,5 +1,13 @@
 # PostgreSQL local và API telemetry
 
+## Cập nhật nhiều sensor
+
+Bản mới có registry khu vực/sensor, seed ENV01 trong AREA001, không xóa dữ liệu
+cũ. Xem [hướng dẫn registry và IAM](../book/CHAPTER_09B_SENSOR_AREAS.md) trước
+khi restart backend: subscription chuyển sang FARM001/+/telemetry và cần cập
+nhật runtime policy. Các mô tả ENV01-only bên dưới là workflow baseline.
+Đăng ký sensor không tự tạo certificate AWS; từng device phải có cấu hình riêng.
+
 Mốc trước: người dùng đã cung cấp probe 300 giây nhận 60 gói, BUILD SUCCESS.
 Mốc này thêm ingest → validate → PostgreSQL → read API; không tạo RDS/EC2.
 API và PostgreSQL chỉ bind loopback. Đây là workflow phát triển local, chưa có

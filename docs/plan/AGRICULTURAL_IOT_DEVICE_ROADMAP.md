@@ -1,0 +1,599 @@
+# Ý tưởng và lộ trình thiết bị IoT nông nghiệp
+
+Cập nhật: 14/10/2026. Nguồn: hai bản ý tưởng người dùng gửi về các node
+nông nghiệp và roadmap hợp nhất Monitoring/Nutrition & Treatment/Optimization.
+Mốc nền relay/phao: `9730558`; nền node/kênh v2: `705094f`, xem
+[báo cáo A1](../implementation/NODE_CHANNELS_REPORT.md).
+**Đây là kiến trúc đích và backlog. Code/tests A1 và A2 monitoring đã có; các node mới,
+Decision Engine, dinh dưỡng, tối ưu và AI chưa được nghiệm thu hoạt động.**
+Trạng thái kiểm chứng đọc tại [bảng nghiệm thu](../book/ACCEPTANCE_STATUS.md).
+
+## 1. Tầm nhìn và master plan hợp nhất
+
+Trục phát triển:
+
+**Smart Farm Monitoring → Precision Agriculture → Decision Support →
+Automated Optimization → AI-assisted Farm Management.**
+
+Vòng lặp mục tiêu: **Sense → Collect → Understand → Decide → Optimize →
+Act → Verify → Learn**. Dữ liệu và kết quả thực hiện được nối với cùng cây,
+dãy, zone, đợt chăm sóc và thiết bị; tránh tạo các tính năng rời rạc không có
+nguồn dữ liệu hoặc feedback chung.
+
+Một node vật lý có thể có nhiều cảm biến/actuator logic. Không bắt buộc mỗi
+đầu đo có một ESP32; không xem mỗi actuator là một node vật lý riêng.
+
+Bài toán thiết kế: **100 cây dừa, 4 dãy, khoảng 25 cây/dãy**. Đây chưa phải
+số cây/vị trí đã lưu trong database hoặc số bộ thiết bị đã lắp. Dùng 3 điểm
+đất đầu–giữa–cuối mỗi dãy để thử; độ sâu, vị trí và mật độ phải được khảo sát.
+
+### 1.1. Tám phase triển khai
+
+| Phase | Mục tiêu | Năng lực chính | Điều kiện chuyển bước |
+|---|---|---|---|
+| Phase 1 — Foundation | Có mô hình trang trại và dữ liệu nguồn đáng tin | Digital Twin dữ liệu thật, cây/dãy/zone, device/channel/actuator, MQTT/AWS, telemetry | Danh tính/mapping đúng, v1/v2 tương thích, phân biệt dữ liệu đo/nhập tay/ước tính |
+| Phase 2 — Core Automation | Tưới và điều khiển có phản hồi | Soil → Water → Irrigation → Pump/Valve → Alerts; feeder/drinking/barn theo nhu cầu | Fault tests, nguồn đo đã hiệu chuẩn, quyền điều phối bơm, an toàn cục bộ và nghiệm thu live |
+| Phase 3 — Nutrition | Quản lý dinh dưỡng và tính công thức có cơ sở | pH/EC, soil/lab/leaf records, crop requirements, fertilizer catalog, recipe/calculator, hồ sơ BVTV | Đơn vị/cơ sở dinh dưỡng nhất quán, thông tin sản phẩm và nguồn khuyến nghị có phiên bản |
+| Phase 4 — Optimization | Tối ưu phân và chi phí có ràng buộc | Nutrition Optimizer, Farm Cost Engine, giá/tồn kho, phương án thay thế | Dữ liệu đầu vào kiểm chứng, nghiệm khả thi, không bỏ giới hạn để có kết quả rẻ |
+| Phase 5 — Closed Loop | Fertigation theo feedback được kiểm soát | Dosing pump → mixing → settle → pH/EC feedback → irrigation | Hiệu chuẩn bơm/cảm biến, giới hạn tổng liều/thời gian, E-stop, job đã duyệt và xử lý lỗi |
+| Phase 6 — Intelligence | Đề xuất dự báo và phát hiện bất thường | Predictive irrigation/maintenance, camera AI | Có dataset/baseline, đánh giá sai số và độ tin cậy, không biến prediction thành command trực tiếp |
+| Phase 7 — Farm Intelligence | Đánh giá hiệu quả và truy xuất | Yield prediction, cost/kg, traceability/QR, BI | Yield/cost/batch có nguồn, phân bổ chi phí rõ ràng, dự báo tách số thực thu |
+| Phase 8 — Scale | Mở rộng phủ sóng, nguồn và nền tảng thực địa | LoRa → solar/battery → edge processing → drone/robot | Khảo sát điện/mạng, offline recovery, dữ liệu và Decision Engine đủ ổn định; robot/drone sau cùng |
+
+Phase là các gói năng lực, không phải 8 sprint hoặc cam kết thời gian. Thu
+thập lịch sử chăm sóc/chi phí/traceability phải bắt đầu sớm, không đợi Phase 7.
+Có thể đưa LoRa/solar lên sớm nếu khảo sát phủ sóng yêu cầu; không vì vậy đưa
+robot lên trước. Predictive/camera cần dữ liệu phù hợp, không bắt buộc chờ mọi
+chức năng fertigation hoàn tất. Chăn nuôi là nhánh nghiệp vụ được giữ lại,
+không phải điều kiện bắt buộc trước khi bắt đầu dinh dưỡng cây.
+
+Các mã A0–A6 ở mục 10 là backlog kỹ thuật IoT của nền hiện tại. Phase 1–8 là
+lộ trình toàn nền tảng; WS01–WS16 ở mục 12 là các luồng nghiệp vụ. Dùng ba bộ
+mã riêng để tránh nhầm các nhãn P1/P8 được dùng theo nhiều nghĩa trong ý tưởng.
+
+### 1.2. Digital Twin và cây/dãy/zone
+
+Mô hình đích: FARM001 → ROW01…ROW04 → TREE001…TREE100. ROW01 có TREE001–025;
+ROW02 có TREE026–050; ROW03 có TREE051–075; ROW04 có TREE076–100. Zone là
+phạm vi vận hành/tưới; dãy là bố trí canh tác, không mặc định hai khái niệm
+luôn trùng nhau. Cần mapping có thời gian hiệu lực khi đổi zone hoặc trồng lại.
+
+Hồ sơ cây gồm vị trí/giống/ngày trồng/tuổi/giai đoạn; tham chiếu dữ liệu đất,
+pH/EC; nước/phân đã cấp, điều trị/bệnh/ảnh, năng suất và chi phí. Một sensor
+đại diện zone có thể liên kết nhiều cây, nhưng phải ghi nguồn là đo tại zone.
+Không ghi rằng từng cây đã nhận chính xác một lượng nước/phân chỉ từ tổng
+flow của dãy; phần chia theo cây là phân bổ/ước tính có công thức và phiên bản.
+
+Digital Twin hiện còn phần UI mock; mục tiêu ở đây là mô hình dữ liệu thật,
+không phải xác nhận màn hình mô phỏng đã trở thành bản sao vận hành hoàn chỉnh.
+Nền node/kênh A1 được giữ lại, không viết lại luồng AWS đang chạy để bắt đầu
+Digital Twin. Dữ liệu cây/zone và mốc A2 trạm nước có thể phát triển theo nhu
+cầu mà vẫn giữ ranh giới hợp đồng.
+
+## 2. Nền đang có và việc phải giữ tương thích
+
+| Hiện tại | Giới hạn |
+|---|---|
+| Một ESP32/Wokwi ENV01: DHT22, ADC đất; PUMP01 là actuator logic cùng board | Chưa có SOIL01/WATER01/IRRIGATION01/FEED01 độc lập |
+| AWS MQTT TLS/QoS1 → Spring Boot → PostgreSQL → React polling | Camera chưa có; web không kết nối MQTT trực tiếp |
+| Manual ON/OFF/timer, ACK/status; rule đất khô, cooldown, lịch tuần giờ VN | Dispatcher hiện giới hạn một PUMP01, chưa hỗ trợ 4 van dùng chung bơm |
+| Registry sensor/khu vực, history/CSV, hai cảnh báo ngưỡng và xác nhận đã xem | Thêm registry không tự provision certificate hay flash firmware |
+| A1/V14: nhiều node khai báo, channel/actuator binding, telemetry nước v2 và Sensor Realtime → Node & trạm nước | Có LOW/HIGH/FLOW/nhiệt nước và contract pressure; chưa có WATER firmware live hoặc control nhiều bơm |
+| A2 monitoring: firmware WATER độc lập, LOW/HIGH/FLOW, source badge và project/certificate helper riêng | Có V16 central water alerts/đã xem; chưa nghiệm thu AWS/Wokwi mới hoặc flow-based pump shutdown |
+| Relay/LED tải NO + phao GPIO27, firmware opt-in WATER_LOW | Code/build/native/API tests đã có; relay/phao Wokwi mới chưa nghiệm thu live |
+
+Giữ các topic `smartfarm/FARM001/ENV01/telemetry` và
+`smartfarm/FARM001/PUMP01/{command,ack,status}` trong demo. `IRRIGATION01` sau
+này là tên controller đề xuất; không đổi tên PUMP01 hoặc coi đó là alias đang
+hoạt động. Tách deviceId vật lý, sensorId/channel và actuatorId có bảng ánh xạ
+rõ ràng trước khi mở rộng. Lộ trình này không tự đổi schema, policy hoặc ID.
+
+Phao hiện tại chỉ có nước/cạn; mất tín hiệu hở được coi là cạn. Chưa có phép
+đo flow/áp suất live, phần trăm bồn hoặc bằng chứng bơm vật lý chạy. V2 đã
+nhận/lưu được các loại measurement nước trong kiểm tra cloud, không đồng
+nghĩa đã lắp đồng hồ thật. NVS chưa làm; sau reboot
+chỉ đọc lại đầu vào, không bảo toàn latch RAM. Một status cũ không chứng minh
+bồn hiện đang có nước.
+
+## 3. Danh mục 18 nhóm thiết bị trong ý tưởng
+
+Các linh kiện là lựa chọn khảo sát, chưa phải BOM chốt để mua. Mọi nhóm ngoài
+phần demo và nền A1/A2 monitoring ở mục 2 đều ở trạng thái thiết kế/chưa nghiệm thu live.
+Danh mục 18 nhóm được giữ nguyên; NUTRIENT01 là cấu hình node dinh dưỡng đề
+xuất kết hợp năng lực đất/chất lượng nước, không phải node đã provision.
+Drone/robot ở mục 17 là nền tảng mở rộng sau, chưa thêm vào sơ đồ hiện tại.
+
+| Nhóm | Thiết bị tham khảo | Dữ liệu / hành động | Giai đoạn ưu tiên |
+|---|---|---|---|
+| 1. Environmental Node | ESP32, DHT22/SHT30, BH1750, rain sensor, leaf wetness tùy chọn | °C, %RH, lux, mưa; hỗ trợ quyết định tưới | Canh tác |
+| 2. Soil Monitoring Node | ESP32, capacitive soil, cảm biến nhiệt đất | Độ ẩm từng điểm, °C đất; mapping dãy | Canh tác |
+| 3. Irrigation Controller | ESP32, driver relay/MOSFET, bơm, van điện từ | Điều phối bơm/van, manual/auto, ACK/status | Canh tác |
+| 4. Water Monitoring Node | Phao LOW/HIGH, flow, pressure, DS18B20, leak | Cạn/đầy, L/min, kPa, °C, rò nước | Canh tác ưu tiên |
+| 5. Water Quality Node | pH, EC/TDS, DS18B20 | Chất lượng dung dịch; hiệu chuẩn và bù nhiệt | Sau tưới |
+| 6. Fertigation Node | Dosing pump, mixer, pH/EC | Châm phân giới hạn liều, trộn, liên động | Sau chất lượng nước |
+| 7. Energy Monitoring Node | INA219 cho DC; PZEM phù hợp tải AC | V, A, W, kWh đo thực tế | Sau tưới |
+| 8. Animal Feeding Node | ESP32, DS3231, motor hộp số/auger, driver, HX711/load cell, limit switch, buzzer | Lịch cho ăn và lượng thực cấp | Chăn nuôi đầu tiên |
+| 9. Feed Storage Node | Ultrasonic/ToF, load cell | Mức/khối lượng còn lại, gần hết | Cùng bộ cho ăn |
+| 10. Animal Drinking Node | Phao, van điện từ, flow, nhiệt nước | Cấp nước uống theo mức, phát hiện bất thường | Chăn nuôi |
+| 11. Livestock Environment Node | SHT30, CO₂, NH₃, fan, buzzer | Khí chuồng, nhiệt/ẩm, thông gió | Chăn nuôi |
+| 12. Animal Identification | RFID reader/tag | ID và liên kết hồ sơ vật nuôi | Mở rộng |
+| 13. Animal Weight Node | Load cell + HX711 | Khối lượng đã ổn định, lịch sử tăng trưởng | Mở rộng |
+| 14. Camera Node | IP camera RTSP/ONVIF, mini PC | Video/snapshot, recording | Subsystem riêng |
+| 15. AI Camera Node | Camera, máy xử lý ảnh/YOLO | Detection + confidence + sự kiện | Sau camera |
+| 16. Security Node | Reed/PIR, cảm biến khói phù hợp | Cửa/chuyển động/khói, báo động | Theo nhu cầu |
+| 17. Gateway | Wi-Fi/router; LoRa gateway hoặc mini PC khi cần | Kết nối/gom telemetry, chuyển tiếp | Sau khảo sát phủ sóng |
+| 18. Backup/Power Node | Solar, battery, UPS, đo pin | Nguồn dự phòng và tình trạng pin | Theo triển khai thực địa |
+
+Không xem các lựa chọn như INA219/PZEM, SHT30/DHT22 hoặc ultrasonic/load cell
+là tương đương điện học hay đo lường. Chọn theo tải, môi trường, độ chính xác,
+nguồn cấp và quy trình hiệu chuẩn. Cảm biến khói trong demo không thay hệ báo
+cháy được chứng nhận; mạch relay/LED không thay contactor/bảo vệ bơm thật.
+
+## 4. Bố trí vườn 4 dãy
+
+| Dãy / zone dự kiến | Cây tham chiếu | Điểm độ ẩm đất | Van | Flow nhánh |
+|---|---|---|---|---|
+| ZONE01 | 1–25 | Đầu, giữa, cuối | VALVE01 | FLOW01 |
+| ZONE02 | 26–50 | Đầu, giữa, cuối | VALVE02 | FLOW02 |
+| ZONE03 | 51–75 | Đầu, giữa, cuối | VALVE03 | FLOW03 |
+| ZONE04 | 76–100 | Đầu, giữa, cuối | VALVE04 | FLOW04 |
+
+Tổng dự kiến: 12 điểm đất, 4 van, 4 flow nhánh; nếu trạm nước có flow chính
+thì tổng là 5 đồng hồ flow. Có thể thử một dãy trước rồi nhân rộng, không mua
+đủ 4 bộ trước khi chứng minh đo/calibration/kết nối. Mỗi dãy dùng một ESP32 là
+phương án bố trí, chưa phải ràng buộc thiết kế bắt buộc.
+
+Quy tắc tổng hợp độ ẩm phải được định nghĩa trước khi tự động hóa. Không lấy
+một điểm khô rồi bỏ qua hai điểm khác hoặc lặng lẽ dùng reading cũ. Bước thử
+ban đầu chỉ giám sát riêng 3 điểm; sau hiệu chuẩn chọn quy tắc như ít nhất
+2/3 điểm hợp lệ, có freshness và xử lý trường hợp thiếu điểm rõ ràng. Đây là
+đề xuất cần thử, không thay rule ENV01 hiện tại hoặc khuyến nghị tưới cố định.
+
+Một bơm chung bắt đầu với **mỗi lần chỉ tưới một dãy**. Một coordinator giữ
+quyền điều phối trạm, không tạo 4 rule độc lập cùng tranh bơm. Chu trình đề
+xuất: kiểm tra readiness → yêu cầu mở van → xác minh theo khả năng phản hồi
+thực có → bật bơm → giám sát flow/áp suất/thời hạn → tắt bơm → đóng van theo
+quy trình thủy lực đã khảo sát. ACK relay chỉ chứng minh lệnh/GPIO, không chứng
+minh van đã mở hay có nước. Chưa có feedback thì ghi UNKNOWN, không tự nhận OK.
+
+## 5. Trạm nước trung tâm WATER01
+
+Thiết kế gồm ESP32, phao LOW/HIGH, nhiệt nước DS18B20, main flow, áp suất,
+đầu ra bơm/contactor, leak sensor và đo điện tùy chọn. Hai phao là các trạng
+thái rời rạc; không suy ra mức nước liên tục hoặc lít nếu chưa có phép đo và
+hiệu chuẩn thể tích bồn.
+
+| Tình huống | Phản ứng dự kiến | Điều kiện để kết luận |
+|---|---|---|
+| LOW cạn / hở dây | Cấm ON, tắt bơm và latch lockout tại controller bơm | Liên động cục bộ, không phụ thuộc AWS |
+| Hai phao có tổ hợp bất khả thi | SENSOR_FAULT, OFF/lockout | Xác định cực tính và thứ tự LOW/HIGH |
+| Bơm đã yêu cầu ON nhưng flow=0 | Sau thời gian mồi cấu hình: nghi mất nước/lỗi bơm, dừng | Xung hợp lệ, freshness, hiệu chuẩn và grace period |
+| Áp cao + flow thấp | Nghi tắc, cảnh báo/dừng theo giới hạn | Ngưỡng đã khảo sát đường ống, lọc nhiễu |
+| Áp thấp + flow bất thường | Nghi rò, cảnh báo và yêu cầu kiểm tra | Không khẳng định nguyên nhân chỉ từ một mẫu |
+| Mất dữ liệu flow/pressure quan trọng | Trạng thái UNKNOWN; từ chối khởi chạy hoặc dừng theo policy | Không thay mất dữ liệu bằng số 0 |
+
+Các ngưỡng, thời gian mồi và thời gian xác nhận lỗi cần thử với thiết bị thật,
+không chốt con số từ bản ý tưởng. Khi nhiều node tách rời, quyền an toàn cuối
+cùng nằm ở controller bơm với đầu vào cạn cục bộ. Chỉ gửi mức nước qua MQTT
+không cung cấp cùng mức bảo vệ khi gateway/broker mất mạng.
+
+## 6. Môi trường và điều kiện được tưới
+
+Đề xuất 1–2 trạm môi trường tùy khảo sát vị trí: nhiệt độ, %RH, lux, mưa;
+leaf wetness để sau. Chưa thay DHT22 bằng SHT30 trong firmware hiện tại.
+
+Quy tắc tương lai: đất khô đủ mẫu hợp lệ + lịch cho phép + rain=false fresh
++ trạm nước sẵn sàng + không lockout + coordinator giữ quyền zone → có thể
+yêu cầu tưới. Đây là AND của điều kiện, không phải đến giờ luôn ON. Reading
+mưa UNKNOWN không được đổi thành false. Chính sách override thủ công, thời
+hạn và khóa an toàn phải được tách rõ; không override liên động cạn nước.
+
+## 7. Chăn nuôi
+
+FEED01 là bước đầu sau canh tác: motor/auger + driver, cân HX711/load cell,
+DS3231 khi cần lịch tại edge, cảm biến tồn kho, công tắc giới hạn và buzzer.
+Các lịch 06h/12h/17h và lượng 2 / 1.5 / 2 kg trong ý tưởng chỉ là ví dụ giao diện,
+không phải khẩu phần đã xác định hoặc cấu hình mặc định để vận hành.
+
+Cho ăn theo khối lượng dùng tare, kiểm tra cân ổn định, lượng tăng so với
+baseline, bù quán tính và giới hạn thời gian/khối lượng tối đa. Không dừng chỉ
+vì số đọc tổng cân chạm 2 kg khi máng đã có thức ăn. Kẹt motor, cân lỗi, hết
+thức ăn, timeout hoặc mất kết nối phải được xử lý; không retry để cấp trùng
+khẩu phần. Lịch edge cần lưu ID đợt cấp đã thực hiện qua reboot trước khi dùng
+không giám sát. Đợt bị gián đoạn không tự bù cấp lại sau reboot.
+
+DRINK01: phao mức máng + van + flow + nhiệt nước; đóng van khi đầy, giới hạn
+lượng/thời gian cấp và xử lý flow bất thường. BARN01: nhiệt/ẩm, CO₂/NH₃ và
+thông gió, mỗi loại khí có sensor/range/calibration riêng. RFID và cân vật nuôi
+liên kết hồ sơ sau; không dùng cùng một measurementType cho cân thức ăn và
+cân con vật.
+
+## 8. Camera là subsystem riêng
+
+```mermaid
+flowchart LR
+    N[Node môi trường / đất / nước / cho ăn] -->|MQTT TLS| I[AWS IoT Core]
+    I --> B[Spring Boot]
+    B --> D[PostgreSQL]
+    D --> B
+    B -->|API; polling hiện tại| W[React website]
+    B -->|Command| I
+    I -->|Command| N
+    C[IP Camera] -->|RTSP / ONVIF| M[Mini PC: MediaMTX hoặc Frigate]
+    M -->|WebRTC hoặc HLS qua truy cập bảo vệ| W
+    M -->|Metadata / sự kiện| B
+```
+
+MediaMTX và Frigate là lựa chọn cần đánh giá, không mặc định phải triển khai
+cả hai. Video/recording không truyền qua MQTT; không mở camera trực tiếp ra
+Internet để thử. Website không phát RTSP trực tiếp. Bắt đầu xem luồng và lưu
+snapshot/retention có giới hạn, sau đó mới AI detection và cảnh báo có confidence.
+“Healthy/abnormal” là mục tiêu nghiên cứu, không phải chẩn đoán bệnh cây đã
+được kiểm chứng. Chưa thêm dịch vụ camera/AI trong repository ở đợt này.
+
+## 9. Danh tính, hợp đồng và giao diện cần mở rộng
+
+Mỗi device vật lý đăng ký farm/zone, hardwareId, sensor channels, actuator
+capabilities, firmwareVersion và trạng thái provisioning. Certificate riêng
+cho từng client, policy chỉ đủ farm/device/actuator được gán, có thu hồi/rotate;
+không chia sẻ private key ENV01 cho mọi node. AWS service-linked role không
+phải thứ cần tạo cho từng cảm biến. Chưa có tự động onboarding/fleet provisioning.
+
+Giữ topic hiện tại; ví dụ tương lai dưới cùng prefix:
+`smartfarm/FARM001/SOIL01/telemetry`, `.../WATER01/telemetry`,
+`.../FEED01/{telemetry,command,ack,status}`. Chỉ dùng sau khi có firmware,
+contract, routing, policy và kiểm thử; wildcard subscribe không tự cấp publish.
+
+Nền A1 đã có channelId, metric, unit, calibrationVersion, quality, timestamp
+nguồn và receivedAt cho nước v2. Mở rộng sang pH/EC/NPK/feed cần hợp đồng
+riêng hoặc version được thiết kế và kiểm thử; schema nước hiện không nhận
+các metric đó. Giữ bootId/sequence để dedupe và chống sai thứ tự. Độ ẩm đất ADC quy đổi % không tự tương đương %VWC; EC (mS/cm),
+TDS (ppm), flow (L/min), pressure (kPa), điện năng (kWh) phải có định nghĩa đo.
+
+Không nhét node nước/feed vào schema v1 đang bắt buộc temperature/humidity/
+soilMoisture hoặc tự suy diễn missing=0. Giữ water v2 đã có, thiết kế version/
+contract theo capability cho nhóm khác; có parser và migration tương thích
+v1 trước khi flash node mới. Tách config đã lưu, lệnh đã gửi, ACK thực thi và trạng thái
+được đo/báo; control phải giữ expiry, bounded runtime, dedupe, safe boot.
+
+Màn hình mục tiêu: registry/capabilities theo zone → Sensor Realtime theo
+metric → water station/zone control → alert/history/event liên kết nguồn →
+resource usage chỉ khi có đồng hồ thật. Giữ nguồn đo/giả lập/mock rõ ràng;
+không tính lít từ thời gian relay ON nếu chưa đo hoặc công bố hệ số ước tính.
+Tab Node & trạm nước cùng API inventory/water v2 đã có trong A1. Các tab
+metric dinh dưỡng/feed, Decision Engine và lượng tiêu thụ đo thật còn là mục
+tiêu; lần cập nhật roadmap này không bổ sung code hoặc thiết bị.
+
+## 10. Backlog theo thứ tự triển khai
+
+Năm nhóm MVP đích theo ý tưởng: **ENV01, SOIL01, WATER01, IRRIGATION01,
+FEED01**. Đây là danh mục đích để xây từng bước, không phải 5 node đã provision
+hay cam kết triển khai cả 5 ngay trong một đợt/tuần. FEED01 làm sau canh tác.
+
+| Mốc | Phạm vi cụ thể | Điều kiện hoàn thành |
+|---|---|---|
+| A0 | Nghiệm thu relay/phao hiện tại trên Wokwi | Boot OFF, ON/timer, cạn OFF/lockout, khôi phục không auto ON, reset khi đủ nước; lưu bằng chứng chương21 |
+| A1 | Mô hình physical device / sensor channel / actuator và contract mở rộng | v1 vẫn chạy; node/channel/zone không nhập nhằng; loại payload không hợp lệ bị từ chối; capability chưa provision không tự hoạt động |
+| A2 | WATER01: LOW/HIGH + flow, cạn/không flow | Có calibration và grace period; bảo vệ cục bộ; web/alert/history hiển thị dữ liệu thật hoặc simulator được gắn nhãn; fault tests mất tín hiệu |
+| A3 | SOIL + IRRIGATION: một dãy 3 điểm/van, rồi 4 dãy | Coordinator chung không tranh bơm; chỉ tưới zone giữ quyền; không coi ACK là feedback van/nước; flow/timer/stop/reset có kiểm thử |
+| A4 | Mưa/ánh sáng vào quyết định tưới | Sensor fresh + ngưỡng có hysteresis; rain unknown không coi khô ráo; không vượt liên động cạn |
+| A5 | FEED01 + tồn thức ăn, sau đó DRINK01/BARN01 | Cân đúng tare/định lượng; chống cấp trùng/reboot, jam/timeout và giới hạn cấp nước/khí |
+| A6 | ENERGY01, camera, chất lượng nước/fertigation/RFID/AI theo nhánh | Tách thành các mốc của Phase 3–8; đo/hiệu chuẩn, quyền truy cập và bảo vệ từng loại tải; không nghiệm thu bằng mock |
+
+Ánh xạ: A0/A1 thuộc Phase 1 và điều kiện nghiệm thu Phase 2; A2–A4 là
+trục canh tác Phase 2; A5 là nhánh chăn nuôi; A6 phân rã qua Phase 3–8.
+Không coi một hàng A6 rộng là một task triển khai duy nhất. Không đổi số A
+trong các báo cáo cũ hoặc coi A1 đã hoàn thành firmware/enrollment.
+
+A1 là điều kiện trước khi đưa nhiều node độc lập vào backend; không cần làm
+một framework rule tổng quát hoặc thay toàn bộ UI để thử một dãy. A2 có thể
+thử flow trên board demo trước khi tách hardware WATER01, nhưng vẫn ghi rõ ID
+và nguồn dữ liệu, không báo đã có một Thing độc lập khi chưa provision.
+
+Nền A1 đã có model node/channel, mapping legacy, water contract/router/storage
+và UI khai báo, xem [chương22](../book/CHAPTER_22_NODES_AND_WATER_CHANNELS.md).
+Đã có firmware monitor WATER riêng và helper provisioning do người dùng
+chủ động chạy theo [chương23](../book/CHAPTER_23_WATER_NODE_MONITOR.md), chưa
+fleet onboarding tự động. A2 monitoring có code/build nhưng live/A0 cần đối
+chiếu; V16 có central water alert LOW/fault, source riêng và đã xem
+([chương 24](../book/CHAPTER_24_WATER_ALERTS.md)); chưa live.
+Sau V16 có [water history/CSV](../book/CHAPTER_25_WATER_HISTORY.md), dữ liệu gốc
+và source/calibration theo mẫu; chưa live. Liên kết pump ON, flow fault/grace/
+cutoff và water consumption vẫn chờ.
+A3–A6 còn trong kế hoạch. Không tự tạo Jira tasks hay AWS
+resources từ bảng backlog này.
+
+## 11. Simulator, chi phí và sổ bằng chứng
+
+Wokwi là bước thử logic: phao có thể dùng switch, độ ẩm đất dùng potentiometer,
+tải dùng LED/relay. Các tín hiệu flow/pressure/feed nếu chưa có model phù hợp
+phải được mô tả là giả lập tín hiệu có điều khiển; không gọi đó là đo vật lý,
+độ chính xác cảm biến hoặc hiệu chuẩn thành công. Chưa thêm các phần đó vào
+sơ đồ trong lượt cập nhật ý tưởng này.
+
+Mỗi mốc lưu firmware/config version không chứa secrets, schema version,
+calibration, điều kiện đầu vào, commandId/ACK/status, fault injection và kết
+quả thực tế. Unit/integration/browser fixtures, Wokwi live và phần cứng thật
+là ba lớp bằng chứng riêng. NVS/store-and-forward, reconnect và recovery qua
+reboot cần acceptance riêng; không tự khẳng định đã có nhờ thêm node.
+
+Giữ Budget và kiểm tra Billing theo dịch vụ. Thêm Thing/registry không đồng
+nghĩa toàn hệ miễn phí: MQTT connections/messages/delivery, rules/shadow nếu
+dùng, log retention, DB/compute, video/storage và phần cứng có chi phí theo
+cấu hình/usage. Chưa chọn LoRa/mini PC/cloud camera hoặc provision thêm dịch vụ
+trước khi khảo sát khoảng cách, điện, mạng, tải và dự toán.
+
+
+## 12. Các luồng nghiệp vụ hợp nhất
+
+Bảng này chuẩn hóa 16 chủ đề chi tiết trong ý tưởng mới. Trạng thái là mục
+tiêu, trừ những phần nền đã ghi cụ thể ở mục 2 và báo cáo implementation.
+
+| Mã | Luồng | Nội dung chính | Phase |
+|---|---|---|---|
+| WS01 | Digital Twin | Farm/row/zone/tree, mapping sensor, hồ sơ và dữ liệu đại diện | 1 |
+| WS02 | IoT Monitoring | Soil/water/weather/nutrient/livestock/energy, nguồn/đơn vị/quality | 1–3 |
+| WS03 | Automation | Irrigation/feeding/pump/valve có feedback, coordinator và fail-safe | 2 |
+| WS04 | Nutrition Management | Soil nutrition, crop requirements, catalog, recipes, calculator, crop protection | 3 |
+| WS05 | Farm Decision Engine | Kết hợp sensor, lab/lá, giai đoạn cây, lịch sử và thời tiết | 3–6 |
+| WS06 | Predictive Irrigation | Dự báo nhu cầu tưới theo đất/cây/khí tượng/nước sẵn có | 6 |
+| WS07 | Nutrition Optimizer | Phương án phân đáp ứng dinh dưỡng/tồn kho với chi phí thấp | 4 |
+| WS08 | Automatic Fertigation | Dosing/mixing/feedback/job và giới hạn cục bộ | 5 |
+| WS09 | Crop Protection | Sản phẩm/nhãn, calculator, human approval, treatment job và PHI/REI | 3; liên kết 5–7 |
+| WS10 | Camera AI | Surveillance riêng với AI vision, ảnh theo cây và lịch sử | 6 |
+| WS11 | Predictive Maintenance | Baseline dòng/áp/flow/runtime/nhiệt, phát hiện suy giảm | 6 |
+| WS12 | Farm Cost Engine | Chi phí trực tiếp/phân bổ/ước tính theo job/cây/dãy/zone/farm | 4; báo cáo ở 7 |
+| WS13 | Yield Prediction | Dự báo cây/dãy/farm cùng sai số và nguồn dữ liệu | 7 |
+| WS14 | Traceability | Tree/zone → harvest/batch → storage/processing/sale → QR | 1–7 |
+| WS15 | Edge + LoRa + Solar | Nguồn/phủ sóng, store-and-forward, dedupe và offline policy | 8; hạ tầng có thể sớm hơn |
+| WS16 | Robot / Drone | Khảo sát ảnh/bản đồ, GPS/RTK, nhiệm vụ có kiểm soát | 8 sau cùng |
+
+## 13. Nutrition & Treatment là miền nghiệp vụ riêng
+
+Dinh dưỡng và xử lý cây là một miền cấp 1 trong kiến trúc đích, có nghiệp vụ
+và dữ liệu riêng; không chỉ thêm vài sensor vào IoT. Vị trí menu/module sẽ
+được chốt khi triển khai; chưa thêm subsystem runtime mới hoặc đổi sáu phân
+hệ đang có chỉ bằng tài liệu này.
+
+Phạm vi đích: Soil Nutrition → Crop Requirements → Fertilizer Catalog →
+Recipes → Mixing Calculator → Cost Optimizer → Fertigation → Crop Protection
+→ Analytics. Liên kết cây trồng, kho/vật tư, IoT, công việc chăm sóc và chi phí
+thông qua ID/job và dữ liệu đã xác nhận.
+
+### 13.1. Dữ liệu dinh dưỡng
+
+NUTRIENT01 dự kiến gồm ESP32, độ ẩm/nhiệt đất, pH/EC và kết quả lấy mẫu NPK.
+NPK có thể là kết quả xét nghiệm/nhập tay có nguồn, không mặc định là một số
+đo liên tục chính xác từ cảm biến rẻ. Ghi loại phép đo, đơn vị, phương pháp,
+độ sâu/vị trí, thời điểm, calibration, người/đơn vị cung cấp và quality.
+
+Kết quả đất/lá, khuyến nghị chuyên môn, giống/tuổi/giai đoạn cây và mục tiêu
+năng suất là đầu vào để xây crop requirements. Không suy ra kg phân cần bón
+trực tiếp từ một reading NPK ppm hoặc EC, không quy đổi ppm thành kg/zone
+khi thiếu cơ sở lấy mẫu/khối lượng đất/phương pháp và mô hình nông học.
+
+### 13.2. Catalog, recipe và calculator
+
+Catalog lưu sản phẩm/nhà cung cấp, thành phần và cơ sở công bố, dạng phân,
+khối lượng/đơn vị, giá có ngày hiệu lực, lô/tồn kho, độ tan và khả năng phối
+trộn theo thông tin đã kiểm chứng. Ví dụ UREA 46% N, giá 13.000 đ/kg, tồn 125 kg;
+NPK 16-16-8 với N/P₂O₅/K₂O 16/16/8%, giá 15.000 đ/kg chỉ là dữ liệu minh họa,
+không phải bảng giá/tồn kho đang có.
+
+Phân biệt N–P–K nguyên tố với N–P₂O₅–K₂O trên nhãn. Mỗi target/recipe phải
+ghi cơ sở thành phần, phạm vi farm/zone/treeCount, thời kỳ và đơn vị; chuẩn
+hóa trước khi tính, không cộng lẫn hai cơ sở. ROW02 trong mô hình này có
+25 cây; ví dụ nhu cầu cho 100 cây phải gắn scope toàn vườn, không áp nguyên
+số đó cho một dãy. Công thức lưu phiên bản dữ liệu sản phẩm/requirements và
+kết quả tính để có thể tái lập.
+
+Calculator trước hết là công cụ đề xuất được kiểm tra và duyệt cho job.
+Không ghi “đã cấp phân” khi chỉ lưu recipe hoặc gửi lệnh; lượng thực cấp lấy
+từ phép đo/phản hồi phù hợp, có sai số và phần thất thoát nếu xác định được.
+
+## 14. Decision Engine, tưới dự báo và tối ưu
+
+### 14.1. Quyết định có bằng chứng
+
+Đầu vào: soil sensor + soil lab + leaf analysis + crop stage + weather +
+irrigation/fertilizer/treatment/disease/yield history + ảnh và nguồn lực sẵn
+có. Các engine con dự kiến: Irrigation, Nutrition, Fertilizer Optimizer,
+Disease/Treatment, Cost và Maintenance. Đây là module nghiệp vụ trong cùng
+kiến trúc, chưa có yêu cầu tách thành nhiều microservice.
+
+Mỗi đề xuất trả scope, mục tiêu, dữ liệu nguồn và tuổi dữ liệu, version model/
+rule, lý do, đơn vị, độ không chắc chắn, điều kiện còn thiếu, thời hạn hiệu
+lực và bước duyệt cần thiết. Phân biệt **recommendation → approved plan →
+execution job → command → ACK/status/measurement → verified outcome**.
+Thiếu dữ liệu quan trọng thì trả chưa đủ cơ sở, không tự gán zero hoặc ON.
+Với tưới tự động, quyền thực hiện có thể đến từ rule/policy đã bật với phạm
+vi và giới hạn rõ ràng, không mặc định yêu cầu duyệt thủ công từng chu kỳ.
+BVTV vẫn dùng bước duyệt Treatment Job riêng theo mục 15.2.
+
+Rule đất khô hiện tại là automation hữu hạn; chưa phải Decision Engine đa
+nguồn. Recommendation dù được duyệt vẫn phải qua readiness, expiry, quyền
+điều phối và liên động cục bộ khi thực thi. Duyệt recipe không cấp quyền bỏ
+qua cạn bồn, quá liều hoặc emergency stop.
+
+### 14.2. Predictive irrigation
+
+Mở rộng đầu vào đất/độ sâu rễ/loại đất, thời tiết và dự báo mưa, giai đoạn cây,
+bốc thoát hơi, lần tưới trước, lượng đã đo và nước sẵn có. Chỉ tính nhu cầu
+lít khi có mô hình cân bằng nước, diện tích/phạm vi và hiệu suất hệ tưới được
+hiệu chuẩn. Giá trị % ADC đất hiện tại chưa tự tương đương %VWC hoặc thiếu
+hụt nước theo mm.
+
+Ví dụ “ROW03, đất 25%, tưới ngày mai 05:30, 320 L vì ít mưa/nóng” là định dạng
+đầu ra minh họa. Không cố định 320 L hay lịch này vào rule đang chạy. Nêu
+khoảng bất định và cập nhật khi forecast thay đổi; bắt đầu ở chế độ đề xuất,
+đối chiếu với thực tế trước khi tự động phát job. Mất forecast không được
+ngầm coi là trời không mưa.
+
+### 14.3. Nutrition Optimizer
+
+Mục tiêu cơ bản: giảm `Σ(amount_kg × price_per_kg)` với lượng không âm,
+khoảng dinh dưỡng N/P₂O₅/K₂O/Ca/Mg theo cùng cơ sở, tồn kho, giới hạn sản phẩm
+và điều kiện canh tác. Ví dụ nhu cầu 3,5 / 1,2 / 4,0 kg hay phương án phân 12,4 kg +
+8,1 kg / 319.000 đ chỉ minh họa; không là requirement/recipe để vận hành.
+
+LP phù hợp khi quan hệ thành phần và ràng buộc thực sự tuyến tính. Chọn sản
+phẩm rời rạc hoặc cấm một số cặp phối trộn có thể cần MILP hoặc tập tổ hợp
+đã duyệt. pH/EC và phản ứng dung dịch không mặc định cộng tuyến tính theo kg
+phân; cần mô hình/kiểm tra hòa tan và đo feedback đã xác nhận. Một solver LP
+không tự chứng minh phối trộn hóa học an toàn hoặc EC đạt giới hạn.
+
+Nếu không có nghiệm khả thi, báo nguyên nhân/ràng buộc thiếu; không tự nới
+liều/EC/tồn kho để tạo phương án rẻ. Trả ít nhất phương án, chi phí theo giá
+hiệu lực, chênh lệch mục tiêu, tồn kho dự kiến và các giả định. Giữ lịch sử
+phương án thay thế, không gọi “tiết kiệm” là tiền đã tiết kiệm nếu chưa thực
+hiện và đối chiếu baseline.
+
+## 15. Fertigation và Crop Protection
+
+### 15.1. Fertigation có phản hồi giới hạn
+
+Thiết kế gồm bồn nguồn/bồn trộn/bồn stock A–B–C, dosing pump, cân/flow,
+DS18B20, pH/EC, mixer, phao, van, E-stop và controller. Lựa chọn số bồn và
+vật liệu phải theo sản phẩm/khả năng phối trộn, không mặc định mọi dung dịch
+đều được pha chung hoặc châm vào cùng bồn stock.
+
+Luồng đích: **calculate/approve → dose → mix → settle → measure pH/EC →
+compare → irrigate khi đạt**. Nếu chưa đạt, chỉ cho phép hiệu chỉnh trong
+ngân sách liều/thời gian/số vòng đã xác định và được duyệt. Vượt giới hạn,
+reading không ổn định, đo lỗi hoặc phối trộn bất khả thi → dừng, báo lỗi và
+chờ xử lý; không lặp adjust/mix vô hạn hoặc vẫn tưới dung dịch chưa đạt.
+
+Cần đo riêng lượng thực cấp, hiệu chuẩn từng bơm, giới hạn rate/volume/tổng
+liều, mức bồn, chống chạy cạn và xử lý valve/pump/flow fault. Job/command có
+ID/idempotency, cutoff và trạng thái bền vững để không châm trùng sau retry/
+reboot. Khởi động lại không tự tiếp tục job hóa chất bị gián đoạn. Hệ điều
+khiển này chưa được triển khai chỉ vì demo GPIO26 đã có ACK.
+
+### 15.2. BVTV tách với phân bón
+
+Luồng đề xuất: **AI phát hiện nghi ngờ → đối chiếu/đánh giá → khuyến nghị xử
+lý → sản phẩm đã xác nhận phù hợp → nhãn và liều áp dụng → calculator →
+người phụ trách duyệt → Treatment Job → ghi nhận kết quả**.
+
+Catalog BVTV, nhãn/version, cây/đối tượng được áp dụng, đơn vị/liều, thời gian
+cách ly thu hoạch (PHI), thời gian vào lại (REI nếu có), người duyệt và lịch
+sử thực hiện tách rõ với fertilizer catalog. Chỉ tính từ thông tin nhãn đã
+nhập/xác nhận và dữ liệu phù hợp; thiếu nhãn/đơn vị/điều kiện thì không tạo
+hướng dẫn pha để thực hiện. Không dùng output AI như chẩn đoán xác nhận.
+
+Phạm vi V1 của miền Nutrition & Treatment dự kiến **không cho ESP32 tự pha
+hoặc phun thuốc BVTV**. Đây là ranh giới thiết kế từ ý tưởng, không phải một
+workflow phê duyệt đã được cài đặt trong backend hiện tại. Camera, robot hoặc
+optimizer không tự vượt bước duyệt/kiểm tra nhãn để phát lệnh xử lý hóa chất.
+
+## 16. Intelligence, chi phí và truy xuất
+
+### 16.1. Camera AI và bảo trì dự báo
+
+Giữ hai nhánh surveillance và AI vision riêng. Có thể lấy ảnh định kỳ/theo
+job, gắn treeId/zoneId, timestamp, modelVersion và chất lượng ảnh; chưa cần
+AI chạy liên tục 24/7. Lưu nghi ngờ/bất thường, confidence theo định nghĩa
+model và lịch sử đối chiếu; không coi tỷ lệ “yellowing 32% → 76%” là mức bệnh được xác nhận nếu
+chưa có phép đo/dataset tương ứng.
+
+Maintenance dùng baseline theo thiết bị/chế độ tải từ dòng/áp điện, flow,
+áp nước, runtime và nhiệt độ. Ví dụ dòng 1,4 → 2,1 A, flow 18 → 12 L/min, áp 2,1 → 1,4 bar
+là mẫu minh họa, không phải ngưỡng hỏng chung cho mọi bơm. Chuẩn hóa đơn vị
+(bar/kPa) và phân biệt tải thay đổi với suy giảm; bắt đầu cảnh báo kiểm tra,
+không tự kết luận nguyên nhân hoặc thay thế bảo trì thực tế.
+
+### 16.2. Farm Cost Engine
+
+Ghi chi phí nước, phân, BVTV, điện, lao động, thức ăn và bảo trì theo job,
+ngày hiệu lực giá, đơn vị tiền và scope. Phân biệt thực chi/tiêu thụ đã đo,
+phân bổ chi phí dùng chung và ước tính. Tổng hợp tree → row/zone → farm không
+đếm trùng cùng một hóa đơn hoặc cùng job vừa gán cây vừa cộng lại toàn dãy.
+
+Ví dụ TREE037 tổng 125.000 đ / thực thu 48 kg → khoảng 2.604 đ/kg chỉ minh họa phép
+tính. Khi yield=0/chưa thu thì trả chưa tính được, không chia cho 0 hoặc dùng
+forecast yield để gắn nhãn actual cost/kg. Giá/tồn kho/inventory thuộc nguồn
+nghiệp vụ được đồng bộ, không giả định module kho UI hiện đã là sổ kế toán.
+Nếu phân bổ nước/phân từ flow zone theo 25 cây thì công bố quy tắc và sai số,
+không ghi thành đo độc lập tại từng cây.
+
+### 16.3. Dự báo năng suất
+
+Đầu vào dự kiến: tuổi/giai đoạn/giống, weather, nước, dinh dưỡng, bệnh, ảnh,
+năng suất các vụ và đặc điểm canh tác. Đầu ra cây/dãy/farm có horizon, phạm
+vi dữ liệu, modelVersion, sai số/interval và phương pháp đánh giá với mùa vụ
+được giữ ngoài tập huấn luyện.
+
+Ví dụ TREE037 = 51 kg / confidence 82% hay farm ≈ 5.040 kg là mock định dạng, không
+phải forecast đã kiểm chứng. Không bịa confidence; nếu chưa hiệu chuẩn xác
+suất/interval thì trình bày giới hạn đánh giá. Không cộng số ước tính thiếu
+cây hoặc trộn vụ khác nhau thành tổng farm mà không báo coverage.
+
+### 16.4. Traceability và BI
+
+Chuỗi đích: tree/zone → harvest → batch → storage → processing → sale → QR.
+Ghi được split/merge batch và khối lượng đối chiếu, ngày thu hoạch, vùng
+trồng, lịch nước/phân/điều trị có nguồn và quyền hiển thị. QR trỏ hồ sơ công
+khai được chọn, không chứa credentials hoặc mở toàn bộ dữ liệu vận hành.
+
+Nếu thu hoạch theo zone/lô, không suy ra truy xuất chính xác từng cây khi
+chưa ghi nguồn cây. Lịch sử approval/job/actual outcome cần lưu phiên bản
+và chỉnh sửa có vết; Event Log hiện là read model, chưa phải audit bất biến.
+BI chỉ báo cost/kg/yield/ROI hoặc tiết kiệm khi có dữ liệu và phương pháp
+phù hợp; KPI mock/forecast/estimated phải được phân biệt với kết quả thực tế.
+
+## 17. Edge, LoRa, solar và robot/drone
+
+Node ở xa có thể dùng ESP32 + LoRa → gateway → Internet → AWS, nguồn solar/
+battery theo ngân sách điện và thời gian tự chủ. Khảo sát phủ sóng, điện,
+băng thông, tần suất gửi, latency và vận hành trước khi chọn hạ tầng. Video
+camera vẫn cần đường truyền phù hợp, không mặc định truyền RTSP qua LoRa.
+
+Offline policy gồm cấu hình có phiên bản, store-and-forward telemetry,
+clock/freshness, dedupe và execution ledger bền vững cho job rủi ro. Reading
+cũ sau reconnect không trở thành quyền bật bơm/châm phân/cho ăn lại. NVS/
+phục hồi job chưa được xác nhận trong demo; đo lại và nghiệm thu từng lỗi
+mạng/điện/reboot trước khi dùng không giám sát.
+
+Drone giai đoạn cuối: RGB/multispectral/GPS → ảnh/bản đồ sức khỏe/điểm bất
+thường → Decision Engine. Robot dự kiến camera/GPS hoặc RTK/sensor và phần
+chấp hành theo nhiệm vụ đã được duyệt. Bắt đầu quan sát/khảo sát; công việc
+chuyển động/phun phải có thiết kế bảo vệ, phạm vi và nghiệm thu riêng, không
+kế thừa khả năng vận hành chỉ từ một mô hình AI phát hiện bất thường.
+
+## 18. Kiến trúc đích và việc làm tiếp
+
+```mermaid
+flowchart TD
+    S[IoT: môi trường / đất / nước / chăn nuôi] -->|MQTT TLS qua Wi-Fi hoặc gateway| I[AWS IoT Core]
+    I --> B[Backend và Data Platform]
+    C[IP camera] -->|RTSP| M[Media subsystem / xử lý ảnh]
+    M -->|Metadata / kết quả có nguồn| B
+    L[Nhập tay / xét nghiệm đất-lá / nhãn sản phẩm] --> B
+    B --> H[History / Realtime / Analytics có quality và lineage]
+    H --> D[Decision: Irrigation / Nutrition / Treatment / Maintenance]
+    D --> O[Optimizer / Cost Engine]
+    O --> R[Đề xuất và job được duyệt theo phạm vi]
+    R --> G[Readiness / expiry / coordinator / local safety]
+    G --> A[Automation: pump / valve / feeder / dosing / mixer]
+    A --> V[ACK / status / phép đo kết quả]
+    V --> B
+    H --> W[React website / BI / traceability]
+    M -->|WebRTC hoặc HLS| W
+```
+
+Đây là kiến trúc logic. Tiếp tục Spring Boot/PostgreSQL/React hiện tại, không
+mặc định cần thêm microservice, cloud AI hoặc hạ tầng tính phí ngay lập tức.
+Phê duyệt đề xuất, job đã thực hiện và outcome đo thật là ba trạng thái riêng.
+
+**Thứ tự gần nhất:** giữ ENV01/PUMP01 v1 và water v2 tương thích → đối chiếu
+A0 relay/phao → nghiệm thu A2 monitor, bổ sung liên kết pump/flow safety có hiệu chuẩn →
+A3 một dãy rồi 4 dãy → A4 weather gate. Hoàn thiện model cây/zone và nguồn dữ
+liệu dinh dưỡng theo Phase 1/3, không nhảy từ water registry sang tự châm phân.
+Mỗi mốc cần implementation report, fault tests và bằng chứng live riêng trước
+khi mở rộng hành động tự động hoặc gắn nhãn đã hoàn thành.
+
+Lần cập nhật roadmap này chỉ sửa tài liệu. Các ví dụ liều, chi phí, giờ tưới,
+khối lượng, confidence và số lượng cây trong bản ý tưởng không được nhập tự
+động vào DB, không thay rule/cấu hình hiện tại, không tạo Jira/AWS resources.
+Những câu trong nguồn nói một chức năng “đã xác định/đã mô tả trong tài liệu”
+không được dùng làm bằng chứng code hay runtime đã có chức năng đó.

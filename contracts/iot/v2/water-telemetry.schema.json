@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Water node telemetry v2",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "deviceId": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_-]{1,31}$"
+    },
+    "bootId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "uptimeMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "readings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "channelId",
+          "metric",
+          "unit",
+          "quality",
+          "value",
+          "calibrationVersion"
+        ],
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_-]{1,31}$"
+          },
+          "metric": {
+            "enum": [
+              "WATER_PRESENT",
+              "FLOW_RATE",
+              "WATER_TEMPERATURE",
+              "WATER_PRESSURE"
+            ]
+          },
+          "unit": {
+            "enum": [
+              "boolean",
+              "L/min",
+              "°C",
+              "kPa"
+            ]
+          },
+          "quality": {
+            "enum": [
+              "VALID",
+              "SENSOR_FAULT"
+            ]
+          },
+          "value": {
+            "type": [
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "calibrationVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 40,
+            "pattern": "\\S"
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "metric": {
+                "const": "WATER_PRESENT"
+              },
+              "unit": {
+                "const": "boolean"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "quality": {
+                      "const": "VALID"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "value": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "value": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "properties": {
+              "metric": {
+                "const": "FLOW_RATE"
+              },
+              "unit": {
+                "const": "L/min"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "quality": {
+                      "const": "VALID"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "value": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "value": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "properties": {
+              "metric": {
+                "const": "WATER_TEMPERATURE"
+              },
+              "unit": {
+                "const": "°C"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "quality": {
+                      "const": "VALID"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "value": {
+                      "type": "number",
+                      "minimum": -55,
+                      "maximum": 125
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "value": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "properties": {
+              "metric": {
+                "const": "WATER_PRESSURE"
+              },
+              "unit": {
+                "const": "kPa"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "quality": {
+                      "const": "VALID"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "value": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "value": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "dataSource": {
+      "enum": [
+        "UNSPECIFIED",
+        "SIMULATOR",
+        "PHYSICAL"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "timestamp",
+    "uptimeMs",
+    "readings"
+  ]
+}

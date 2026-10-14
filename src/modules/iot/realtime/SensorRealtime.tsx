@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Activity, Clock, Database, Droplets, History, RefreshCw, Thermometer, WifiOff } from 'lucide-react';
-import { fetchHistory, fetchLatest, telemetryState, type NetworkState, type TelemetryReading } from './telemetryApi';
+import { WaterNodesPanel } from '../nodes/WaterNodesPanel';
+import React, { useEffect, useRef, useState } from 'react';
+import { Activity, Clock, Database, Droplets, History, RefreshCw, Thermometer, WifiOff, Plus, MapPin, X } from 'lucide-react';
+import { fetchHistory, fetchLatest, telemetryState, type NetworkState, type TelemetryReading, fetchRegistry, registerItem, type SensorSummary, type SensorArea } from './telemetryApi';
 
 const dateTime = (value: string) => new Date(value).toLocaleString('vi-VN');
 const number = (value: number | undefined) => value === undefined ? '—' : value.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
 
-export const SensorRealtime: React.FC = () => {
+const SensorDetail: React.FC<{ sensor: SensorSummary; areaName: string }> = ({ sensor, areaName }) => {
   const [latest, setLatest] = useState<TelemetryReading | null>(null);
   const [history, setHistory] = useState<TelemetryReading[]>([]);
   const [network, setNetwork] = useState<NetworkState>('loading');
@@ -30,7 +31,7 @@ export const SensorRealtime: React.FC = () => {
       timeout = setTimeout(() => controller.abort(), 8000);
       try {
         const [readingResult, historyResult] = await Promise.allSettled([
-          fetchLatest(controller.signal), fetchHistory(controller.signal),
+          fetchLatest(controller.signal, sensor.deviceId), fetchHistory(controller.signal, sensor.deviceId),
         ]);
         if (!active) return;
         if (readingResult.status === 'fulfilled') {
@@ -62,7 +63,7 @@ export const SensorRealtime: React.FC = () => {
       clearTimeout(timeout);
       controller?.abort();
     };
-  }, [refresh]);
+  }, [refresh, sensor.deviceId]);
 
   const state = telemetryState(network, latest, now);
   const labels = {
@@ -82,13 +83,13 @@ export const SensorRealtime: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5 pb-12">
+    <div className="space-y-5" data-testid="sensor-detail">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-emerald-600" /> Cảm biến thời gian thực
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">Trang trại FARM001 · Thiết bị ENV01 · Dữ liệu cảm biến đã lưu</p>
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-emerald-600" /> {sensor.name}
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">{areaName} · {sensor.deviceId} · Dữ liệu cảm biến đã lưu</p>
         </div>
         <button type="button" disabled={refreshing} onClick={() => setRefresh(value => value + 1)}
           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
@@ -154,4 +155,132 @@ export const SensorRealtime: React.FC = () => {
       </section>
     </div>
   );
+};
+
+export const SensorRealtime: React.FC = () => {
+  const [nodeView,setNodeView]=useState(false);
+  const [areas, setAreas] = useState<SensorArea[]>([]);
+  const [sensors, setSensors] = useState<SensorSummary[]>([]);
+  const [filter, setFilter] = useState('all');
+  const [selected, setSelected] = useState('ENV01');
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [reload, setReload] = useState(0);
+  const [now, setNow] = useState(Date.now());
+  const [form, setForm] = useState<'sensors' | 'areas' | null>(null);
+  const [code, setCode] = useState('');
+  const [name, setName] = useState('');
+  const [areaId, setAreaId] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const submission = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => { clearInterval(timer); submission.current?.abort(); };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    let timeout: ReturnType<typeof setTimeout>;
+    let controller: AbortController;
+    const load = async () => {
+      controller = new AbortController();
+      timeout = setTimeout(() => controller.abort(), 8000);
+      try {
+        const result = await fetchRegistry(controller.signal);
+        if (active) {
+          setAreas(result.areas); setSensors(result.sensors); setFailed(false);
+          setSelected(current => result.sensors.some(sensor => sensor.deviceId === current) ? current : result.sensors[0]?.deviceId ?? '');
+        }
+      } catch {
+        if (active) setFailed(true);
+      } finally {
+        clearTimeout(timeout);
+        if (active) { setLoading(false); timer = setTimeout(load, 5000); }
+      }
+    };
+    void load();
+    return () => { active = false; clearTimeout(timer); clearTimeout(timeout); controller?.abort(); };
+  }, [reload]);
+
+  const visible = sensors.filter(sensor => filter === 'all' || sensor.areaId === filter);
+  const current = visible.find(sensor => sensor.deviceId === selected) ?? visible[0];
+  const areaName = (id: string) => areas.find(area => area.id === id)?.name ?? id;
+  const openForm = (kind: 'sensors' | 'areas') => {
+    setForm(kind); setCode(''); setName(''); setFormError('');
+    setAreaId(filter === 'all' ? areas[0]?.id ?? '' : filter);
+  };
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form || saving) return;
+    setSaving(true); setFormError('');
+    const controller = new AbortController(); submission.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    try {
+      const id = code.trim();
+      await registerItem(form, form === 'sensors' ? { deviceId: id, name: name.trim(), areaId } : { id, name: name.trim() }, controller.signal);
+      if (form === 'sensors') { setSelected(id); setFilter('all'); }
+      setForm(null); setReload(value => value + 1);
+    } catch (error) {
+      setFormError(error instanceof Error && error.name !== 'AbortError' ? error.message : 'Request quá thời gian. Tải lại danh sách để kiểm tra đã lưu hay chưa.');
+    } finally { clearTimeout(timeout); setSaving(false); submission.current = null; }
+  };
+  const labels = { loading: 'Đang tải', live: 'Dữ liệu mới', stale: 'Dữ liệu cũ', empty: 'Chưa có dữ liệu', error: 'Backend chưa khả dụng' };
+
+  if(nodeView)return <div className="max-w-6xl mx-auto space-y-5 pb-12"><button type="button" onClick={()=>setNodeView(false)} className="underline">Về sensor môi trường</button><WaterNodesPanel /></div>;
+  return <div className="max-w-6xl mx-auto space-y-5 pb-12">
+    <header className="flex flex-wrap items-center justify-between gap-3">
+      <div><h1 className="text-xl font-bold text-slate-900 flex items-center gap-2"><Activity className="w-5 h-5 text-emerald-600" /> Sensor Realtime</h1>
+        <p className="text-sm text-slate-500 mt-1">Giám sát cảm biến theo khu vực · FARM001</p></div>
+      <div className="flex gap-2">
+        <button type="button" onClick={()=>setNodeView(true)} className="border rounded-lg px-3 py-2 text-sm font-semibold">Node & trạm nước</button>
+        <button type="button" onClick={() => openForm('areas')} className="border border-slate-200 bg-white rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-2"><MapPin className="w-4 h-4" /> Thêm khu vực</button>
+        <button type="button" disabled={failed || loading || !areas.length} onClick={() => openForm('sensors')} className="bg-emerald-600 text-white rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-2 disabled:opacity-50"><Plus className="w-4 h-4" /> Thêm sensor</button>
+      </div>
+    </header>
+    <section className="bg-white border border-slate-200 rounded-xl overflow-hidden" aria-label="Danh sách sensor">
+      <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <label className="text-sm text-slate-600 flex items-center gap-2">Khu vực
+          <select aria-label="Lọc khu vực" value={filter} onChange={event => setFilter(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 bg-white">
+            <option value="all">Tất cả khu vực</option>{areas.map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
+          </select></label>
+        <span className="text-xs text-slate-500">{visible.length} sensor · Chọn thiết bị để xem lịch sử</span>
+      </div>
+      {failed && <p role="alert" className="p-4 bg-rose-50 text-rose-700 text-sm">Không cập nhật được danh sách sensor. Dữ liệu đang hiển thị có thể đã cũ. <button type="button" onClick={() => setReload(value => value + 1)} className="underline font-semibold">Thử lại</button></p>}
+      <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr>
+        <th className="px-4 py-3">Sensor</th><th className="px-4 py-3">Khu vực</th><th className="px-4 py-3">Nhiệt độ</th><th className="px-4 py-3">Độ ẩm</th><th className="px-4 py-3">Độ ẩm đất</th><th className="px-4 py-3">Trạng thái</th>
+      </tr></thead><tbody className="divide-y divide-slate-100">
+        {visible.map(sensor => {
+          const status = telemetryState(failed ? 'error' : sensor.latest ? 'ready' : 'empty', sensor.latest, now);
+          return <tr key={sensor.deviceId} className={current?.deviceId === sensor.deviceId ? 'bg-emerald-50/50' : 'hover:bg-slate-50'}>
+            <td className="px-4 py-3"><button type="button" aria-pressed={current?.deviceId === sensor.deviceId} onClick={() => setSelected(sensor.deviceId)} className="text-emerald-700 font-semibold text-left hover:underline">{sensor.name}<span className="block text-xs font-normal text-slate-400">{sensor.deviceId}</span></button></td>
+            <td className="px-4 py-3">{areaName(sensor.areaId)}</td>
+            <td className="px-4 py-3 tabular-nums">{number(sensor.latest?.telemetry.temperature)} °C</td>
+            <td className="px-4 py-3 tabular-nums">{number(sensor.latest?.telemetry.humidity)} %</td>
+            <td className="px-4 py-3 tabular-nums">{number(sensor.latest?.telemetry.soilMoisture)} %</td>
+            <td className={`px-4 py-3 text-xs ${status === 'live' ? 'text-emerald-700' : status === 'error' ? 'text-rose-700' : 'text-amber-700'}`}>{labels[status]}</td>
+          </tr>;
+        })}
+        {!visible.length && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">{loading ? 'Đang tải sensor…' : failed ? 'Danh sách chưa khả dụng.' : 'Khu vực chưa có sensor. Thêm sensor để bắt đầu theo dõi.'}</td></tr>}
+      </tbody></table></div>
+    </section>
+    {current && <SensorDetail key={current.deviceId} sensor={current} areaName={areaName(current.areaId)} />}
+    {form && <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
+      <form onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="registry-title" className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-4">
+        <div className="flex items-center justify-between"><h2 id="registry-title" className="text-lg font-bold">{form === 'sensors' ? 'Thêm sensor' : 'Thêm khu vực'}</h2>
+          <button type="button" aria-label="Đóng" disabled={saving} onClick={() => setForm(null)}><X className="w-5 h-5" /></button></div>
+        <label className="block text-sm font-semibold">{form === 'sensors' ? 'Mã thiết bị' : 'Mã khu vực'}
+          <input autoFocus required maxLength={32} pattern="[A-Z][A-Z0-9_-]{1,31}" value={code} onChange={event => setCode(event.target.value.toUpperCase())} className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2" placeholder={form === 'sensors' ? 'ENV02' : 'AREA002'} />
+          <span className="block text-xs text-slate-400 font-normal mt-1">2–32 ký tự, chữ in hoa, số, dấu _ hoặc -. Bắt đầu bằng chữ.</span></label>
+        <label className="block text-sm font-semibold">Tên hiển thị<input required maxLength={80} value={name} onChange={event => setName(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2" /></label>
+        {form === 'sensors' && <>
+          <label className="block text-sm font-semibold">Khu vực<select aria-label="Khu vực sensor" required value={areaId} onChange={event => setAreaId(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2 bg-white"><option value="">Chọn khu vực</option>{areas.map(area => <option key={area.id} value={area.id}>{area.name}</option>)}</select></label>
+          <p className="text-xs text-slate-500">Sensor môi trường: nhiệt độ, độ ẩm không khí và độ ẩm đất. Đăng ký xong, thiết bị cần được cấu hình kết nối AWS bằng đúng mã này. Sensor sẽ chờ dữ liệu đến.</p>
+        </>}
+        {formError && <p role="alert" className="text-sm text-rose-700">{formError}</p>}
+        <div className="flex justify-end gap-2"><button type="button" disabled={saving} onClick={() => setForm(null)} className="px-4 py-2 border rounded-lg">Hủy</button><button type="submit" disabled={saving} className="px-4 py-2 bg-emerald-600 text-white rounded-lg disabled:opacity-50">{saving ? 'Đang lưu…' : 'Lưu'}</button></div>
+      </form>
+    </div>}
+  </div>;
 };

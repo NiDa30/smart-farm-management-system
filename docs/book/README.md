@@ -1,5 +1,12 @@
 # Hồ sơ xây dựng và bản thảo sách Smart Farm
 
+Người mới nên đọc [hướng dẫn chạy trên Windows](WINDOWS_RUNBOOK.md) trước,
+sau đó xem [trạng thái nghiệm thu](ACCEPTANCE_STATUS.md) để biết phần nào đã
+được người dùng xác nhận và phần nào mới có kiểm tra giả lập.
+
+Bản bàn giao tưới V10 có [mẫu nhật ký thử Wokwi](WOKWI_AUTOMATION_TEST_LOG.md)
+để ghi thao tác, thời điểm, commandId/run ID và bằng chứng; chưa có kết quả live.
+
 Đây là bộ nhớ bằng tài liệu của dự án, được lưu trong Git để sử dụng qua các phiên làm việc. Không dựa vào việc một cuộc trò chuyện luôn giữ được toàn bộ lịch sử.
 
 - [Nhật ký xây dựng](BUILD_JOURNAL.md): công việc, quyết định, bằng chứng, trạng thái hiện tại.
@@ -7,6 +14,8 @@
 - [Dàn ý sách](BOOK_OUTLINE.md): tổ chức câu chuyện xây dựng thành các chương thực hành.
 - [Chương 8 — PostgreSQL local và API](CHAPTER_08_LOCAL_DATABASE_API.md): bản thảo thực hành đang được cập nhật cùng triển khai.
 - [Chương 9 — Telemetry trên React](CHAPTER_09_REALTIME_FRONTEND.md): API, proxy, polling, freshness và kiểm tra giao diện.
+- [Chương 9B — Sensor theo khu vực](CHAPTER_09B_SENSOR_AREAS.md): registry, thêm sensor/khu vực, topic identity, migration và runtime IAM.
+- [Chương 10 — Relay Wokwi](CHAPTER_10_WOKWI_RELAY_CONTROL.md): command/ACK, cutoff timer, flags, IAM và các gate còn chờ live.
 - [Kế hoạch MVP](../implementation/ONE_WEEK_SMART_FARM_MVP_PLAN.md) và [checklist](../implementation/MVP_CHECKLIST.md).
 
 ## Cách duy trì
@@ -18,3 +27,38 @@ Khi tiếp tục ở phiên mới, đọc bộ hồ sơ này và kiểm tra Git 
 Không lưu access key, secret key, token, private key, liên kết xác minh hoặc ảnh chứa bí mật. Trong sách dùng ACCOUNT_ID, CERTIFICATE_ID và endpoint mẫu; không sao chép thông tin nhận dạng tài khoản cá nhân. Chỉ dùng lệnh đã kiểm chứng hoặc đánh dấu rõ chưa chạy. Không biến suy đoán thành kết luận.
 
 Đây là bản ghi hồi cứu từ lịch sử có sẵn ngày 11/10/2026, chưa phải bản ghi đầy đủ mọi thao tác ngoài cuộc trò chuyện. Bổ sung nếu có bằng chứng mới.
+
+- [Lịch sử cảm biến và CSV](CHAPTER_11_SENSOR_HISTORY.md)
+
+- [Cảnh báo cảm biến](CHAPTER_12_SENSOR_ALERTS.md)
+
+- [Quy tắc tưới tự động](CHAPTER_13_AUTOMATIC_WATERING.md)
+
+- [Nhật ký sự kiện thật](CHAPTER_14_EVENT_LOG.md)
+
+- [Bàn giao Event Log cloud](../implementation/LOCAL_EVENT_LOG_REPORT.md)
+
+- [Giám sát thiết bị thật](CHAPTER_15_DEVICE_MONITORING.md)
+
+- [Tổng quan IoT thật](CHAPTER_16_IOT_OVERVIEW.md)
+
+- [Cài đặt quy tắc tưới có phiên bản](CHAPTER_17_WATERING_SETTINGS.md)
+
+- [Quan sát an toàn từ dữ liệu thật](CHAPTER_18_SAFETY_OVERVIEW.md)
+
+- [Xác nhận đã xem cảnh báo và ghi chú](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md)
+
+- [Lịch tưới nông nghiệp theo tuần](CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md)
+
+- [Relay tưới và phao cạn nước trên simulator](CHAPTER_21_RESERVOIR_INTERLOCK.md)
+
+- [Định hướng mở rộng thiết bị nông nghiệp](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md):
+  ý tưởng người dùng và backlog sau demo; chưa phải chương nghiệm thu phần cứng.
+
+- [Node vật lý và kênh nước v2](CHAPTER_22_NODES_AND_WATER_CHANNELS.md): nền A1, registry/UI và ngữ nghĩa dữ liệu, chưa có WATER firmware live.
+
+- [Trạm nước độc lập trên Wokwi](CHAPTER_23_WATER_NODE_MONITOR.md): firmware/pulse flow, project và certificate riêng; live còn chờ.
+
+- [Cảnh báo trạm nước](CHAPTER_24_WATER_ALERTS.md): hai mẫu mới, hồ sơ/nguồn và xác nhận đã xem; không điều khiển bơm.
+
+- [Lịch sử kênh nước và CSV](CHAPTER_25_WATER_HISTORY.md): lọc range/source/quality, phân trang và xuất đúng trang; không tính tổng lít.

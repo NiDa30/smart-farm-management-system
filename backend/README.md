@@ -66,3 +66,49 @@ MAVEN_OPTS='-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts' \
 ```
 
 The settings file is machine-local, outside Git; TLS validation stays enabled. CRT runtime WSS proxy support is a separate live prerequisite: the probe accepts `AWS_IOT_PROXY_HOST` and `AWS_IOT_PROXY_PORT` for an HTTP CONNECT tunnel using supported CRT HttpProxyOptions. It does not automatically consume HTTPS_PROXY or embed proxy credentials. Use a supported tunnel or an authenticated laptop/network with outbound WSS443. Native self-test does not establish that live network path or SigV4 authentication works.
+
+
+## Versioned watering settings
+
+GET/PUT `/api/v1/automation/watering/settings` reads/saves integer dry/wet
+thresholds, automatic duration, cooldown and revision. Saves require a disabled
+rule, no unresolved run and the current revision. V11 keeps defaults 30/35/20/60;
+new runs store a settings snapshot, older runs keep null metadata. Saving settings
+never dispatches MQTT or enables watering. See [chapter 17](../docs/book/CHAPTER_17_WATERING_SETTINGS.md)
+and the [handoff](../docs/implementation/WATERING_SETTINGS_REPORT.md) for bounds,
+Windows restart and verification. Alert thresholds remain independent.
+
+
+## Read-only safety observations
+
+GET `/api/v1/safety` reads MQTT/control observations, ENV01 sensor/PUMP01 status,
+rule/settings, unresolved command totals, ten recent problem commands and fifty
+relay changes. It must not expire commands, retry publish or pause rules.
+DB reads use a read-only REPEATABLE_READ snapshot; MQTT lifecycle is separate.
+See [chapter 18](../docs/book/CHAPTER_18_SAFETY_OVERVIEW.md) and the
+[handoff](../docs/implementation/SAFETY_OVERVIEW_REPORT.md). This does not verify
+firmware, physical interlocks or gateway/OTA health. No new IAM or migration.
+
+
+## Alert acknowledgement (V12)
+
+GET `/api/v1/alerts/{id}` reads an incident beyond the latest100 list.
+PUT `/api/v1/alerts/{id}/acknowledgement` accepts optional text note (<=500),
+locks the incident and preserves the first acknowledgement. Identical retries
+are idempotent; different note or initial acknowledgement after clear returns409.
+It does not clear conditions, change automation/control or send MQTT/email.
+Event Log records ALERT_ACKNOWLEDGED at backend time with no device correlation.
+No authenticated actor is claimed. See [chapter19](../docs/book/CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md)
+and the [handoff](../docs/implementation/ALERT_ACKNOWLEDGEMENT_REPORT.md).
+
+
+## Agricultural irrigation calendar (V13)
+
+GET/PUT `/api/v1/automation/watering/calendar` returns settings and current/next
+window view. ANY_TIME keeps existing moisture-rule behavior; TIME_WINDOWS uses
+up to8 weekly non-overlapping windows in Asia/Ho_Chi_Minh, including overnight.
+Save requires current revision, disabled rule and no active run; never enables
+or publishes. WateringRule checks both current/source time and requests OFF
+outside windows. Runs snapshot calendar metadata before dispatch; legacy null.
+Backend must run and restart still pauses the rule. See [chapter20](../docs/book/CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md)
+and the [handoff](../docs/implementation/IRRIGATION_CALENDAR_REPORT.md).

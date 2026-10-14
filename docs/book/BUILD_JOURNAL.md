@@ -1,5 +1,509 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — Lịch sử nước và CSV sau V16
+
+Thêm read-only history theo node/channel/range/source/quality, cursor giờ đo/ID
+và cap ID. Web có lịch sử từng kênh WATER, CSV đúng trang, giữ false/0/fault/null,
+source, calibration và giờ gốc; chưa tổng lít/cost. Không migration/firmware/AWS mới.
+141 backend, 18 browser node/history và 12 unit frontend đạt, lint/build đạt.
+Full app dùng lại 4 packet V16, LOW/FLOW/filters/download CSV đạt, command/run=0.
+Lỗi input native datetime-local và so sánh phút/giây được sửa, có ca hồi quy.
+Xem [chương 25](CHAPTER_25_WATER_HISTORY.md) và [báo cáo](../implementation/WATER_HISTORY_REPORT.md).
+
+
+## 14/10/2026 — A2: Trung tâm Cảnh báo trạm nước
+
+V16 thêm cursor/state/episode cảnh báo nước, parser/router/store cập nhật cùng
+transaction. Hai mẫu fresh liên tiếp theo boot/sequence/time/source mới mở hoặc
+hết; duplicate/history/out-of-order/missing không tự đóng đợt. LOW/HIGH bất
+nhất và SENSOR_FAULT tách riêng, flow 0 không bị gán lỗi bơm. Giữ nguồn mô phỏng
+và vật lý riêng, ghi packet mở/hết và giờ nhận. Xác nhận đã xem idempotent,
+giữ ghi chú đầu, API riêng và UI trong Trung tâm Cảnh báo → Trạm nước.
+
+132 backend tests, 17 browser alerts (9 cũ + 8 nước), 4 unit frontend và
+lint/build đạt; nâng V15→V16 giữ mẫu cũ và không backfill cảnh báo. Không sửa
+firmware/provisioning hoặc gửi AWS. Xem [chương 24](CHAPTER_24_WATER_ALERTS.md)
+và [báo cáo](../implementation/WATER_ALERTS_REPORT.md) cho smoke process/DB.
+
+
+## 14/10/2026 — A2 monitoring: WATER firmware và nguồn dữ liệu
+
+Thêm firmware/water-node độc lập: LOW/HIGH debounce và lỗi bất nhất, ISR đếm
+xung FLOW, elapsed window/rate/calibration guard. Clock/gate Wokwi là tín hiệu
+mô phỏng, không có random measurement hay pump output. Thêm helper certificate
+monitor-only và private project riêng theo node; retry attach dùng cert cũ,
+checkpoint chặn mint thêm khi CreateKeys chưa rõ kết quả. Không dùng lại ENV key.
+
+V15/source optional giữ v2 cũ UNSPECIFIED; web nguồn đo thiết bị khai báo và
+mức bồn chỉ từ phao fresh/cùng packet. 119 backend, 9 browser node, 6 unit node,
+17 Python water + 2 flash regression, native model/packet và build/buildfs/merge
+rỗng đạt. C++ packet được schema và Java parser/SQL kiểm tra. Full app/API/DB
+fixture MID/fault/zero/stale đạt, command0/run0; MQTT/control tắt. Không AWS/
+Wokwi live mới; A2 flow-based cutoff/central alert/NVS chưa làm. Xem
+[chương23](CHAPTER_23_WATER_NODE_MONITOR.md) và
+[báo cáo](../implementation/WATER_NODE_FIRMWARE_REPORT.md).
+
+
+## 14/10/2026 — A1 node/kênh và telemetry nước riêng
+
+Theo lộ trình18nhóm, V14 thêm physical node/channel/actuator mapping, giữ
+ENV01/PUMP01v1. Sensor registration cũ tạo mapping cùng transaction. Router
+v1/v2, water parser strict, declared channel/unit/calibration, atomic packet
+và dedupe; không giả số môi trường để nhận nước. UI Sensor Realtime có Node
+& trạm nước, null/fault/false/0/freshness30s, save uncertain có readback.
+
+116backend,7browser node,4unit frontend,3Python contract v2, lint/build đạt.
+Full app registry lưu rồi restart đọc lại đạt; SQL fixture sau restart thử
+LOW=false/HIGH=fault/FLOW=0 nguồn cũ. Command0/run0 giữ nguyên, MQTT/control
+tắt. Lỗi seed UNION NULL/type đã sửa bằng cast, không liên quan payload AWS.
+Không firmware/diagram/AWS mới; A2 flow safety và nước live còn chờ. Xem
+[chương22](CHAPTER_22_NODES_AND_WATER_CHANNELS.md) và
+[báo cáo](../implementation/NODE_CHANNELS_REPORT.md).
+
+
+## 14/10/2026 — Cập nhật ý tưởng các node nông nghiệp
+
+Nguồn là bản ý tưởng người dùng gửi: 18 nhóm thiết bị, ví dụ 100 cây dừa / 4 dãy,
+trạm nước trung tâm, môi trường, cho ăn/nước uống/chuồng và camera riêng.
+Đã lập [lộ trình](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md), phân biệt nền
+9730558 với ENV/SOIL/WATER/IRRIGATION/FEED mục tiêu. Mỗi dãy 3 điểm đất / 1 van /
+1 flow là bố trí đề xuất, chưa có dữ liệu/Thing/board tương ứng.
+
+Ưu tiên A0 nghiệm thu relay/phao → A1 model/channel/contracts → A2 trạm nước
+→ A3 tưới từng dãy → A4 mưa/ánh sáng → chăn nuôi/camera/mở rộng. Giữ PUMP01,
+contract v1 và fail-safe cũ; không đổi topic hoặc suy ra phao nhị phân thành
+phần trăm bồn. Ghi rõ video đi qua media subsystem, không MQTT; flow/áp suất/
+khẩu phần cần hiệu chuẩn. Context cũ có nhãn Production Ready/HiveMQ/topic
+khác đã được thêm cảnh báo lịch sử và link mới. Chỉ tài liệu thay đổi; không
+build/code, tạo Jira/AWS hoặc chạy nghiệm thu thiết bị trong lượt này.
+
+
+## 14/10/2026 — Thiết bị simulator nông nghiệp và phao cạn
+
+Người dùng chưa thấy thiết bị mới: lịch V13 trước đó chỉ đổi backend/web. Đợt
+này thêm relay/LED tải NO và slide-switch phao vào sơ đồ chuẩn firmware/esp32,
+phân biệt root wokwi legacy. Firmware opt-in GPIO27, cạn khóa OFF và chặn ON/
+RESET, có nước không resume; backend/web nhận lý do WATER_LOW. Legacy config
+được giữ nguyên, cần thêm flag và rebuild/merge ảnh flash để thử.
+
+Cloud: 104 backend, 10 browser safety, 4 unit safety, 7 Python contracts đạt;
+native RelaySafety và build ESP32 control=1/phao=1 + legacy thiếu flags mới,
+3 kiểm tra sơ đồ tĩnh và smoke UI/API/DB reservoir_smoke GET-only đạt, command0/
+run0/history1 giữ nguyên; lint/build đạt. Cache cả từ chối lúc cạn để duplicate
+RESET sau thêm nước không tự mở khóa. Python lần
+đầu thiếu format validator gây ca timestamp fail; cài pin requirements rồi
+chạy lại, không đổi test để né lỗi. Không AWS/GPIO live mới; tiếp điểm relay có
+mâu thuẫn trong tài liệu Wokwi, cần thử cực tính. NVS/flow/cảnh báo phao riêng
+chưa làm. Xem [chương21](CHAPTER_21_RESERVOIR_INTERLOCK.md) và
+[báo cáo](../implementation/RESERVOIR_INTERLOCK_REPORT.md).
+
+
+## 14/10/2026 — Ưu tiên nông nghiệp: khung giờ tưới theo tuần
+
+Người dùng ưu tiên chức năng IoT trong canh tác trước. Từ df0c923 thêm V13:
+calendar ANY_TIME/TIME_WINDOWS, timezone VN, tối đa8 khung theo ngày ISO.
+Không tạo dispatcher riêng tranh relay: rule đất khô dùng cùng mutex/gate,
+source sample phải trong khung, kiểm tra lại trước publish. Hết khung yêu cầu
+OFF, vẫn đợi ACK/status, không bỏ timer/cooldown/manual hold. Run ghi revision/
+bounds lịch trước publish; legacy null. Mặc định giữ cả ngày, rule startup vẫn tắt.
+
+UI chọn thứ/giờ, preview giờ VN, overnight và validation chồng sang ngày/tuần,
+giữ draft và CAS revision. Sửa chỉ khi rule tắt/no active run; unknown response
+không retry, không tự bật rule khi lưu. Có thể tưới nhiều đợt trong khung nếu
+đất khô; không coi độ dài khung là runtime liên tục. Backend phải chạy.
+
+103 backend tests cuối đạt không skip;33 browser automation và20 unit client,
+lint/build đạt. Một fixture static mock lúc đầu làm helper validation trả
+mặc định; sửa chỉ mock evaluate, giữ validation thật. Rà soát thêm nhãn chờ
+mẫu trong khung và snapshot tại thời điểm kiểm tra ngay trước dispatch.
+Smoke App/API/PostgreSQL lưu thứ2/4/6 05:30–05:45; browser NewYork vẫn hiển thị
+VN. Mode/revision/windows giữ nguyên sau restart; rule/MQTT/control tắt và
+command0. Không AWS/Wokwi/GPIO live mới. Chương20 và IRRIGATION_CALENDAR_REPORT
+hướng dẫn thử trên Windows; không sửa IAM/firmware hoặc mở rộng đa thiết bị.
+
+
+## 14/10/2026 — Xác nhận đã xem và ghi chú cảnh báo
+
+Từ1138a75 thêm V12, GET alert theo ID và PUT acknowledgement. Transaction row
+lock giữ ghi chú/timestamp đầu tiên; retry đúng note trả cùng kết quả, note
+khác409. ACK không thay clear/state watermark/rule/relay. Incident tái phát
+không kế thừa ACK. Không gán actor từ AppContext vì backend chưa authentication.
+
+UI chi tiết độc lập list100, giữ draft qua polling, tách bộ lọc condition/seen.
+Unknown outcome khóa gửi lại và yêu cầu GET đối chiếu. Cả note khác ở tab khác,
+clear khi thao tác hoặc rơi khỏi100 đều có đường đọc lại; không success giả.
+EventLog có ALERT_ACKNOWLEDGED dùng giờ backend, không giả timestamp/correlation
+thiết bị. Dashboard/monitoring vẫn đếm tất cả incident active.
+
+Lượt đầu88 tests có1 lỗi: Jackson ép123 thành String. Kiểm tra kiểu JSON trường
+note sửa đúng lỗi, giữ validation unknown fields. Browser đầu trượt labelselect
+và thứ tự event text; sửa aria-label/selector và chạy lại. Cuối88 backend,
+9 browser alert+8events+8dashboard,17 unit frontend đạt không skip; lint/build đạt.
+Smoke App/API/PostgreSQL lưu ACK, giữ active/count2/event, metadata còn nguyên sau
+restart. MQTT/control tắt, không AWS command; Windows/Wokwi bản mới còn chờ.
+Chương19 và ALERT_ACKNOWLEDGEMENT_REPORT ghi phạm vi, bằng chứng và cách cập nhật.
+
+
+## 14/10/2026 — An toàn Fail-Safe & Edge bỏ dữ liệu mẫu
+
+Từ 814f0a4, thay trang rules/gateway/OTA mẫu bằng GET /api/v1/safety. Không
+báo OTA thành công bằng timer, không giả lưu lượng/mực nước hoặc flash usage.
+Snapshot DB read-only REPEATABLE_READ, đọc rule/settings V11 và stateReason
+đã nhận. Không gọi commands() có side effect expire, không pause/publish.
+
+Tổng queue độc lập10 problems preview/20 commands cũ; overdue chỉ tính toán,
+không đổi trạng thái DB. UI15s tách trạng thái hiện tại với bản cũ, thiếu status
+không suy OFF/không khóa. API lỗi bỏ khẳng định current; polling không hồi sinh
+mẫu cũ. Ba nút mở Control/Automation/Events chỉ navigate. Reason không được suy
+ra từ nút bấm, không hứa MQTT/device online hoặc GPIO thực thi từ snapshot.
+
+78 backend tests đạt, thêm6 safety integration;9 browser fixtures và14 unit client
+đạt không skip; lint/build đạt. Smoke App/API/PostgreSQL thật trong safety_smoke,
+MQTT/control tắt, seed mất kết nối cũ và run chưa OFF. Sau xem trang, DB vẫn giữ
+PUBLISH_UNCERTAIN/STOP_UNCONFIRMED/active command. Không command phát ra cloud.
+Chương18 và SAFETY_OVERVIEW_REPORT ghi kiểm tra, cách chạy Windows và giới hạn.
+Không migration/IAM/firmware/dependency mới; AWS/Wokwi live còn chờ nghiệm thu.
+
+
+## 14/10/2026 — Cài đặt tưới và bảo vệ bản nháp
+
+Tiếp tục từ b9cc51b. Thêm V11 giữ mặc định 30/35/20/60 và cấu hình có phiên bản.
+API chỉ cho sửa khi rule tắt và không có active run, không phát MQTT khi lưu.
+Scheduler dùng ngưỡng/thời gian đã lưu; mỗi run ghi cấu hình trước publish.
+Run cũ để metadata null, không gán dữ liệu không có bằng chứng. Khoảng nghỉ đang
+có giữ nguyên deadline khi sửa; cấu hình mới dùng cho lần sau. Alert giữ ngưỡng riêng.
+
+UI giữ bản nháp qua polling, chặn bật khi chưa lưu, phát hiện revision đổi từ
+tab khác. PUT chưa rõ kết quả khóa gửi lại và yêu cầu GET đối chiếu; không suy
+thành công từ HTTP 200 sai body. Thêm khóa sửa khi run chưa xác nhận OFF, kể cả
+sau backend restart. Tận dụng Jackson strict sẵn có thay vì thêm parser riêng.
+
+72 backend tests, 24 browser fixtures automation, 11 unit client đạt không skip;
+lint/build đạt. Smoke App/API/PostgreSQL test lưu và đọc sau restart, MQTT/control
+tắt, không gửi command hoặc bật rule. Migration V10 → V11 giữ run/boot/sequence,
+không mất dữ liệu cũ. Chương 17 và WATERING_SETTINGS_REPORT mô tả kiểm tra và giới hạn.
+Windows/AWS/Wokwi dùng ngưỡng mới chưa nghiệm thu; không đổi firmware/IAM/NVS.
+
+
+## Tổng quan IoT dùng dữ liệu backend
+
+Từ bbbd231, thay IoTDashboard mock bằng GET /api/v1/dashboard/overview, chỉ
+đọc. Ghép monitoring, registry/areas, alert, rule state và Event Log. Read-only
+REPEATABLE_READ giữ tổng/preview nhất quán trong DB. Không gọi command timeout,
+không quick-toggle hoặc bật rule từ dashboard. PUMP01 không tính là cảm biến.
+Trung bình khu vực chỉ dùng sensor có số đo mới trong 30 giây, mẫu cũ không làm sai trung bình,
+không còn mẫu mới trả dấu —. Rule vẫn dùng 15 giây; không nới safety gate.
+
+Preview 5 alert khác tổng tất cả alert, 8 sự kiện trong 24 giờ phân biệt giờ nguồn và
+backend. API lỗi không giữ khẳng định trạng thái hiện tại. Không tạo số pin,
+pH, van hoặc lưu lượng giả. Không đổi schema/firmware/IAM/dependency.
+Cloud: 64 backend tests đạt không skip; 7 browser fixtures và 9 unit frontend đạt;
+full-app smoke qua menu/proxy/Spring/PostgreSQL thật đạt, MQTT/control=false.
+Nghiệm thu automation/GPIO vẫn tách riêng, không đánh dấu từ seed/fixtures.
+Chương16 và báo cáo IOT_DASHBOARD_REPORT ghi cách chạy và giới hạn.
+
+## Giám sát registry, dữ liệu và kết nối backend
+
+Tiếp tục từ070e37d: thay DeviceMonitor mock bằng GET /api/v1/monitoring.
+Không tự thêm IAM hoặc subscription heartbeat. Màn phân biệt MQTT backend,
+độ mới sensor30s/relay15s, hoạt động bản tin đã lưu trong30s và cảnh báo mở.
+Không suy luận mất Wi-Fi/nguồn từ thiếu số đo. Bản tin cũ đến muộn cập nhật
+lastMessageAt nhưng không thay số đo nguồn mới hơn. UI dùng server time cộng
+monotonic elapsed, API lỗi không được giữ nhãn connected hiện tại; relay cũ
+chỉ hiển thị ON/OFF lần trước và trạng thái hiện tại Chưa xác định.
+
+MqttHealth version tránh subscription cũ ghi đè disconnect; queue đã nhận
+trước disconnect không được tự coi là reconnect. Không thay rule gate15s,
+cutoff hoặc publish control. Không migration/dependency mới. Cloud61 Java
+với DB test riêng đạt,7 browser fixtures giám sát và6 unit client đạt;
+full-app smoke qua API/DB thật với MQTT/control=false đạt. Không có AWS/GPIO.
+Selector fixture exact text ban đầu không khớp cell chứa timestamp; sửa và
+chạy lại7/7. Chương15 ghi rõ giám sát bản tin khác chứng minh online/offline.
+
+## Cloud tiếp quản commit 3d8bcd9 và triển khai nhật ký sự kiện
+
+Người dùng push toàn bộ bàn giao local lên feature branch. Cloud fast-forward
+từ 943d22a đến 3d8bcd9, giữ cấu hình Wokwi và các file người dùng đã commit.
+Nhánh fetch chỉ cập nhật FETCH_HEAD do refspec checkout; merge FETCH_HEAD sau
+khi đối chiếu SHA, không reset hoặc force. Event Log chưa nằm trong bản push,
+vẫn dùng iotEventLogs mock, nên hoàn thiện trước các chức năng khác.
+
+GET /api/v1/events tổng hợp alert mở/đóng, command tạo/ACK, pump state history
+và watering run. Cursor theo timestamp+ID, range cố định, lọc category/device;
+chỉ đọc DB, không gọi command timeout hoặc publish. Không cần migration mới.
+Command/run hiển thị kết quả hiện đang lưu chứ không dựng lịch sử chuyển
+trạng thái đã không được lưu. Alert chỉ có thời gian thiết bị; ACK chỉ có
+thời gian backend nhận, không bịa timestamp hoặc liên kết theo giờ gần nhau.
+
+Cloud: PostgreSQL test container riêng cổng 55439, không dùng DB demo 5433.
+52 Java tests đạt không skip; 13 browser fixtures automation và 7 fixtures
+Event Log đạt; 3 unit telemetry đạt; lint/build đạt. Smoke toàn app qua menu,
+Vite proxy, Spring Boot và DB event_smoke riêng đạt với MQTT/control=false.
+Không có lệnh AWS hoặc GPIO trong lượt kiểm tra. Mẫu UI test phải dùng type
+IoTEvent để nullable fields đúng, lỗi typecheck ban đầu đã sửa rồi chạy lại.
+
+Người dùng trước đó xác nhận bật tự động hoạt động, chưa có chi tiết cho sáu
+ca nghiệm thu. Không đánh dấu OFF sớm/cooldown/restart là live PASS. Sách cập
+nhật số liệu mới, giữ các báo cáo local cũ làm bằng chứng lịch sử.
+
+## 14/10/2026, 00:49 +07 — Chuẩn bị phép thử tưới nhóm 1
+
+Theo yêu cầu tiếp theo của người dùng, đã chạy backend bằng Git Bash mới,
+loại biến DB test trước khi helper nạp cấu hình runtime. Flyway nâng DB demo
+V9→V10, không xóa dữ liệu; backend subscribe AWS thành công. API rule trả
+enabled=false, RESTART_PAUSED, không active command. Frontend chạy cổng 3000.
+PUMP01 vẫn UNKNOWN/fresh=false, telemetry cuối đã cũ; gateway 9011 chưa chạy.
+Agent không có công cụ thao tác Wokwi/quan sát LED, chưa bật rule hoặc gửi
+control. Chỉ xác nhận quy tắc tắt sau startup ở API; ON/ACK/OFF sớm/cooldown
+live vẫn chờ người dùng thực hiện. Helper verify ở môi trường live chạy 4
+unit tests đạt, 37 integration tests skip; không thay thế lượt 41/41 local
+trước đó. Chi tiết bổ sung ở cuối LOCAL_CODEX_REPORT.md. Chưa commit/push.
+
+## 14/10/2026 — Rà soát sách và cập nhật xác nhận của người dùng
+
+Người dùng xác nhận cảnh báo đất thấp và nhiệt độ cao mở/đóng đúng ngưỡng.
+Quy tắc tưới tự động chưa nghiệm thu đầy đủ trên AWS/Wokwi thật. Phiên biên
+tập này không chạy code/tests hoặc truy cập AWS/Wokwi; không lấy code đang
+được agent khác sửa làm nguồn cập nhật hành vi trong sách.
+
+Bổ sung [hướng dẫn Windows](WINDOWS_RUNBOOK.md),
+[bảng bằng chứng](ACCEPTANCE_STATUS.md) và phần tổng hợp trong sổ lỗi.
+Restart simulator mất trạng thái RAM; NVS chưa làm. Các mục chờ xác nhận
+phía dưới phản ánh thời điểm lịch sử, cần đọc cùng bảng bằng chứng hiện tại.
+
+## 14/10/2026 — Audit local quy tắc tưới và thứ tự ACK/status
+
+Theo xác nhận người dùng: telemetry Wokwi lên Sensor Realtime, điều khiển thủ
+công/timer/lịch sử trạng thái, lịch sử cảm biến, cảnh báo LOW_SOIL 30/35 và
+HIGH_TEMPERATURE 35/33 hoạt động; firmware có `RELAY_OFF reason=CONNECTION_LOST`.
+Đây là bằng chứng người dùng cung cấp, không phải lần kiểm tra live của audit này.
+
+Phát hiện scheduler chỉ lấy latest có thể bỏ qua mẫu ướt giữa hai mẫu khô.
+Sửa đọc các mẫu chưa xét theo thời gian, lưu boot/sequence bằng migration V10;
+đổi boot làm đếm lại, timestamp/sequence cũ không tăng đếm. OFF heartbeat sau
+thời điểm gửi chưa đủ chứng minh OFF đã thực thi. Nay cần status OFF cùng boot
+có sequence lớn hơn ACK EXECUTED; khi thiếu ACK, chỉ chấp nhận OFF mới sau
+`expiresAt + durationSeconds` của ON (TTL 10 giây cộng runtime 20 giây).
+Khoảng nghỉ 60 giây bắt đầu khi backend xác nhận OFF, không bắt đầu từ PUBACK.
+
+Publish chưa rõ kết quả trước đây làm mất commandId trong rule/run. Nay giữ ID,
+tạm dừng và chỉ thử OFF một lần; chưa xác nhận OFF vẫn giữ lần chạy. Startup
+tạm dừng được tách khỏi scheduler có điều kiện MQTT: cả boot không bật MQTT
+cũng không giữ enabled từ DB. ACK SUCCESS sai reportedState bị từ chối;
+status khác boot có timestamp bằng nhau không được thay trạng thái hiện tại.
+UI tiếng Việt bổ sung lý do nghỉ/chờ lệnh/thiết bị/khóa an toàn/mẫu mới và ACK
+thực thi, đồng thời xóa thông báo lỗi cũ khi polling đã phục hồi.
+
+Kiểm tra local Windows: PostgreSQL 16.15 container riêng cổng 55439, DB
+watering_test, schema telemetry_test; transport mock, MQTT tắt. Maven verify
+đạt 41 tests, 0 failures/errors/skip; frontend lint/build đạt. Lượt đầu 37 tests
+đạt trước khi bổ sung các ca hồi quy cuối. Wrapper PowerShell lỗi Target[0]
+trên thư mục thường được sửa. Không truy cập DB demo, không phát lệnh AWS,
+không đổi IAM, không đọc secrets, không commit/push. Chưa nghiệm thu automation
+AWS/Wokwi thật; NVS và phục hồi mạng simulator vẫn để sau. Báo cáo đầy đủ:
+[LOCAL_CODEX_REPORT](../implementation/LOCAL_CODEX_REPORT.md).
+
+## Quy tắc tưới Wokwi ENV01 → PUMP01
+
+Người dùng xác nhận cảnh báo ngưỡng hoạt động và đồng ý làm automation.
+Một template cố định: hai mẫu mới dưới 30%, cách nhau không quá 15 giây,
+gửi ON 20 giây; đất đạt 35% gửi OFF sớm. Nghỉ 60 giây sau trạng thái OFF mới.
+Migration V9 lưu state/run và commandId. Trang Quy tắc Tự động hóa dùng API
+thay builder mock. Mặc định tắt; restart backend tạm dừng; thao tác thủ công
+qua API tạm dừng trước dispatch. Scheduler chạy mỗi 2 giây khi MQTT enabled.
+
+PumpService giữ kiểm tra ACK, pending, causal status và TTL. ON thất bại hoặc
+không xác nhận thì tạm dừng, không tự thử lại ON. Theo dõi command trực tiếp
+bằng ID, không phụ thuộc 20 lệnh mới nhất. OFF thử một lần rồi chờ status OFF
+mới, không gửi dồn. Nếu OFF chưa xác nhận, operator kiểm tra Actuator; thiết
+bị vẫn có cutoff 20 giây. Chỉ hỗ trợ một backend process, chưa nhiều instance.
+
+Cloud: 28 Java tests với PostgreSQL đạt, gồm hai mẫu mới, pending, manual,
+restart, thất bại gửi lệnh, đất đủ ẩm, khoảng nghỉ và dữ liệu cũ. Transport MQTT
+được mock, chưa nghiệm thu live. Foreign key V9 yêu cầu fixture pump truncate
+thêm watering state/run; chỉ sửa dữ liệu test. UI enable/disable, lint/build đạt.
+Chờ Wokwi soil 45 → 28 → 35, GPIO, ACK và run history thật. NVS để sau.
+
+## Cảnh báo đất thấp và nhiệt độ cao từ telemetry thật
+
+Người dùng xác nhận trang lịch sử cảm biến hoạt động; chưa có bằng chứng CSV
+live riêng. Tiếp tục cảnh báo, không tự điều khiển relay. V8 lưu state và incident
+PostgreSQL; chỉ sample newly inserted, timestamp mới trong30s và không tương
+lai>2s được evaluate trong transaction cùng insert telemetry. Duplicate không
+trigger; timestamp <=watermark không cập nhật alert. Ngưỡng đất<30 mở, >=35
+đóng; nhiệt>35 mở, <=33 đóng. Không backfill alert từ history cũ. Không có
+email/SNS, ngưỡng cố định MVP, chưa có UI sửa ngưỡng hay acknowledge.
+
+Row lock và unique active(device,type) ngăn incident trùng, state bền vững
+qua restart. Không nhận telemetry không tự clear cảnh báo. UI poll API5s,
+100 incident ưu tiên active; dữ liệu cũ báo lỗi nếu backend mất.
+Test phát hiện precision timestamp Java nanoseconds/DB microseconds có thể
+coi sample timestamp giống nhau là mới: normalize watermark milliseconds,
+rerun đạt. Lần chạy lặp phát hiện test history cũ không xóa history khi reset
+fixture nên chạm giới hạn50; thêm truncate bảng test history, không xóa dữ liệu
+ứng dụng hoặc thay giới hạn API. Cloud: 23 Java tests PostgreSQL đạt, frontend lint/build và
+Playwright active/cleared/filter/empty/error đạt. Không có live AWS trong test.
+Chờ người dùng hạ soil<30 rồi tăng>=35 và thử nhiệt36→33 trên Wokwi.
+
+## Chuyển lịch sử cảm biến từ mock sang dữ liệu PostgreSQL
+
+Người dùng muốn chuyển chức năng khác; phần NVS/offline recovery để sau.
+Bằng chứng trước: serial RELAY_OFF reason=CONNECTION_LOST xác nhận xử lý
+mất mạng; gateway restart không phục hồi DNS/Wi-Fi của phiên Wokwi, phải
+restart simulation. Chưa kiểm chứng gửi lý do sau reconnect không reboot.
+Không ghi nhận hoàn tất kiểm tra toàn bộ network recovery.
+
+Trang /iot/history nay dùng registry/API telemetry thay dữ liệu SM-01 mock.
+Chọn sensor, 1h/24h, nhiệt độ/độ ẩm/đất; biểu đồ timestamp thực, thống kê mẫu
+đã tải và CSV cùng mẫu. Không dùng parseHistory realtime vì hàm đó cắt 15 mẫu.
+Giới hạn API1000: cảnh báo mẫu mới nhất có thể không bao phủ toàn khoảng24h,
+không gọi thống kê toàn ngày. Khoảng trống >30s không nối đường, không nội suy.
+Load/error/empty riêng; refresh thủ công, không thêm poll AWS hay quyền mới.
+Cloud validation: frontend lint/build đạt; Playwright fixture kiểm tra query
+range, chart, CSV có3 dòng mẫu, empty/error và disabled export đạt. Không
+đọc dữ liệu AWS live trong phép thử này.
+Chờ kiểm chứng live lịch sử và CSV trên Windows.
+
+## Lý do trạng thái do firmware báo
+
+Người dùng xác nhận có lịch sử trạng thái sau bản V6. Bổ sung stateReason
+trên topic PUMP01/status hiện có; không thêm quyền AWS. BOOT, COMMAND_ON,
+COMMAND_OFF, LOCKOUT_RESET, TIMER_EXPIRED, CONNECTION_LOST, DEVICE_FAULT.
+Backend kiểm tra enum, V7 lưu lý do trong status/history. Firmware cũ không
+có field vẫn được nhận, lịch sử cũ giữ null thay vì đoán lý do.
+
+Timer callback cắt GPIO ngay, gửi nguyên nhân qua latch cho Arduino loop;
+tách timer cutoff khỏi network fault để hết giờ không bị khóa an toàn.
+Mất MQTT khi GPIO đang ON cắt ngay, loop khóa và giữ CONNECTION_LOST;
+status sau reconnect mang lý do. Không có status trong lúc offline, không
+cam kết nhật ký bền vững trên thiết bị: reboot lúc offline có thể mất lý do.
+Nhiều thay đổi nhanh trước status có thể chỉ ghi được trạng thái cuối cùng;
+chưa phải event outbox bảo đảm mọi sự kiện. Không thay TTL/dedup/cutoff.
+Cloud checks: 19 Java tests với PostgreSQL đạt, native safety assertions đạt,
+frontend lint/build và UI fixture hiển thị lý do đạt, ESP32 build SUCCESS.
+Thời điểm status là lúc báo, không phải timestamp sự cố offline.
+Chờ user kiểm tra live timer/manual/network sau build và merge lại firmware.
+
+## Người dùng xác nhận công tắc/hẹn giờ; thêm lịch sử trạng thái
+
+Người dùng báo kiểm tra công tắc và hẹn giờ thành công trên Windows/Wokwi.
+Không có log chi tiết mới để chứng minh runtime 60 phút; ghi nhận là user-reported.
+Backend khởi động thất bại từng gây Vite ECONNREFUSED 8080; người dùng sau đó
+xác nhận chạy thành công, nguyên nhân lỗi startup chưa có stack trace.
+MQTT từng ngắt errno119 rồi tự kết nối lại/PUBACK, chưa xác định nguyên nhân.
+
+Migration V6 thêm lịch sử thay đổi status: lần đầu, ON/OFF/lockout đổi,
+boot mới. Trigger PostgreSQL ghi cùng transaction với status đã được kiểm tra
+thứ tự; heartbeat và packet trùng không tạo thêm sự kiện. API /history trả
+50 thay đổi mới nhất, UI hiển thị; lỗi lịch sử không chặn nút OFF.
+Cloud: 18 Java tests pass với PostgreSQL, trong đó test history kiểm tra
+transition, heartbeat và packet trùng; frontend lint/build và UI fixture pass.
+Chưa kiểm tra history live trên Windows.
+Không suy luận nguyên nhân timer/mạng từ status. Sự kiện lý do trực tiếp từ
+firmware vẫn là bước tiếp theo, chưa triển khai ở bản này.
+
+## Công tắc từ xa và hẹn giờ tắt tối đa 60 phút
+
+Người dùng xác nhận bật/tắt và timer 3 giây hoạt động trong Wokwi sau bản sửa
+clock. Yêu cầu tiếp: công tắc từ xa và hẹn giờ tắt mở rộng. UI thêm switch
+chỉ phản ánh reportedState mới; không đổi ON lạc quan khi POST thành công.
+Hẹn giờ theo giây/phút, 1..3600 giây. Bỏ chọn hẹn giờ gửi ON 3600 giây:
+có thể tắt thủ công và vẫn có cutoff an toàn 60 phút; không phải ON vô hạn.
+Thay đổi cài đặt chỉ áp dụng lần bật tiếp theo, không gia hạn lệnh đang chạy.
+
+Backend/schema/firmware nâng cùng giới hạn 3600; migration V5 thay constraint
+DB, không sửa V3 đã triển khai. Runtime dùng monotonic/esp_timer; TTL nhận
+lệnh vẫn 10 giây, không đồng nghĩa thời gian bật. Mất kết nối vẫn OFF/lockout.
+Cloud validation: 17 Java tests pass với PostgreSQL (không skip), 10 Python
+contract tests pass; native timer test kiểm tra cutoff 3600 giây; firmware
+và frontend build pass. UI fixture kiểm tra switch, đổi phút và cutoff mặc định;
+không publish AWS.
+Firmware cũ từ chối thời gian trên 30 giây: phải build/merge/restart firmware
+trước khi thử thời gian dài. Chưa xác nhận live tính năng mới này.
+
+## Wokwi clock chậm 7–9 giây: NTP và dung sai mô phỏng
+
+Người dùng ghi nhận age=-7 và -9, ON bị CLOCK_SKEW, GPIO vẫn OFF.
+Backend và MQTT đã chuyển lệnh; chưa xác nhận nguyên nhân clock chậm do máy host
+hay thời gian mô phỏng. Firmware yêu cầu SNTP cập nhật mỗi 15 giây thay vì
+chỉ dựa vào lần sync đầu. Thêm FARM_WOKWI_CLOCK_TOLERANCE_SECONDS mặc định 2,
+chỉ dùng khi SSID Wokwi-GUEST; có thể đặt 10 cho mô phỏng. Compile từ chối
+ngoài 0..10; lớp safety cũng clamp tối đa 10. Đây là dung sai thử nghiệm,
+không chứng minh clock đã đúng và không phải cấu hình cho bơm thật.
+
+Kiểm tra native: mặc định từ chối tương lai 9 giây; cấu hình 10 cho phép 9,
+từ chối 11; expiry vẫn bị kiểm tra; ON 3 giây tự OFF theo monotonic timer.
+Timer độc lập và giới hạn duration không thay đổi. Chờ kiểm tra LED/ACK trực tiếp.
+
+## Wokwi nhận ON nhưng từ chối thời gian
+
+Người dùng cung cấp serial COMMAND_EXECUTED action=ON state=OFF result=EXPIRED.
+Xác nhận packet đến command handler và output không bật. Code trước gộp lỗi
+clock chưa sẵn sàng, issuedAt tương lai, lifetime sai và expiry thực vào EXPIRED;
+chưa thể kết luận packet đến muộn. Tách CLOCK_NOT_READY/CLOCK_SKEW/
+INVALID_LIFETIME/EXPIRED và thêm log epoch UTC đã parse, age/remaining; không
+in keys hoặc raw payload. Giữ TTL và giới hạn relay, chờ log runtime mới.
+
+## Windows control build đạt, merge thiếu LittleFS image
+
+Người dùng gửi log firmware SUCCESS sau67.20s; RAM15.0%, flash74.2%. Merge
+FileNotFoundError cho .pio/build/esp32dev/littlefs.bin. Không biết chính xác
+vì sao artifact mất; firmware build không bảo đảm giữ filesystem output.
+Hướng xử lý: buildfs từ data/certificate hiện có rồi merge; không tạo cert mới.
+Warning FARM_CONTROL_ENABLED redefined do fallback trước include local config;
+dời fallback xuống sau include. ArduinoJson containsKey deprecated được đổi
+sang isUnbound để vẫn từ chối durationSeconds=null trên OFF/RESET. Chưa control
+live và chưa có output buildfs/merge sau sửa của người dùng.
+
+## Relay Wokwi — code/tests; chưa control live
+
+Người dùng hoãn provisioning sensor mới và đồng ý tiếp tục command/ACK cho
+ENV01/PUMP01. Thêm API command/status/history, V3 persistence, bounded ON1..30s,
+TTL10s, fresh-OFF gate, ACK correlation, PUBLISH_UNCERTAIN và timeout không tự
+suy ra trạng thái relay. Backend mặc định control disabled; telemetry vẫn dùng
+policy đọc hiện có nếu không bật flag. Khi control enabled, thêm status/ACK
+subscriptions, publish command non-retained và resubscribe sau reconnect.
+
+Firmware control mặc định disabled, chỉ ENV01/FARM001. LED GPIO26, queue trong
+loop, retained/expired command rejection, dedup cache và esp_timer cutoff độc
+lập, mất link đang ON→OFF/lockout, RESET khi OFF. Cache đầy vẫn cho OFF. Lockout
+RAM không persist reboot; boot OFF. Chưa safety event publisher hoặc rule engine.
+
+PlatformIO Linux compile đạt (variant enabled cũng đạt); native C++ assertions
+đạt, 16 Java tests PostgreSQL đạt (transport mock), lint/build/browser UI fixtures
+đạt. Local HTTP pump status disabled trảUNKNOWN. Mirror proxy403 được fallback
+thành công, không tắtTLS. Chưa có AWS publish control hoặc Wokwi GPIO runtime
+evidence. Viết chương10 với hướng dẫn managed IAM policy để tránh inline quota,
+flags/rebuild và nghiệm thu3s. Không provision thêm device/certificate.
+
+## Sensor theo khu vực — implementation và cloud verification
+
+Người dùng yêu cầu thêm sensor và quản lý nhiệt độ theo khu vực, rồi đồng ý
+triển khai. Migration V2 tạo registry area/device, gắn ENV01 vào AREA001,
+giữ readings cũ và thêm foreign key. API hỗ trợ list/create/metadata; summaries
+lấy latest bằng lateral join. Validator mở deviceId theo pattern; ingest
+subscribe +/telemetry, đối chiếu topic/payload với registry và từ chối thiết bị
+chưa đăng ký hoặc sai farm. Schema telemetry v1 giữ tương thích payload ENV01.
+
+UI thêm khu vực/sensor, lọc khu vực, chọn sensor để xem chi tiết/lịch sử và các
+trạng thái pending/error/freshness. Panel remount theo deviceId để tránh giữ
+số đo của sensor trước. ENVIRONMENT v1 vẫn yêu cầu cả ba chỉ số; chưa hỗ trợ
+sensor loại khác, edit/delete hoặc nhiều farm. Registry backend chưa đồng bộ
+với các khu vực mock cũ. Form đăng ký không provision certificate AWS.
+
+Cloud: 10 Java tests trên PostgreSQL 16.15 đạt, gồm migration V1→V2 giữ sample
+cũ, tách reading từng device và validation registry/topic. 10 Python tests,
+3 Node tests, lint/build đạt. Browser dùng API/database thật trong schema riêng:
+tạo khu vực/sensor, pending, lọc, reading từ fixture SQL, đổi sensor không lẫn
+số, lỗi mã trùng; không có page errors. Freshness smoke cũng đạt. Locator trong
+harness được sửa để scope history và select; không kết luận đó là lỗi AWS.
+
+Người dùng cần cập nhật SmartFarmBackendRuntime trước startup: Subscribe
+FARM001/+/telemetry và Receive FARM001/*/telemetry. Helper render_telemetry_iam.py
+chỉ tạo policy offline; không mở wildcard cho certificate ENV01. Chưa cập nhật
+IAM trên AWS, chưa provision ENV02 hoặc xác nhận nhiều thiết bị live trên
+Windows. Chương 9B có hướng dẫn rollout, giữ volume/db.env/certificate hiện có.
+
 ## Windows frontend — người dùng xác nhận chạy thành công
 
 Sau cập nhật Sensor Realtime dùng API, người dùng báo “đã chạy thành công”.
@@ -68,8 +572,8 @@ trong ignored private .local/postgres/db.env, Flyway V1, telemetry validator,
 MQTT subscription liên tục, JDBC INSERT ON CONFLICT chống trùng và API
 latest/history trên loopback8080. API chưa có authentication, chỉ cho local.
 Validator từ chối trường lạ/thiếu, numeric coercion, UUID/time sai, số vượt range,
-duplicate JSON keys và timestamp tương lai quá60 giây. History tối đa31 ngày,
-limit1..1000, source-time ordering; device cố địnhENV01/FARM001.
+duplicate JSON keys và timestamp tương lai quá60 giây. History tối đa 31 ngày,
+limit 1..1000, source-time ordering; device cố địnhENV01/FARM001.
 
 Cloud Docker đã chạy PostgreSQL thật. Lần kiểm tra đầu tiên chạy khi image còn
 đang tải nên test context lỗi Connection refused; chờ Compose healthy rồi chạy

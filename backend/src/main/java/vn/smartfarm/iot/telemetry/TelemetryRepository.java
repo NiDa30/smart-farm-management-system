@@ -14,13 +14,16 @@ public class TelemetryRepository {
     public record Reading(long id, String farmId, Telemetry telemetry, Instant receivedAt) {}
     private final JdbcTemplate jdbc;
     public TelemetryRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
-    private static final RowMapper<Reading> MAPPER = (rs, row) -> new Reading(
+    private static final RowMapper<Reading> MAPPER = (rs, row) -> mapReading(rs);
+    public static Reading mapReading(java.sql.ResultSet rs) throws java.sql.SQLException {
+        return new Reading(
         rs.getLong("id"), rs.getString("farm_id"),
         new Telemetry(rs.getInt("schema_version"), rs.getString("device_id"),
             rs.getObject("boot_id", UUID.class), rs.getLong("sequence"),
             rs.getTimestamp("observed_at").toInstant(), rs.getDouble("temperature"),
             rs.getDouble("humidity"), rs.getDouble("soil_moisture"), rs.getLong("uptime_ms")),
         rs.getTimestamp("received_at").toInstant());
+    }
 
     public boolean insert(Telemetry value) {
         return jdbc.update("""

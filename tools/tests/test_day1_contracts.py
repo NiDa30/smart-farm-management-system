@@ -22,7 +22,7 @@ class ContractsTest(unittest.TestCase):
                 self.validate(name, self.example(name))
 
     def test_invalid_telemetry_identity_values_and_time(self):
-        for field, invalid in [("deviceId", "PUMP01"), ("soilMoisture", -1), ("humidity", 101),
+        for field, invalid in [("deviceId", "bad/device"), ("soilMoisture", -1), ("humidity", 101),
                                ("temperature", "31"), ("bootId", "invalid"), ("timestamp", "yesterday")]:
             value = self.example("telemetry")
             value[field] = invalid
@@ -30,7 +30,7 @@ class ContractsTest(unittest.TestCase):
                 self.validate("telemetry", value)
 
     def test_on_requires_bounded_duration(self):
-        for duration in [None, 0, 31]:
+        for duration in [None, 0, 3601]:
             value = self.example("command")
             if duration is None: del value["durationSeconds"]
             else: value["durationSeconds"] = duration
@@ -51,6 +51,14 @@ class ContractsTest(unittest.TestCase):
         with self.assertRaises(ValidationError): self.validate("ack", value)
         value["errorCode"] = "EXPIRED"
         self.validate("ack", value)
+
+    def test_pump_state_reason_includes_water_interlock(self):
+        value = self.example("status")
+        value.update(deviceId="PUMP01", reportedState="OFF", safetyLockout=True,
+                     activeCommandId=None, stateReason="WATER_LOW")
+        self.validate("status", value)
+        value["stateReason"] = "UNKNOWN_REASON"
+        with self.assertRaises(ValidationError): self.validate("status", value)
 
     def test_device_policy_cannot_publish_command_or_cross_farm(self):
         spec = importlib.util.spec_from_file_location("provision", ROOT / "tools/aws/provision_day1.py")

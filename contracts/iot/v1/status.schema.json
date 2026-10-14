@@ -51,6 +51,18 @@
     },
     "reason": {
       "type": "string"
+    },
+    "stateReason": {
+      "enum": [
+        "BOOT",
+        "COMMAND_ON",
+        "COMMAND_OFF",
+        "LOCKOUT_RESET",
+        "TIMER_EXPIRED",
+        "CONNECTION_LOST",
+        "DEVICE_FAULT",
+        "WATER_LOW"
+      ]
     }
   },
   "required": [

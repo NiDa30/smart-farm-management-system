@@ -1,8 +1,45 @@
 # ESP32 Day 1 AWS TLS spike
 
-This is a build/provisioning baseline, not completed remote control. Relay stays OFF. ESP-MQTT publishes real DHT22+ADC readings using QoS1 to AWS, with TLS CA/hostname/client certificate verification. No fabricated soil data. GPIO34 must be wired to a calibrated sensor or Wokwi potentiometer before accepting sample evidence.
+Control update: a Wokwi-only GPIO26/LED demo is now implemented but disabled by
+default. Follow [chapter 10](../../docs/book/CHAPTER_10_WOKWI_RELAY_CONTROL.md)
+to enable it, update backend IAM and verify runtime. Earlier Day 1 limitations
+below are historical. Compile/native tests are not live relay evidence.
 
-Pins: DHT22 GPIO15 (existing diagram); potentiometer signal GPIO34, rails3V3/GND; relay GPIO26. Set `FARM_RELAY_OFF_LEVEL` for relay polarity; on real hardware use safe pull resistors/low-voltage loads. No actuator ON test in this Day1 firmware.
+Current demo: one ESP32 (`ENV01`) reads DHT22 and calibrated soil ADC,
+publishes QoS1 telemetry over AWS MQTT/TLS, and controls `PUMP01` through GPIO26
+when explicitly enabled. Boot output is OFF. Commands have ACK/status,
+deduplication, expiry and an independent cutoff (manual 1–3600 seconds;
+automatic backend rule 1–30 seconds). Network loss while ON forces OFF/lockout.
+No physical pump or water flow has been verified.
+
+The agricultural diagram now includes a relay module, LED load through its NO
+contact, and a reservoir float switch represented by a slide switch:
+
+| Component | GPIO | Operation |
+|---|---|---|
+| DHT22 | 15 | Temperature and air humidity |
+| Soil potentiometer | 34 | Low ADC = wet, high ADC = dry |
+| PUMP01 relay input | 26 | Diagram uses `transistor=pnp`; verify HIGH closes COM–NO in Wokwi |
+| Reservoir switch common (2) | 27 | Terminal 1 to GND: left=water, right/open=dry |
+
+Use **`firmware/esp32/diagram.json`**, not the legacy root `wokwi/diagram.json`.
+See [chapter 21](../../docs/book/CHAPTER_21_RESERVOIR_INTERLOCK.md) for the Windows
+update/build instructions and unrun live test matrix. Existing private
+`config.local.h` is preserved: add `FARM_WATER_INTERLOCK_ENABLED 1` and
+`FARM_WATER_LEVEL_PIN 27` there to enable this new input. Missing flag defaults
+to disabled for existing installations; the new example opts in. Keep control
+disabled unless testing the private Wokwi demo. Do not overwrite your local
+endpoint/certificates to update these flags.
+
+An enabled open/disconnected switch trips OFF/lockout even at boot while idle.
+Restoring water does not resume ON or clear lockout. RESET is rejected with
+`WATER_LOW` while dry; OFF remains allowed. Backend stores the device reason,
+and Control / Safety / Event Log display it. This is a binary input, not a water
+percentage/flow measurement. Checking is in the Arduino loop and immediately
+before command output; there is no certified physical dry-run protection or
+persistent NVS lockout. Real hardware requires its own electrical interlocks.
+
+For new installations only (do not overwrite existing private config):
 
 ```bash
 cd firmware/esp32
@@ -25,8 +62,8 @@ and overlap, and merges bootloader, partition table, OTA initialization, app and
 LittleFS into a private 4 MiB flash image. It uses the default PlatformIO core
 directory (or PLATFORMIO_CORE_DIR / --core-dir). Wokwi config points to this
 ignored image; regenerate it after firmware or certificate/filesystem changes.
-On Windows use `.local/day1-venv/Scripts/python.exe`. Runtime loading in Wokwi
-still requires verification; a successful merge does not prove TLS connectivity.
+On Windows use `.local/day1-venv/Scripts/python.exe`. A successful merge proves image assembly only. Prior user-provided TLS/PUBACK
+evidence remains separate from acceptance of the new relay/float wiring.
 
 For MQTT connection diagnosis, stop the simulator and run from repository root:
 `python tools/aws/check_device_connection.py`. It checks the same local PEM pair,
@@ -43,4 +80,8 @@ For a physical board later: `pio run -t upload`, `pio run -t uploadfs`, `pio dev
 
 The existing root `wokwi/sketch.ino` remains the legacy HiveMQ example, and is not the AWS demo firmware. Build/run the authoritative `firmware/esp32` output instead; do not report legacy sketch results as AWS gate success. For Wokwi use the private diagram below plus the extension's supported ESP32 flash/filesystem image procedure. If LittleFS is unavailable/missing credentials, firmware fails closed (relay OFF). Configure endpoint; wait for time sync and MQTT TLS. Serial must show AWS MQTT connected and QoS1 PUBACK; Test Client must show actual schema packets.
 
-Day1 limitations: reconnection uses fixed10s Wi-Fi and SDK5s MQTT retries; bounded backoff/jitter and command handler/timer safety are Day2/5 work. No ACK/actuator/PUMP01 status yet. Board pin/electrical calibration, Wokwi filesystem support and live AWS connection are unverified until hardware/simulator tests. Firmware compilation is also unverified while PlatformIO registry access is blocked in the cloud.
+Remaining limitations: fixed10s Wi-Fi / SDK5s MQTT retry, no durable NVS state
+or event replay, and no automatic ON recovery. Existing AWS telemetry/manual
+control have user-provided evidence; the new relay-contact/float-switch demo
+still needs the Windows/Wokwi tests in chapter 21. Cloud firmware compilation,
+native safety tests, SQL ingestion and browser fixtures do not prove live GPIO.

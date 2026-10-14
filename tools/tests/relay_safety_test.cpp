@@ -1,0 +1,86 @@
+#include "../../firmware/esp32/include/RelaySafety.h"
+#include <cassert>
+#include <cstdio>
+int main() {
+  const int64_t epoch = 1800000000;
+  RelaySafety relay;
+  assert(!relay.isOn());
+  assert(!relay.apply("on", RelaySafety::ON, 3, epoch, epoch+10, epoch, 1000));
+  assert(relay.isOn());
+  assert(!relay.apply("on", RelaySafety::ON, 3, epoch, epoch+10, epoch+2, 3000));
+  assert(relay.tickSafety(4000, true)); // duplicate did not renew timer
+  assert(!relay.isOn());
+  assert(!relay.apply("on", RelaySafety::ON, 3, epoch, epoch+10, epoch+4, 5000));
+  assert(!relay.isOn()); // duplicate after timeout does not turn on again
+  assert(relay.apply("expired", RelaySafety::ON, 3, epoch-20, epoch-10, epoch, 6000));
+  assert(!relay.isOn());
+  assert(relay.apply("long", RelaySafety::ON, 3601, epoch, epoch+10, epoch, 6000));
+  assert(!relay.apply("new", RelaySafety::ON, 30, epoch, epoch+10, epoch, 6000));
+  assert(relay.tickSafety(6100, false));
+  assert(relay.lockout() && !relay.isOn());
+  assert(relay.apply("locked", RelaySafety::ON, 1, epoch, epoch+10, epoch, 6200));
+  assert(!relay.apply("reset", RelaySafety::RESET, 0, epoch, epoch+10, epoch, 6200));
+  assert(!relay.lockout());
+  assert(!relay.apply("wrap", RelaySafety::ON, 1, epoch, epoch+10, epoch, UINT32_MAX-500));
+  assert(!relay.tickSafety(100, true));
+  assert(relay.tickSafety(500, true));
+  assert(!relay.isOn());
+  RelaySafety clock;
+  assert(strcmp(clock.apply("strict",RelaySafety::ON,3,epoch+9,epoch+19,epoch,0),"CLOCK_SKEW")==0);
+  assert(!clock.isOn());
+  assert(!clock.apply("simulation",RelaySafety::ON,3,epoch+9,epoch+19,epoch,0,10));
+  assert(clock.tickSafety(3000,true));
+  assert(!clock.isOn());
+  assert(strcmp(clock.apply("beyond",RelaySafety::ON,3,epoch+11,epoch+21,epoch,3000,10),"CLOCK_SKEW")==0);
+  assert(strcmp(clock.apply("clamped",RelaySafety::ON,3,epoch+11,epoch+21,epoch,3000,99),"CLOCK_SKEW")==0);
+  assert(strcmp(clock.apply("still-expired",RelaySafety::ON,3,epoch-10,epoch,epoch,3000,10),"EXPIRED")==0);
+  RelaySafety extended;
+  assert(!extended.apply("hour",RelaySafety::ON,3600,epoch,epoch+10,epoch,0));
+  assert(!extended.tickSafety(3599999,true));
+  assert(extended.tickSafety(3600000,true));
+  assert(!extended.isOn());
+  RelaySafety cutoff;
+  assert(!cutoff.apply("cutoff",RelaySafety::ON,3,epoch,epoch+10,epoch,0));
+  cutoff.stop();
+  assert(!cutoff.isOn() && !cutoff.lockout()); // timer is not a network fault
+  RelaySafety crowded;
+  assert(!crowded.apply("first",RelaySafety::ON,30,epoch,epoch+10,epoch,0));
+  for(int i=0;i<31;i++) {
+    char id[37]; snprintf(id,sizeof(id),"busy%d",i);
+    assert(crowded.apply(id,RelaySafety::ON,30,epoch,epoch+10,epoch,1));
+  }
+  assert(!crowded.apply("emergency",RelaySafety::OFF,0,epoch,epoch+10,epoch,2));
+  assert(!crowded.isOn());
+  // Reservoir interlock is local and remains latched after water returns.
+  RelaySafety dry;
+  assert(dry.setWaterAvailable(false));
+  assert(dry.lockout() && !dry.isOn());
+  assert(strcmp(dry.apply("dry-on",RelaySafety::ON,30,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(strcmp(dry.apply("dry-reset",RelaySafety::RESET,0,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(!dry.apply("dry-off",RelaySafety::OFF,0,epoch,epoch+10,epoch,0));
+  assert(dry.lockout() && !dry.isOn());
+  assert(dry.setWaterAvailable(true));
+  assert(dry.lockout() && !dry.isOn());
+  assert(strcmp(dry.apply("dry-reset",RelaySafety::RESET,0,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(dry.lockout()); // failed reset is deduplicated even after refilling
+  assert(strcmp(dry.apply("no-resume",RelaySafety::ON,30,epoch,epoch+10,epoch,0),"SAFETY_LOCKOUT")==0);
+  assert(!dry.apply("wet-reset",RelaySafety::RESET,0,epoch,epoch+10,epoch,0));
+  assert(!dry.lockout() && !dry.isOn());
+  assert(strcmp(dry.apply("dry-on",RelaySafety::ON,30,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(!dry.isOn()); // previously rejected ON cannot become a new run
+  assert(!dry.apply("wet-on",RelaySafety::ON,30,epoch,epoch+10,epoch,0));
+  assert(dry.isOn());
+  dry.setWaterAvailable(false);
+  assert(!dry.isOn() && dry.lockout());
+  // Duplicate successful ON or RESET cannot override a subsequently dry tank.
+  assert(strcmp(dry.apply("wet-on",RelaySafety::ON,30,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(strcmp(dry.apply("wet-reset",RelaySafety::RESET,0,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  dry.setWaterAvailable(true);
+  assert(!dry.tickSafety(1000,true));
+  assert(!dry.isOn() && dry.lockout());
+  assert(!dry.apply("recover",RelaySafety::RESET,0,epoch,epoch+10,epoch,1000));
+  assert(!dry.apply("new-run",RelaySafety::ON,2,epoch,epoch+10,epoch,1000));
+  assert(dry.tickSafety(3000,true));
+  assert(!dry.isOn() && !dry.lockout());
+  puts("RelaySafety: timer, dedup, network, clock, reservoir interlock PASS");
+}
