@@ -1,5 +1,12 @@
 # Trạng thái bằng chứng và nghiệm thu — 14/10/2026
 
+Cảnh báo nước V16: **132 backend tests**, 17 browser alerts và 4 unit frontend
+nước đạt, không skip; lint/build đạt. Trung tâm Cảnh báo → Trạm nước lưu đợt,
+nguồn, bằng chứng packet và đã xem; không phát lệnh bơm. Migration V15 giữ
+mẫu cũ, không tạo đợt hồi tố. AWS/Wokwi mới vẫn **Chưa chạy**; xem
+[chương 24](CHAPTER_24_WATER_ALERTS.md) và [báo cáo](../implementation/WATER_ALERTS_REPORT.md).
+
+
 A2 monitoring: **119 backend tests**, 9 browser node, 6 unit node, 17 Python water
 helpers/contracts/SDK mocks/diagram + 2 flash regression đạt; native model và
 packet, ESP32 build/FS rỗng/merge và lint/build đạt. Full app/API/PostgreSQL

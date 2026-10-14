@@ -27,6 +27,9 @@ và [contract nước](../../contracts/iot/v2/README.md). Registry không provis
 AWS. Sau đó A2 có firmware monitor WATER riêng, V15 dataSource và chẩn đoán
 phao/flow, xem [chương23](../book/CHAPTER_23_WATER_NODE_MONITOR.md). Chưa có
 WATER live được nghiệm thu hoặc điều khiển PUMP01 từ telemetry nước v2.
+V16 thêm cảnh báo nước và xác nhận đã xem, [chương 24](../book/CHAPTER_24_WATER_ALERTS.md):
+hai mẫu fresh liên tiếp, đợt riêng theo nguồn; không dispatch command, không
+coi flow 0 là lỗi bơm. Overview/Event Log/Safety chưa hợp nhất water alerts.
 
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.

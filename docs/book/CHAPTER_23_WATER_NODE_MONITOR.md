@@ -249,3 +249,8 @@ Nếu kết nối/publish liên tục mỗi 5 giây, mỗi node gửi khoảng 1
 AWS phụ thuộc usage và biểu giá hiện hành, credit không đồng nghĩa không có
 chi phí. Giữ Budget và dừng simulator khi kết thúc thử; không tự bật logging
 chi tiết hoặc triển khai server mới chỉ để chạy monitor này.
+
+
+Bước kế tiếp đã có: [chương 24 — Cảnh báo trạm nước](CHAPTER_24_WATER_ALERTS.md).
+V16 bổ sung hồ sơ LOW/fault và đã xem, không đổi firmware hoặc thêm bơm no-flow
+protection. Các nhận xét central alert chưa làm ở chương này là mốc trước V16.

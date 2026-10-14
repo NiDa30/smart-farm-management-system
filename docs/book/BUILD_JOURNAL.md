@@ -1,5 +1,20 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — A2: Trung tâm Cảnh báo trạm nước
+
+V16 thêm cursor/state/episode cảnh báo nước, parser/router/store cập nhật cùng
+transaction. Hai mẫu fresh liên tiếp theo boot/sequence/time/source mới mở hoặc
+hết; duplicate/history/out-of-order/missing không tự đóng đợt. LOW/HIGH bất
+nhất và SENSOR_FAULT tách riêng, flow 0 không bị gán lỗi bơm. Giữ nguồn mô phỏng
+và vật lý riêng, ghi packet mở/hết và giờ nhận. Xác nhận đã xem idempotent,
+giữ ghi chú đầu, API riêng và UI trong Trung tâm Cảnh báo → Trạm nước.
+
+132 backend tests, 17 browser alerts (9 cũ + 8 nước), 4 unit frontend và
+lint/build đạt; nâng V15→V16 giữ mẫu cũ và không backfill cảnh báo. Không sửa
+firmware/provisioning hoặc gửi AWS. Xem [chương 24](CHAPTER_24_WATER_ALERTS.md)
+và [báo cáo](../implementation/WATER_ALERTS_REPORT.md) cho smoke process/DB.
+
+
 ## 14/10/2026 — A2 monitoring: WATER firmware và nguồn dữ liệu
 
 Thêm firmware/water-node độc lập: LOW/HIGH debounce và lỗi bất nhất, ISR đếm

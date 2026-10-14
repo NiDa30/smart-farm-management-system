@@ -1,12 +1,14 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {AlertTriangle,RefreshCw} from 'lucide-react';
+import {WaterAlertCenter} from './WaterAlertCenter';
 import {AlertAcknowledgement} from './AlertAcknowledgement';
 import {alertTitle,parseAlert,parseAlerts,type SensorAlert} from './alertApi';
-export const IoTAlertCenter:React.FC=()=>{
+const SensorAlertPanel:React.FC<{onBusyChange:(busy:boolean)=>void}>=({onBusyChange})=>{
   const [alerts,setAlerts]=useState<SensorAlert[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(false);
   const [refresh,setRefresh]=useState(0),[filter,setFilter]=useState<'all'|'active'|'cleared'>('all'),[seen,setSeen]=useState('all');
   const [selected,setSelected]=useState<SensorAlert|null>(null),[busy,setBusy]=useState(false);
   const [actionError,setActionError]=useState(''),[needsCheck,setNeedsCheck]=useState(false),[success,setSuccess]=useState(false);
+  useEffect(()=>onBusyChange(busy),[busy,onBusyChange]);
   const version=useRef(0),inFlight=useRef(false);
   useEffect(()=>{
     if(busy)return;
@@ -63,7 +65,7 @@ export const IoTAlertCenter:React.FC=()=>{
     </div>
     {loading&&<p role="status">Đang tải cảnh báo…</p>}
     {error&&<p role="alert" className="text-rose-700">Không tải được cảnh báo. Dữ liệu trước đó có thể đã cũ; thao tác xác nhận tạm khóa.</p>}
-    {selected&&<AlertAcknowledgement key={selected.id} alert={selected} busy={busy} unavailable={error} needsCheck={needsCheck} error={actionError} success={success}
+    {selected&&<AlertAcknowledgement key={selected.id} alert={selected} title={alertTitle(selected)} busy={busy} unavailable={error} needsCheck={needsCheck} error={actionError} success={success}
       onSave={act} onCheck={()=>void act()} onClose={()=>{if(!inFlight.current)setSelected(null);}} />}
     {!loading&&!error&&!shown.length&&<p>Chưa có cảnh báo trong bộ lọc này.</p>}
     {!loading&&<div className="space-y-3" aria-label="Danh sách cảnh báo">{shown.map(alert=><article key={alert.id} className={`border rounded-xl p-4 space-y-2 ${alert.clearedAt?'bg-white':'bg-amber-50'}`}>
@@ -75,5 +77,16 @@ export const IoTAlertCenter:React.FC=()=>{
       <button disabled={busy} onClick={()=>open(alert)} className="border rounded px-3 py-1 disabled:opacity-40">Chi tiết cảnh báo #{alert.id}</button>
     </article>)}</div>}
     <p className="text-xs text-slate-500">Tự tải mỗi 5 giây. Tối đa 100 cảnh báo, ưu tiên đang hoạt động rồi chưa xem. Bộ lọc áp dụng cho danh sách đã tải; không phải tổng toàn bộ lịch sử. Chi tiết đang mở được giữ khi cảnh báo ra khỏi danh sách.</p>
+  </div>;
+};
+
+export const IoTAlertCenter:React.FC=()=>{
+  const [tab,setTab]=useState<'sensor'|'water'>('sensor'),[busy,setBusy]=useState(false);
+  return <div className="space-y-4">
+    <nav aria-label="Nhóm cảnh báo" className="flex gap-2">
+      <button disabled={busy} aria-pressed={tab==='sensor'} onClick={()=>setTab('sensor')} className="border rounded px-4 py-2 aria-pressed:bg-emerald-100 disabled:opacity-40">Cảm biến môi trường</button>
+      <button disabled={busy} aria-pressed={tab==='water'} onClick={()=>setTab('water')} className="border rounded px-4 py-2 aria-pressed:bg-emerald-100 disabled:opacity-40">Trạm nước</button>
+    </nav>
+    {tab==='sensor'?<SensorAlertPanel onBusyChange={setBusy}/>:<WaterAlertCenter onBusyChange={setBusy}/>}
   </div>;
 };

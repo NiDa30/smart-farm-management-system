@@ -58,3 +58,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Node vật lý và kênh nước v2](CHAPTER_22_NODES_AND_WATER_CHANNELS.md): nền A1, registry/UI và ngữ nghĩa dữ liệu, chưa có WATER firmware live.
 
 - [Trạm nước độc lập trên Wokwi](CHAPTER_23_WATER_NODE_MONITOR.md): firmware/pulse flow, project và certificate riêng; live còn chờ.
+
+- [Cảnh báo trạm nước](CHAPTER_24_WATER_ALERTS.md): hai mẫu mới, hồ sơ/nguồn và xác nhận đã xem; không điều khiển bơm.

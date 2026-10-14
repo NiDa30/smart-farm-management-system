@@ -79,7 +79,7 @@ cầu mà vẫn giữ ranh giới hợp đồng.
 | Manual ON/OFF/timer, ACK/status; rule đất khô, cooldown, lịch tuần giờ VN | Dispatcher hiện giới hạn một PUMP01, chưa hỗ trợ 4 van dùng chung bơm |
 | Registry sensor/khu vực, history/CSV, hai cảnh báo ngưỡng và xác nhận đã xem | Thêm registry không tự provision certificate hay flash firmware |
 | A1/V14: nhiều node khai báo, channel/actuator binding, telemetry nước v2 và Sensor Realtime → Node & trạm nước | Có LOW/HIGH/FLOW/nhiệt nước và contract pressure; chưa có WATER firmware live hoặc control nhiều bơm |
-| A2 monitoring: firmware WATER độc lập, LOW/HIGH/FLOW, source badge và project/certificate helper riêng | Chưa nghiệm thu AWS/Wokwi mới; chưa flow-based pump shutdown hoặc central water alert |
+| A2 monitoring: firmware WATER độc lập, LOW/HIGH/FLOW, source badge và project/certificate helper riêng | Có V16 central water alerts/đã xem; chưa nghiệm thu AWS/Wokwi mới hoặc flow-based pump shutdown |
 | Relay/LED tải NO + phao GPIO27, firmware opt-in WATER_LOW | Code/build/native/API tests đã có; relay/phao Wokwi mới chưa nghiệm thu live |
 
 Giữ các topic `smartfarm/FARM001/ENV01/telemetry` và
@@ -295,7 +295,9 @@ và UI khai báo, xem [chương22](../book/CHAPTER_22_NODES_AND_WATER_CHANNELS.m
 Đã có firmware monitor WATER riêng và helper provisioning do người dùng
 chủ động chạy theo [chương23](../book/CHAPTER_23_WATER_NODE_MONITOR.md), chưa
 fleet onboarding tự động. A2 monitoring có code/build nhưng live/A0 cần đối
-chiếu; liên kết pump ON, flow fault/grace/cutoff và central alert vẫn chờ.
+chiếu; V16 có central water alert LOW/fault, source riêng và đã xem
+([chương 24](../book/CHAPTER_24_WATER_ALERTS.md)); chưa live. Liên kết pump ON,
+flow fault/grace/cutoff, water history/consumption vẫn chờ.
 A3–A6 còn trong kế hoạch. Không tự tạo Jira tasks hay AWS
 resources từ bảng backlog này.
 

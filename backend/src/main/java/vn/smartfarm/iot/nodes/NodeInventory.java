@@ -18,7 +18,8 @@ public class NodeInventory {
     public record Snapshot(String farmId,Instant asOf,List<Node> nodes) {}
     private final JdbcTemplate jdbc;
     private final SensorRegistry sensors;
-    public NodeInventory(JdbcTemplate jdbc,SensorRegistry sensors) {this.jdbc=jdbc;this.sensors=sensors;}
+    private final vn.smartfarm.iot.alerts.WaterAlerts waterAlerts;
+    public NodeInventory(JdbcTemplate jdbc,SensorRegistry sensors,vn.smartfarm.iot.alerts.WaterAlerts waterAlerts) {this.jdbc=jdbc;this.sensors=sensors;this.waterAlerts=waterAlerts;}
 
     @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
     public Snapshot snapshot() {
@@ -106,6 +107,7 @@ public class NodeInventory {
             INSERT INTO channel_sample(sample_id,node_id,channel_id,quality,number_value,boolean_value,calibration_version) VALUES(?,?,?,?,?,?,?)
             """,rows.getFirst(),packet.deviceId(),reading.channelId(),reading.quality(),reading.value() instanceof Number?reading.value():null,
                 reading.value() instanceof Boolean?reading.value():null,reading.calibrationVersion());
+        waterAlerts.observe(packet,rows.getFirst());
         return true;
     }
 }

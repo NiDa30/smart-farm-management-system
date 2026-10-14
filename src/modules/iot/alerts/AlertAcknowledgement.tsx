@@ -1,14 +1,14 @@
 import React,{useState} from 'react';
-import {alertTitle,type SensorAlert} from './alertApi';
+import {type SensorAlert} from './alertApi';
 interface Props {
-  alert:SensorAlert;busy:boolean;unavailable:boolean;needsCheck:boolean;error:string;success:boolean;
+  alert:Pick<SensorAlert,'id'|'clearedAt'|'acknowledgedAt'|'acknowledgementNote'>;title:string;busy:boolean;unavailable:boolean;needsCheck:boolean;error:string;success:boolean;
   onSave:(note:string)=>Promise<boolean>;onCheck:()=>void;onClose:()=>void;
 }
-export const AlertAcknowledgement:React.FC<Props>=({alert,busy,unavailable,needsCheck,error,success,onSave,onCheck,onClose})=>{
+export const AlertAcknowledgement:React.FC<Props>=({alert,title,busy,unavailable,needsCheck,error,success,onSave,onCheck,onClose})=>{
   const [note,setNote]=useState('');
   const unsaved=!!note.trim()&&note.trim()!==alert.acknowledgementNote;
   return <section aria-label="Xác nhận cảnh báo" className="bg-white border border-emerald-300 rounded-xl p-5 space-y-3">
-    <div className="flex justify-between gap-3"><h2 className="font-semibold">{alertTitle(alert)} · #{alert.id}</h2><button disabled={busy} onClick={onClose} className="border rounded px-3 py-1">Đóng chi tiết</button></div>
+    <div className="flex justify-between gap-3"><h2 className="font-semibold">{title} · #{alert.id}</h2><button disabled={busy} onClick={onClose} className="border rounded px-3 py-1">Đóng chi tiết</button></div>
     <p>Điều kiện cảm biến: {alert.clearedAt?'Đã trở về bình thường':'Đang cảnh báo'}</p>
     <p>Xác nhận đã xem: {alert.acknowledgedAt?new Date(alert.acknowledgedAt).toLocaleString('vi-VN'):'Chưa xem'}</p>
     {alert.acknowledgedAt&&<p className="whitespace-pre-wrap break-words">Ghi chú đã lưu: {alert.acknowledgementNote??'Không có ghi chú'}</p>}

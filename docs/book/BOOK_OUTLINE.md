@@ -42,3 +42,5 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 22. [Node vật lý và kênh nước](CHAPTER_22_NODES_AND_WATER_CHANNELS.md): A1 có code/tests; tiếp tục A2 firmware và nghiệm thu trạm nước.
 
 23. [WATER monitor độc lập](CHAPTER_23_WATER_NODE_MONITOR.md): A2 monitoring có code/build/helpers, provenance và chẩn đoán; chưa hoàn thành pump no-flow protection.
+
+24. [Cảnh báo trạm nước](CHAPTER_24_WATER_ALERTS.md): đợt LOW/fault, bằng chứng packet, source riêng và ghi chú idempotent.

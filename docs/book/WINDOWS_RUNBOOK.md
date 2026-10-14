@@ -173,3 +173,12 @@ firmware. Quy tắc Tự động hóa → Lịch tưới theo tuần, sửa khi 
 còn run. Lưu không bật rule; muốn thử phải bật rule có chủ đích. Giờ VN cố định,
 hai mẫu đất khô mới trong khung mới được tính; backend phải chạy. Sau restart
 rule lại tạm dừng. Xem [chương20](CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md).
+
+
+### Trung tâm Cảnh báo trạm nước (V16)
+
+Sau khi pull, restart backend để Flyway áp dụng V16, giữ PostgreSQL/config cũ.
+Chỉ thử nước có thể dùng `SMARTFARM_CONTROL_ENABLED=false bash tools/backend/run_backend_windows.sh`.
+Mở Trung tâm Cảnh báo → Trạm nước, đợi hai packet mới; flow 0 không tự báo mất
+dòng. Không cần flash lại cho thay đổi backend/UI này. Đối chiếu
+[chương 24](CHAPTER_24_WATER_ALERTS.md) trước thử phao/lỗi/đã xem.
