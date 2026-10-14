@@ -77,3 +77,14 @@ new runs store a settings snapshot, older runs keep null metadata. Saving settin
 never dispatches MQTT or enables watering. See [chapter 17](../docs/book/CHAPTER_17_WATERING_SETTINGS.md)
 and the [handoff](../docs/implementation/WATERING_SETTINGS_REPORT.md) for bounds,
 Windows restart and verification. Alert thresholds remain independent.
+
+
+## Read-only safety observations
+
+GET `/api/v1/safety` reads MQTT/control observations, ENV01 sensor/PUMP01 status,
+rule/settings, unresolved command totals, ten recent problem commands and fifty
+relay changes. It must not expire commands, retry publish or pause rules.
+DB reads use a read-only REPEATABLE_READ snapshot; MQTT lifecycle is separate.
+See [chapter 18](../docs/book/CHAPTER_18_SAFETY_OVERVIEW.md) and the
+[handoff](../docs/implementation/SAFETY_OVERVIEW_REPORT.md). This does not verify
+firmware, physical interlocks or gateway/OTA health. No new IAM or migration.

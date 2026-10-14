@@ -23,6 +23,10 @@ hợp API/UI Event Log, không phải bằng chứng AWS hoặc GPIO.
 đã lưu cấu hình và đọc lại sau restart backend; MQTT/control tắt. Ngưỡng mới
 trên Windows/AWS/Wokwi vẫn cần xác nhận, không thay bằng chứng V10.
 
+Đợt trang an toàn đạt **78 backend tests**, 9 browser fixtures safety, 14 unit
+frontend và lint/build, không skip. Smoke App/API/PostgreSQL chỉ GET và đối chiếu
+DB giữ nguyên lệnh/run đạt. Không có kiểm chứng GPIO hay sự cố AWS/Wokwi live mới.
+
 Người dùng đã nói “đã hoạt động” sau bước đất khô bật tự động; ghi nhận là
 user-reported một phần, chưa có timestamp/commandId/ACK/sequence để nghiệm thu
 trọn sáu ca. OFF sớm, cooldown, timer và restart giữa run vẫn chờ xác nhận.
@@ -40,6 +44,7 @@ Lượt helper cũ 4 đạt/37 skip là lịch sử, không thay kết quả ki�
 | Giám sát thiết bị | API/UI đọc registry, số đo, status, cảnh báo và lifecycle MQTT backend; cloud unit/integration/browser/smoke đạt | Chưa subscribe heartbeat mọi sensor; không chứng minh online/offline vật lý. Windows/AWS live còn chờ |
 | Tổng quan IoT | Snapshot registry/monitoring/alert/rule/events thật; cloud 64 backend, 7 dashboard browser và 9 unit frontend đạt; full-app smoke đạt | MQTT/control tắt trong cloud; chưa nghiệm thu Windows/AWS live cho dashboard |
 | Cài đặt tưới V11 | API phiên bản, giới hạn, khóa sửa khi active, snapshot run; backend/browser và smoke lưu/đọc sau restart đạt | Một rule, một backend process; không cấu hình ngưỡng alert; chưa nghiệm thu ngưỡng mới trên AWS/Wokwi |
+| An toàn Fail-Safe & Edge | API/UI chỉ đọc, bản cũ/current tách biệt, queue toàn bộ và reason/history thật; cloud integration/browser/smoke đạt | Không xác minh firmware thực nạp, GPIO, dry-run, OTA, NVS; chưa thử live Windows/AWS |
 | NVS và phục hồi mạng | Restart simulation từng cần thiết khi gateway restart không phục hồi phiên | **NVS chưa làm**; restart mất RAM, không phải bằng chứng reconnect thành công |
 
 Tests với MQTT mock, API fixture, dữ liệu SQL thử hoặc native safety assertions

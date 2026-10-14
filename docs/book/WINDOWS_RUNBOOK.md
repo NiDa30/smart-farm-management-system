@@ -129,3 +129,12 @@ an toàn và lý do sự cố chưa gửi. Firmware khởi động OFF; restart 
 luồng reconnect đã phục hồi hoặc lý do offline đã được lưu. **Lưu NVS chưa làm.**
 Lịch sử đã nhận và lưu PostgreSQL khác với trạng thái RAM trên ESP32; không suy
 ra rằng dữ liệu chưa gửi sẽ tự xuất hiện sau reboot.
+
+
+## Trang An toàn Fail-Safe & Edge mới
+
+Sau khi pull và restart backend, mở IoT → An toàn Fail-Safe & Edge. Trang dùng
+API thật và chỉ đọc; không tạo lệnh reset/ON/OFF khi xem. Không cần đổi IAM,
+build firmware hoặc migration mới sau V11 cho trang này. Giữ backend/frontend
+ở các terminal riêng như trên. Trạng thái đã cũ hiện Chưa xác định, không tự
+coi OFF hoặc không khóa. Chi tiết ở [chương 18](CHAPTER_18_SAFETY_OVERVIEW.md).

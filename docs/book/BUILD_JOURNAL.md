@@ -1,5 +1,26 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — An toàn Fail-Safe & Edge bỏ dữ liệu mẫu
+
+Từ 814f0a4, thay trang rules/gateway/OTA mẫu bằng GET /api/v1/safety. Không
+báo OTA thành công bằng timer, không giả lưu lượng/mực nước hoặc flash usage.
+Snapshot DB read-only REPEATABLE_READ, đọc rule/settings V11 và stateReason
+đã nhận. Không gọi commands() có side effect expire, không pause/publish.
+
+Tổng queue độc lập10 problems preview/20 commands cũ; overdue chỉ tính toán,
+không đổi trạng thái DB. UI15s tách trạng thái hiện tại với bản cũ, thiếu status
+không suy OFF/không khóa. API lỗi bỏ khẳng định current; polling không hồi sinh
+mẫu cũ. Ba nút mở Control/Automation/Events chỉ navigate. Reason không được suy
+ra từ nút bấm, không hứa MQTT/device online hoặc GPIO thực thi từ snapshot.
+
+78 backend tests đạt, thêm6 safety integration;9 browser fixtures và14 unit client
+đạt không skip; lint/build đạt. Smoke App/API/PostgreSQL thật trong safety_smoke,
+MQTT/control tắt, seed mất kết nối cũ và run chưa OFF. Sau xem trang, DB vẫn giữ
+PUBLISH_UNCERTAIN/STOP_UNCONFIRMED/active command. Không command phát ra cloud.
+Chương18 và SAFETY_OVERVIEW_REPORT ghi kiểm tra, cách chạy Windows và giới hạn.
+Không migration/IAM/firmware/dependency mới; AWS/Wokwi live còn chờ nghiệm thu.
+
+
 ## 14/10/2026 — Cài đặt tưới và bảo vệ bản nháp
 
 Tiếp tục từ b9cc51b. Thêm V11 giữ mặc định 30/35/20/60 và cấu hình có phiên bản.

@@ -43,3 +43,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Tổng quan IoT thật](CHAPTER_16_IOT_OVERVIEW.md)
 
 - [Cài đặt quy tắc tưới có phiên bản](CHAPTER_17_WATERING_SETTINGS.md)
+
+- [Quan sát an toàn từ dữ liệu thật](CHAPTER_18_SAFETY_OVERVIEW.md)
