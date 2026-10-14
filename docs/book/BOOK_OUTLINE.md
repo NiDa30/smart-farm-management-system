@@ -28,3 +28,5 @@ Mỗi chương gồm mục tiêu, điều kiện đầu vào, lý do chọn gi�
 Chương thực hành bổ sung: [17 — Cài đặt tưới có phiên bản](CHAPTER_17_WATERING_SETTINGS.md), lưu cấu hình, xung đột hai tab và giữ bằng chứng theo run.
 
 Chương thực hành bổ sung: [18 — Quan sát an toàn](CHAPTER_18_SAFETY_OVERVIEW.md), phân biệt bản tin cũ, lệnh chưa rõ kết quả và khả năng kiểm chứng firmware.
+
+Chương thực hành bổ sung: [19 — Đã xem cảnh báo](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md), metadata độc lập với ngưỡng, xử lý hai tab và kết quả chưa xác định.

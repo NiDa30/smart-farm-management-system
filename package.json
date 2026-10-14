@@ -13,7 +13,8 @@
     "test:events": "playwright test --config playwright.events.config.ts",
     "test:monitoring": "playwright test --config playwright.monitoring.config.ts",
     "test:dashboard": "playwright test --config playwright.dashboard.config.ts",
-    "test:safety": "playwright test --config playwright.safety.config.ts"
+    "test:safety": "playwright test --config playwright.safety.config.ts",
+    "test:alerts": "playwright test --config playwright.alerts.config.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

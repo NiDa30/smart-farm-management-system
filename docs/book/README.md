@@ -45,3 +45,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Cài đặt quy tắc tưới có phiên bản](CHAPTER_17_WATERING_SETTINGS.md)
 
 - [Quan sát an toàn từ dữ liệu thật](CHAPTER_18_SAFETY_OVERVIEW.md)
+
+- [Xác nhận đã xem cảnh báo và ghi chú](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md)

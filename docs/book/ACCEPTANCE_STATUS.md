@@ -27,6 +27,11 @@ trên Windows/AWS/Wokwi vẫn cần xác nhận, không thay bằng chứng V10.
 frontend và lint/build, không skip. Smoke App/API/PostgreSQL chỉ GET và đối chiếu
 DB giữ nguyên lệnh/run đạt. Không có kiểm chứng GPIO hay sự cố AWS/Wokwi live mới.
 
+Đợt xác nhận đã xem V12 đạt **88 backend tests**, 9 browser cảnh báo, 8 Event
+Log và 8 Dashboard, 17 unit frontend và lint/build. Smoke lưu/đọc sau restart
+trên App/API/PostgreSQL giữ timestamp/note/điều kiện active đạt; MQTT/control
+tắt. Không có phép thử AWS/Wokwi live mới trong đợt metadata này.
+
 Người dùng đã nói “đã hoạt động” sau bước đất khô bật tự động; ghi nhận là
 user-reported một phần, chưa có timestamp/commandId/ACK/sequence để nghiệm thu
 trọn sáu ca. OFF sớm, cooldown, timer và restart giữa run vẫn chờ xác nhận.
@@ -45,6 +50,7 @@ Lượt helper cũ 4 đạt/37 skip là lịch sử, không thay kết quả ki�
 | Tổng quan IoT | Snapshot registry/monitoring/alert/rule/events thật; cloud 64 backend, 7 dashboard browser và 9 unit frontend đạt; full-app smoke đạt | MQTT/control tắt trong cloud; chưa nghiệm thu Windows/AWS live cho dashboard |
 | Cài đặt tưới V11 | API phiên bản, giới hạn, khóa sửa khi active, snapshot run; backend/browser và smoke lưu/đọc sau restart đạt | Một rule, một backend process; không cấu hình ngưỡng alert; chưa nghiệm thu ngưỡng mới trên AWS/Wokwi |
 | An toàn Fail-Safe & Edge | API/UI chỉ đọc, bản cũ/current tách biệt, queue toàn bộ và reason/history thật; cloud integration/browser/smoke đạt | Không xác minh firmware thực nạp, GPIO, dry-run, OTA, NVS; chưa thử live Windows/AWS |
+| Xác nhận đã xem cảnh báo V12 | ACK/note idempotent riêng condition, Event Log người xem, row-lock/concurrency/migration/browser và restart smoke đạt | Chưa actor/auth, edit/unack/email; list100, GET theo ID; Windows/Wokwi mới chưa thử |
 | NVS và phục hồi mạng | Restart simulation từng cần thiết khi gateway restart không phục hồi phiên | **NVS chưa làm**; restart mất RAM, không phải bằng chứng reconnect thành công |
 
 Tests với MQTT mock, API fixture, dữ liệu SQL thử hoặc native safety assertions

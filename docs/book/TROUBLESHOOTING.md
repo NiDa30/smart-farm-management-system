@@ -189,3 +189,15 @@ phải báo cáo lỗi AWS của người dùng.
 - Đã sửa cooldown nhưng vẫn nghỉ đến giờ cũ: đây là chủ đích giữ deadline đã
   xác nhận. Cấu hình mới dùng cho lần chạy sau, không rút ngắn mốc đang có.
 - Alert và tưới khác ngưỡng: hai tính năng độc lập. Xem [chương 17](CHAPTER_17_WATERING_SETTINGS.md).
+
+
+## V12: note dạng số vẫn được nhận dù nghĩ đã bật JSON strict
+
+Kiểm tra API ban đầu gửi note123 và nhận200 vì Jackson tự ép số sang String.
+Không dùng String DTO rồi mặc định mọi coercion đã bị tắt; trường note được
+kiểm tra kiểu JSON rõ ràng, chỉ nhận chuỗi/null. Unknown fields vẫn bị chặn
+bằng request record. Rerun toàn bộ88 tests backend đạt, không skip.
+
+Nếu ACK trả409 hoặc mất response, mở Đối chiếu trạng thái để đọc theo ID.
+Không ghi đè note đầu hoặc coi đã xem là đã bình thường. Chi tiết ở
+[chương19](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md).

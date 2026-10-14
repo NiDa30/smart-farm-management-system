@@ -88,3 +88,15 @@ DB reads use a read-only REPEATABLE_READ snapshot; MQTT lifecycle is separate.
 See [chapter 18](../docs/book/CHAPTER_18_SAFETY_OVERVIEW.md) and the
 [handoff](../docs/implementation/SAFETY_OVERVIEW_REPORT.md). This does not verify
 firmware, physical interlocks or gateway/OTA health. No new IAM or migration.
+
+
+## Alert acknowledgement (V12)
+
+GET `/api/v1/alerts/{id}` reads an incident beyond the latest100 list.
+PUT `/api/v1/alerts/{id}/acknowledgement` accepts optional text note (<=500),
+locks the incident and preserves the first acknowledgement. Identical retries
+are idempotent; different note or initial acknowledgement after clear returns409.
+It does not clear conditions, change automation/control or send MQTT/email.
+Event Log records ALERT_ACKNOWLEDGED at backend time with no device correlation.
+No authenticated actor is claimed. See [chapter19](../docs/book/CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md)
+and the [handoff](../docs/implementation/ALERT_ACKNOWLEDGEMENT_REPORT.md).

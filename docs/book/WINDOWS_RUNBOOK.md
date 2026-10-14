@@ -138,3 +138,11 @@ API thật và chỉ đọc; không tạo lệnh reset/ON/OFF khi xem. Không c�
 build firmware hoặc migration mới sau V11 cho trang này. Giữ backend/frontend
 ở các terminal riêng như trên. Trạng thái đã cũ hiện Chưa xác định, không tự
 coi OFF hoặc không khóa. Chi tiết ở [chương 18](CHAPTER_18_SAFETY_OVERVIEW.md).
+
+
+## Xác nhận đã xem cảnh báo V12
+
+Sau pull/restart backend, Flyway thêm metadata V12, giữ incident/state cũ.
+Không cần đổi IAM/build firmware hoặc tạo lại database. Trung tâm Cảnh báo
+→ Chi tiết → ghi chú tùy chọn → Xác nhận đã xem. ACK không clear, không gửi
+lệnh. Nếu kết quả chưa rõ, dùng Đối chiếu trạng thái. Xem [chương 19](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md).

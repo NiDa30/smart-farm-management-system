@@ -1,5 +1,10 @@
 # Cảnh báo ngưỡng từ dữ liệu thật
 
+**Cập nhật V12:** nay có xác nhận đã xem và ghi chú riêng. Thao tác không đóng
+cảnh báo; xem [chương 19](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md). Các ngưỡng và
+bằng chứng cảm biến dưới đây giữ nguyên.
+
+
 **Người dùng đã xác nhận cảnh báo đất thấp và nhiệt độ cao mở, đóng đúng
 ngưỡng.** Đây là xác nhận của người dùng, không phải lần kiểm tra live của
 phiên biên tập. Quy tắc tưới tự động chưa nghiệm thu đầy đủ.

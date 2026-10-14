@@ -35,6 +35,10 @@ public class EventLog {
             device_id,NULL,'CLEARED',type,cleared_value,NULL::uuid,NULL::bigint
             FROM sensor_alert WHERE cleared_at IS NOT NULL
           UNION ALL
+          SELECT 'alert-seen:'||id,acknowledged_at,NULL::timestamptz,acknowledged_at,'ALERT','ALERT_ACKNOWLEDGED',
+            device_id,NULL,'ACKNOWLEDGED',type,NULL::double precision,NULL::uuid,NULL::bigint
+            FROM sensor_alert WHERE acknowledged_at IS NOT NULL
+          UNION ALL
           SELECT 'command:'||c.command_id,c.issued_at,NULL::timestamptz,c.issued_at,'COMMAND','COMMAND_CREATED',
             'PUMP01',c.action,c.state,c.error_code,NULL::double precision,c.command_id,
             links.run_id FROM pump_command c LEFT JOIN run_links links ON links.command_id=c.command_id
@@ -90,7 +94,7 @@ public class EventLog {
         try {
             if (value.length()>512) throw new IllegalArgumentException();
             String[] parts=new String(Base64.getUrlDecoder().decode(value),StandardCharsets.UTF_8).split("\n",-1);
-            if (parts.length!=2 || !parts[1].matches("(?:alert-open|alert-clear|command|ack|device|run):[a-zA-Z0-9-]{1,40}")) throw new IllegalArgumentException();
+            if (parts.length!=2 || !parts[1].matches("(?:alert-open|alert-clear|alert-seen|command|ack|device|run):[a-zA-Z0-9-]{1,40}")) throw new IllegalArgumentException();
             return new Cursor(Instant.parse(parts[0]),parts[1]);
         } catch (IllegalArgumentException | java.time.DateTimeException error) { throw bad("Invalid cursor"); }
     }

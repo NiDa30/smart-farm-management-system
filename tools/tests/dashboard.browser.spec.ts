@@ -51,3 +51,11 @@ test('error preserves snapshot without current-state claims and recovers',async(
 test('invalid response shows an error instead of mock metrics',async({page})=>{
  const state=await fixtures(page);state.value={monitoring:{devices:[]}};await page.goto('/');await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByRole('article',{name:'Cảm biến đã đăng ký',exact:true})).toHaveCount(0);
 });
+test('acknowledged alert remains in active total and acknowledgement event has human label',async({page})=>{
+ const state=await fixtures(page),value=initial();
+ value.recentEvents=[{id:'alert-seen:1',eventAt:at,sourceAt:null,recordedAt:at,category:'ALERT',type:'ALERT_ACKNOWLEDGED',deviceId:'ENV01',action:null,state:'ACKNOWLEDGED',reason:'LOW_SOIL',value:null,commandId:null,runId:null}];
+ state.value=value;await page.goto('/');
+ await expect(page.getByRole('article',{name:'Cảnh báo đang mở',exact:true})).toContainText('6');
+ await expect(page.getByText(/ENV01 · Xác nhận đã xem cảnh báo · Đã xem cảnh báo/)).toBeVisible();
+ await expect(page.getByText('Đã xem cảnh báo',{exact:false})).toBeVisible();
+});

@@ -1,5 +1,27 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — Xác nhận đã xem và ghi chú cảnh báo
+
+Từ1138a75 thêm V12, GET alert theo ID và PUT acknowledgement. Transaction row
+lock giữ ghi chú/timestamp đầu tiên; retry đúng note trả cùng kết quả, note
+khác409. ACK không thay clear/state watermark/rule/relay. Incident tái phát
+không kế thừa ACK. Không gán actor từ AppContext vì backend chưa authentication.
+
+UI chi tiết độc lập list100, giữ draft qua polling, tách bộ lọc condition/seen.
+Unknown outcome khóa gửi lại và yêu cầu GET đối chiếu. Cả note khác ở tab khác,
+clear khi thao tác hoặc rơi khỏi100 đều có đường đọc lại; không success giả.
+EventLog có ALERT_ACKNOWLEDGED dùng giờ backend, không giả timestamp/correlation
+thiết bị. Dashboard/monitoring vẫn đếm tất cả incident active.
+
+Lượt đầu88 tests có1 lỗi: Jackson ép123 thành String. Kiểm tra kiểu JSON trường
+note sửa đúng lỗi, giữ validation unknown fields. Browser đầu trượt labelselect
+và thứ tự event text; sửa aria-label/selector và chạy lại. Cuối88 backend,
+9 browser alert+8events+8dashboard,17 unit frontend đạt không skip; lint/build đạt.
+Smoke App/API/PostgreSQL lưu ACK, giữ active/count2/event, metadata còn nguyên sau
+restart. MQTT/control tắt, không AWS command; Windows/Wokwi bản mới còn chờ.
+Chương19 và ALERT_ACKNOWLEDGEMENT_REPORT ghi phạm vi, bằng chứng và cách cập nhật.
+
+
 ## 14/10/2026 — An toàn Fail-Safe & Edge bỏ dữ liệu mẫu
 
 Từ 814f0a4, thay trang rules/gateway/OTA mẫu bằng GET /api/v1/safety. Không

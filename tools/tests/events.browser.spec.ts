@@ -72,3 +72,10 @@ test('a delayed response for old filters cannot replace current results',async({
  await expect(page.locator('tbody tr')).toHaveCount(1);
  await expect(page.getByText('Đã gửi, chờ ACK',{exact:true})).toHaveCount(0);
 });
+test('human alert acknowledgement is distinct from device command ACK',async({page})=>{
+ const state=await fixtures(page);state.items=[{...event('alert-seen:1'),category:'ALERT',type:'ALERT_ACKNOWLEDGED',deviceId:'ENV01',state:'ACKNOWLEDGED',sourceAt:null,recordedAt:at,action:null,reason:'LOW_SOIL',value:null,commandId:null,runId:null}];
+ await page.goto('/');await expect(page.getByText('Xác nhận đã xem cảnh báo',{exact:true})).toBeVisible();
+ await expect(page.getByText('Đã xem cảnh báo',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Chi tiết alert-seen:1',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Chi tiết sự kiện'})).toContainText('Thời gian thiết bị: Không được lưu');
+});
