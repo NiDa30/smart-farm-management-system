@@ -4,8 +4,29 @@
 > **Dự án**: Smart Farm Management System  
 > **Phân hệ**: 04 — IoT & Tự Động Hóa (IoT & Automation)  
 > **Vị trí tài liệu**: `docs/context/IOT_CONTEXT.md`  
-> **Trạng thái**: Production Ready / Active Subsystem Context  
+> **Trạng thái**: Đặc tả mục tiêu lịch sử; có cập nhật định hướng nông nghiệp ngày 14/10/2026, chưa phải xác nhận Production Ready
 > **Đối tượng sử dụng**: AI Pair Programmers, Senior Software Engineers, Solution Architects, Embedded/Firmware Developers, QA Engineers.
+
+
+## Cập nhật định hướng 14/10/2026
+
+Ưu tiên IoT phục vụ cây trồng/tưới trước, sau đó chăn nuôi và camera. Đọc
+[lộ trình thiết bị nông nghiệp](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md)
+để biết 18 nhóm node, bố trí 100 cây / 4 dãy, trạm nước, danh tính/capabilities và
+backlog A0–A6. Đây là ý tưởng đã cập nhật, chưa phải các thiết bị mới đã chạy.
+
+Nền code hiện tại `9730558`: ENV01 và PUMP01 cùng một ESP32; AWS IoT TLS →
+Spring Boot/PostgreSQL → React polling. Relay/phao opt-in có code/tests cloud,
+Wokwi live mới còn chờ. Topic hiện hành `smartfarm/{farmId}/{deviceId}/...`;
+không có segment `dien`. Dùng `PUMP01/command`, `PUMP01/ack`, `PUMP01/status`.
+Không đổi tên PUMP01 thành controller IRRIGATION01 chỉ vì ý tưởng có tên này.
+
+Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
+Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.
+Đối chiếu [hợp đồng đang dùng](../../contracts/iot/v1/README.md),
+[bảng nghiệm thu](../book/ACCEPTANCE_STATUS.md) và báo cáo implementation
+trước khi code. Nếu mâu thuẫn, giữ contract/source hiện hành; thiết kế migration
+trước khi áp dụng mục tiêu mới.
 
 ---
 

@@ -1,5 +1,22 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — Cập nhật ý tưởng các node nông nghiệp
+
+Nguồn là bản ý tưởng người dùng gửi: 18 nhóm thiết bị, ví dụ 100 cây dừa / 4 dãy,
+trạm nước trung tâm, môi trường, cho ăn/nước uống/chuồng và camera riêng.
+Đã lập [lộ trình](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md), phân biệt nền
+9730558 với ENV/SOIL/WATER/IRRIGATION/FEED mục tiêu. Mỗi dãy 3 điểm đất / 1 van /
+1 flow là bố trí đề xuất, chưa có dữ liệu/Thing/board tương ứng.
+
+Ưu tiên A0 nghiệm thu relay/phao → A1 model/channel/contracts → A2 trạm nước
+→ A3 tưới từng dãy → A4 mưa/ánh sáng → chăn nuôi/camera/mở rộng. Giữ PUMP01,
+contract v1 và fail-safe cũ; không đổi topic hoặc suy ra phao nhị phân thành
+phần trăm bồn. Ghi rõ video đi qua media subsystem, không MQTT; flow/áp suất/
+khẩu phần cần hiệu chuẩn. Context cũ có nhãn Production Ready/HiveMQ/topic
+khác đã được thêm cảnh báo lịch sử và link mới. Chỉ tài liệu thay đổi; không
+build/code, tạo Jira/AWS hoặc chạy nghiệm thu thiết bị trong lượt này.
+
+
 ## 14/10/2026 — Thiết bị simulator nông nghiệp và phao cạn
 
 Người dùng chưa thấy thiết bị mới: lịch V13 trước đó chỉ đổi backend/web. Đợt

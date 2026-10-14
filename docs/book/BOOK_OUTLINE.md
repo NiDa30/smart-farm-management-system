@@ -34,3 +34,7 @@ Chương thực hành bổ sung: [19 — Đã xem cảnh báo](CHAPTER_19_ALERT_
 Chương thực hành bổ sung: [20 — Lịch tưới kết hợp độ ẩm](CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md), ưu tiên canh tác, khung giờ Việt Nam, overnight và dữ liệu từng đợt.
 
 21. [Relay và phao cạn nước](CHAPTER_21_RESERVOIR_INTERLOCK.md): sơ đồ mới, interlock cục bộ, khóa/khôi phục và cập nhật ảnh flash; Wokwi live còn chờ.
+
+Chương dự kiến tiếp theo: từ ESP32 demo đến các node nông nghiệp độc lập;
+tham chiếu [lộ trình 18 nhóm thiết bị](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md).
+Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trúc mục tiêu riêng.

@@ -1,5 +1,11 @@
 # HỆ THỐNG QUẢN LÝ NÔNG NGHIỆP TÍCH HỢP IOT
 
+> Cập nhật ưu tiên 14/10/2026: xây các chức năng IoT nông nghiệp trước theo
+> [lộ trình thiết bị mới](AGRICULTURAL_IOT_DEVICE_ROADMAP.md): trạm nước,
+> đất/tưới 4 dãy, môi trường, rồi chăn nuôi/camera. Danh mục và thứ tự tổng quát
+> bên dưới là bản định hướng trước đó; không biểu thị chức năng đã triển khai.
+
+
 ## 1. Tổng quan hệ thống
 
 Hệ thống được thiết kế theo hướng quản lý toàn diện hoạt động nông nghiệp, từ cây trồng, vật tư, thiết bị, IoT, bán hàng cho tới báo cáo và phân tích.

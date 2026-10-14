@@ -1,5 +1,13 @@
 # Tài Liệu Hệ Thống Quản Lý Trang Trại Thông Minh (Smart Farm Management System)
 
+## Định hướng IoT nông nghiệp đang ưu tiên
+
+- [Ý tưởng và lộ trình thiết bị 14/10/2026](plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md):
+  cây trồng/tưới 4 dãy, trạm nước, chăn nuôi, camera; 18 nhóm node và backlog A0–A6.
+- [Trạng thái đã kiểm chứng](book/ACCEPTANCE_STATUS.md) và
+  [chạy demo Windows](book/WINDOWS_RUNBOOK.md).
+
+
 Thư mục `docs` chứa các tài liệu đặc tả thiết kế, kiến trúc giao diện người dùng (UI/UX) và quy trình nghiệp vụ cho hệ thống Smart Farm Management System.
 
 ---

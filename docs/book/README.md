@@ -51,3 +51,6 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Lịch tưới nông nghiệp theo tuần](CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md)
 
 - [Relay tưới và phao cạn nước trên simulator](CHAPTER_21_RESERVOIR_INTERLOCK.md)
+
+- [Định hướng mở rộng thiết bị nông nghiệp](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md):
+  ý tưởng người dùng và backlog sau demo; chưa phải chương nghiệm thu phần cứng.
