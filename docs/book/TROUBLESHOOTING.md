@@ -260,3 +260,16 @@ cloud này đã gặp và dừng đúng Vite vừa tạo, dùng lại3000, khôn
 Nếu khảo sát vùng mất kết luận sau30 giây nhưng alert còn mở, đó là semantics
 freshness/episode khác nhau; kiểm tra timestamp/source, không seed lại dữ liệu
 để giả live. Lượt kiểm tra cuối backend179/browser15/unit6/lintbuild đều đạt.
+
+## Ước tính lượng nước thiếu hoặc không hiện — 15/10/2026
+
+Kiểm tra đúng WATER/FLOW_RATE/L/min, source và khoảng quá khứ≤24h. Không có
+đoạn hợp lệ trảnull, khác FLOW0 trả0 có coverage. Range có hơn25k packet hoặc
+numeric overflow trả422 toàn bộ; rút ngắn range, không lấy tổng truncated.
+Group nhiều calibration không có tổng chung; dữ liệu chưa phủ không tính0.
+Chi tiết [chương31](CHAPTER_31_WATER_VOLUME.md).
+
+Khi rà code đã chặn inputdate rỗng trước toISOString và đổi so scope từ
+chuỗi sang instant vì JavaZ/JS.000Z. Browser16/unit5 có ca tương ứng, không có
+lượt fail trong đợt này. Không gán các lỗi tiềm ẩn này thành lỗi AWS thực tế.
+UI mới cần restart backend có /water-volume; không xóa DB/cert để chữa404.

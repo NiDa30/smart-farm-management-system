@@ -60,3 +60,6 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 
 30. [Tổng quan nông nghiệp](CHAPTER_30_AGRICULTURE_OVERVIEW.md) — snapshot nguồn/kênh/vùng và tổng
     cảnh báo môi trường/nước/đất, expiry và giới hạn read model.
+
+31. [Ước tính lượng nước FLOW](CHAPTER_31_WATER_VOLUME.md) — hình thang,
+    coverage/gap/source/calibration và bỏ số tiêu thụ mẫu khỏi màn Nước & Điện.

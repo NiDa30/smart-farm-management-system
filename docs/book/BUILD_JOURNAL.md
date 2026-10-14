@@ -902,3 +902,21 @@ Sau điều chỉnh IAM, lệnh CLI attach-policy không lỗi. Lần chạy scr
   Vite3000. Không lỗi test trong lượt này; không biến setup thành lỗi AWS.
 - [Chương30](CHAPTER_30_AGRICULTURE_OVERVIEW.md) và [bàn giao](../implementation/LOCAL_AGRICULTURE_OVERVIEW_REPORT.md).
   Năm ca Windows/AWS/Wokwi mới Chưa chạy; controller/van/coordinator còn sau.
+
+## 15/10/2026 — ước tính lượng nước từ lịch sử FLOW (giờ Việt Nam)
+
+- WaterVolume read-only RR hình thang theo đoạn hợp lệ; packet thiếu kênh/
+  khác nguồn giữ trong LEFT JOIN, không bridge qua. Source/boot/seq/calibration/
+  quality/gap≤15s và receipt guards; coverage, null/0 và groups tách rõ.
+- Range [from,to)≤24h,25k packet cap422, không truncated total hoặc ngoại suy
+  biên; BigDecimal/finite guard. No migration/firmware/IAM/command mới.
+- Tiêu thụ Nước & Điện dùng API thật, bỏ mock nước/kWh/cost/leak. Tab Điện
+  chưa có đo. Scope so instant thay chuỗiJavaZ/JS.000Z, date rỗng có guard;
+  test tương ứng đạt. Đây là phát hiện khi rà code, không báo sự cố Windows.
+- 194 backend/16browser cuối/5unit cuối/lintbuild đạt, skip0. Browser đầu14,
+  unit đầu4 cũng đạt; thêm ca canonical và metadata refresh trước lượt cuối. Full-app GET-only
+  dùng lại AGWATER lịch sử0: phủ1/5s20%, thiếu4s; PHYSICAL unknown, không0.
+- Không seed/thay timestamps. Schema agriculture_overview_smoke/counters giữ,
+  command0/run0, MQTT/controlfalse.5ca Windows/AWS/Wokwi chưa chạy; năng lượng/
+  chi phí/coordinator/volume thực địa chưa nghiệm thu.
+- [Chương31](CHAPTER_31_WATER_VOLUME.md), [bàn giao](../implementation/LOCAL_WATER_VOLUME_REPORT.md).

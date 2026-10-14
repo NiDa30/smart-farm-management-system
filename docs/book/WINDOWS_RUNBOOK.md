@@ -243,3 +243,13 @@ cảnh báo ba nhóm. Không cần flash/provision lại cho thay đổi read mo
 Các card môi trường vẫn ENV/v1; source từng kênh do thiết bị khai báo.
 Nếu UI mới thiếu agriculture, restart backend cũ; không xóa PostgreSQL volume.
 Chi tiết và5 ca live Chưa chạy ở [chương30](CHAPTER_30_AGRICULTURE_OVERVIEW.md).
+
+## Lượng nước từ FLOW — 15/10/2026
+
+Pull/restart backend/frontend, giữ PostgreSQL/cert/config. Vào **IoT & Tự động
+hóa → Tiêu thụ Nước & Điện → Nước**. Cần node WATER đã khai báo FLOW và phát
+packet; chọn đúng source, range giờ máy≤24h rồi Tính lượng nước. Không cần
+flash/provision lại chỉ để thêm API này. Nếu chỉ ENV01 hoặc registry chưa có
+FLOW, không có ước tính; không lấy timer relay thay số đo. Đọc coverage và
+nhóm hiệu chuẩn, không xem phần chưa có dữ liệu là0lít. Tab Điện chưa có kWh.
+Xem [chương31](CHAPTER_31_WATER_VOLUME.md),5ca live mới vẫn Chưa chạy.

@@ -659,3 +659,13 @@ full-app local fresh/stale đạt, MQTT/control tắt;5 ca live mới Chưa ch�
 Xem [chương30](../book/CHAPTER_30_AGRICULTURE_OVERVIEW.md). Không đổi firmware
 hoặc V19; A3 controller/van/coordinator còn chờ. Các màn EventLog/Safety/
 DeviceMonitoring/header chưa hợp nhất soil/water alerts trong lượt này.
+
+## Cập nhật 15/10/2026 — ước tính thể tích FLOW
+
+Tiêu thụ Nước & Điện bỏ tổng mẫu, dùng hình thang lịch sử FLOW theo source/
+boot/seq/calibration/quality/receipt/gap, coverage và nhóm hiệu chuẩn. Không
+ngoại suy biên/mất mẫu, không coi unknown là0; Điện chưa có dữ liệu đo.194
+backend/16browser/5unit/lintbuild và full-app GET-only với lịch sử giữ lại đạt.
+Không migration/firmware/IAM mới;5ca Windows/AWS/Wokwi Chưa chạy. Xem
+[chương31](../book/CHAPTER_31_WATER_VOLUME.md). Chưa công tơ tích lũy, chi phí,
+chia volume cho cây/zone, leak detection hoặc coordinator/van A3.

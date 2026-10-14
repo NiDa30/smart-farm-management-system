@@ -133,6 +133,7 @@ Lượt helper cũ 4 đạt/37 skip là lịch sử, không thay kết quả ki�
 | Xác nhận đã xem cảnh báo V12 | ACK/note idempotent riêng condition, Event Log người xem, row-lock/concurrency/migration/browser và restart smoke đạt | Chưa actor/auth, edit/unack/email; list100, GET theo ID; Windows/Wokwi mới chưa thử |
 | Lịch tưới nông nghiệp V13 | Window VN/overnight/overlap, gate source/tick, OFF/chờ xác nhận, snapshot run, API/UI và restart persistence đạt | Một rule; backend phải chạy; default Cả ngày; chưa lịch độc lập ESP32/multi-area hoặc nghiệm thu lịch AWS/Wokwi |
 | Tổng quan nông nghiệp (15/10/2026) |179 backend/15 browser dashboard/6unit/lintbuild đạt; full-app PostgreSQL fresh/stale đọc node, zone, count3 nhóm và menu thật |MQTT/control tắt, no AWS/Wokwi/GPIO mới;5ca live chưa chạy; header/EventLog/Safety/DeviceMonitoring vẫn phạm vi cũ |
+| Ước tính lượng nước FLOW (15/10/2026) |194 backend/16 browser/5unit/lintbuild đạt; full-app lịch sử giữ lại, GET-only,0 khác unknown và có coverage |MQTT/control tắt;5ca live chưa chạy; chưa đo volume/kWh/chi phí thực địa hoặc cấp nước từng cây |
 | NVS và phục hồi mạng | Restart simulation từng cần thiết khi gateway restart không phục hồi phiên | **NVS chưa làm**; restart mất RAM, không phải bằng chứng reconnect thành công |
 
 Tests với MQTT mock, API fixture, dữ liệu SQL thử hoặc native safety assertions

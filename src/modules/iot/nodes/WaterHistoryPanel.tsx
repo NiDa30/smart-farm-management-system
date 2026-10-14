@@ -37,7 +37,7 @@ export function WaterHistoryPanel({nodeId,channel,asOf,onBack}:Props){
  return <section aria-label={soil?'Lịch sử kênh đất':'Lịch sử kênh nước'} className="space-y-4">
   <button type="button" onClick={onBack} className="border rounded px-3 py-2">Quay lại danh sách node</button>
   <h2 className="text-xl font-bold">Lịch sử {nodeId} · {channel.channelId} · {metricLabels[channel.metric]}</h2>
-  <p className="text-sm text-slate-500">Giữ giá trị, chất lượng, nguồn và phiên bản hiệu chuẩn từng mẫu. Dữ liệu lịch sử không xác nhận thiết bị hiện đang online. {soil?'Các điểm đất được lưu độc lập; chưa dùng để điều khiển tưới.':'Chưa tính tổng lượng nước từ lưu lượng.'}</p>
+  <p className="text-sm text-slate-500">Giữ giá trị, chất lượng, nguồn và phiên bản hiệu chuẩn từng mẫu. Dữ liệu lịch sử không xác nhận thiết bị hiện đang online. {soil?'Các điểm đất được lưu độc lập; chưa dùng để điều khiển tưới.':'Ước tính thể tích FLOW tại Tiêu thụ Nước & Điện; lịch sử này giữ mẫu gốc.'}</p>
   <form onSubmit={apply} className="bg-white border rounded-xl p-4 flex flex-wrap items-end gap-3">
    <label>Từ (giờ máy)<input aria-label="Lịch sử từ" type="datetime-local" step="1" required value={from} onChange={e=>setFrom(e.target.value)} className="block border rounded p-2" /></label>
    <label>Đến, không gồm mốc này (giờ máy)<input aria-label="Lịch sử đến" type="datetime-local" step="1" required value={to} onChange={e=>setTo(e.target.value)} className="block border rounded p-2" /></label>

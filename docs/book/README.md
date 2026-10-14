@@ -72,3 +72,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Vùng tưới và ba điểm đất](CHAPTER_29_IRRIGATION_ZONES.md): gán kênh độc quyền, khảo sát đa số/cùng packet, phiên bản cấu hình; controller nhiều vùng còn sau.
 
 - [Tổng quan nông nghiệp: đất, nước và vùng tưới](CHAPTER_30_AGRICULTURE_OVERVIEW.md)
+
+- [Ước tính lượng nước FLOW và độ phủ dữ liệu](CHAPTER_31_WATER_VOLUME.md)

@@ -120,3 +120,16 @@ bảng, phao cặp có channelId=null. Counts độc lập list/preview, ACK v�
 cleared_sample_id khác null mới bị loại. activeAlertCount cũ chỉ môi trường;
 UI tổng cộng ba nhóm. Read-only RR, không thay telemetry/policy hoặc dispatch.
 Xem [chương30](../../../docs/book/CHAPTER_30_AGRICULTURE_OVERVIEW.md).
+
+## Water volume read API, schema vẫn V19
+
+GET /api/v1/nodes/{nodeId}/channels/{channelId}/water-volume?from=...&to=...&dataSource=...
+yêu cầu WATER/v2 FLOW_RATE/L/min, explicit source, [from,to)≤24h từ1970,
+timestamp microsecond hoặc thô hơn, to≤now+2s. Response TRAPEZOID_V1/maxGap15,
+packetCount/sourcePacketCount/acceptedIntervals/excluded/coveredSeconds/
+uncoveredSeconds/estimatedLitres/groups. Giữ packet thiếu/khác source làm
+đứt đoạn; cùngboot/seq+1/calibration, VALID finite≥0, gap0–15s (không0), source
+không trước receipt quá2s, receipt trễ≤30s. Không ngoại suy mép hoặc qua gap.
+No valid interval→null; valid zero→0; nhiều calibration→groups riêng,totalnull.
+Cap25k packet, quá cap/numeric range422, sai phạm vi400/nonFLOW404. Read-only
+RR, không thay telemetry/policy/command; [chương31](../../../docs/book/CHAPTER_31_WATER_VOLUME.md).

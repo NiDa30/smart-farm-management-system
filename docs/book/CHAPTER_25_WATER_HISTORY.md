@@ -142,3 +142,10 @@ và NVS vẫn là bước sau. Lịch sử/cảnh báo nước không cấp quy�
 Bổ sung sau mốc này: [chương 26](CHAPTER_26_LOCAL_FLOW_GUARD.md) có prototype
 flow guard cục bộ opt-in trên ENV01, chưa nghiệm thu live hoặc binding WATER01.
 Các đoạn cutoff chưa làm phía trên mô tả mốc history trước bổ sung này.
+
+## Bổ sung 15/10/2026 — ước tính FLOW riêng
+
+[Chương31](CHAPTER_31_WATER_VOLUME.md) thêm phép tích phân lịch sử với source/
+boot/seq/calibration/quality/receipt/gap và coverage. Raw history/CSV giữ nguyên;
+phần “chưa tính tổng lượng nước” phía trên là trạng thái ở mốc chương25. Màn
+Tiêu thụ Nước & Điện hiển thị ước tính đoạn hợp lệ, không công tơ/bill/thực địa.

@@ -62,6 +62,12 @@ header chưa hợp nhất; rule ENV01 không dùng zone.179 backend/15browser/6u
 và full-app local fresh/stale đạt, không AWS/Wokwi mới. Đọc
 [chương30](../book/CHAPTER_30_AGRICULTURE_OVERVIEW.md).
 
+15/10/2026 có [ước tính lượng nước FLOW](../book/CHAPTER_31_WATER_VOLUME.md):
+hình thang đoạn hợp lệ, source/boot/seq/calibration/quality/receipt/gap, coverage,
+no extrapolation; màn Nước & Điện bỏ tổng giả, Điện chưa có đo. Không migration
+hoặc firmware mới.194backend/16browser/5unit/full-app lịch sử giữ lại đạt,
+MQTT/controlfalse; Windows/AWS/Wokwi mới chưa chạy. Chưa coordinator A3.
+
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.
 Đối chiếu [hợp đồng đang dùng](../../contracts/iot/v1/README.md),
