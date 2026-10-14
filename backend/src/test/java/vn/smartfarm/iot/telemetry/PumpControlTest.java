@@ -125,4 +125,21 @@ class PumpControlTest {
         assertEquals("TIMED_OUT",pump.commands().getFirst().state());
         assertNull(pump.commands().getFirst().reportedState());
     }
+    @Test void successAckWithWrongRelayStateIsRejected() throws Exception {
+        status("OFF",false);
+        var command=pump.create(new PumpService.Request("ON",20));
+        assertThrows(IllegalArgumentException.class,()->ack(command.commandId(),"OFF"));
+        assertEquals("SENT",pump.commands().getFirst().state());
+    }
+    @Test void reorderedStatusCannotRollbackOnToOlderOff() throws Exception {
+        status("OFF",false);
+        String at=jdbc.queryForObject("SELECT observed_at FROM pump_status",java.sql.Timestamp.class).toInstant().toString();
+        String template="{\"schemaVersion\":1,\"deviceId\":\"PUMP01\",\"bootId\":\"ab6cfc5e-18ff-4a01-852b-03604df6b52f\",\"sequence\":3,\"timestamp\":\""+at+"\",\"reportedState\":\"ON\",\"safetyLockout\":false,\"connection\":\"ONLINE\"}";
+        pump.receive("smartfarm/FARM001/PUMP01/status",template.getBytes());
+        pump.receive("smartfarm/FARM001/PUMP01/status",template.replace("\"sequence\":3","\"sequence\":2").replace("\"ON\"","\"OFF\"").getBytes());
+        assertEquals("ON",pump.status().reportedState());
+        // Equal timestamps do not authorize switching back to another boot.
+        pump.receive("smartfarm/FARM001/PUMP01/status",template.replace("ab6cfc5e-18ff-4a01-852b-03604df6b52f",UUID.randomUUID().toString()).replace("\"ON\"","\"OFF\"").getBytes());
+        assertEquals("ON",pump.status().reportedState());
+    }
 }

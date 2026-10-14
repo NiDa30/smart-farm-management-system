@@ -137,6 +137,10 @@ và lưu ở bước này; heartbeat/status và command history hiện là evide
 
 ## CLOCK_SKEW trong Wokwi
 
+Đối chiếu [bảng nghiệm thu](ACCEPTANCE_STATUS.md): nhật ký tiếp theo đã ghi
+người dùng xác nhận ON/OFF và timer 3 giây sau bản sửa clock. Điều đó không
+xác định nguyên nhân clock chậm hoặc chứng minh mọi thời lượng đã được thử.
+
 Nếu COMMAND_TIME có age âm, đồng hồ ESP32 đang chậm hơn issuedAt. Ví dụ
 age=-9 giải thích vì sao ON bị từ chối và LED vẫn OFF. Đồng bộ Windows time,
 khởi động lại Wokwi; firmware mới yêu cầu NTP cập nhật mỗi 15 giây.
@@ -191,3 +195,9 @@ cùng Wokwi vì cùng client ENV01 sẽ đẩy nhau khỏi MQTT.
 
 Lý do trong RAM không tồn tại qua reboot; chưa có outbox cho mọi sự kiện.
 Các dòng lịch sử cũ chưa có lý do không được tự gán nguyên nhân.
+
+Nhật ký ghi gateway restart từng không phục hồi DNS/Wi-Fi của phiên Wokwi,
+phải restart simulation. Restart simulator làm mất RAM, gồm khóa an toàn và
+lý do chưa gửi; **NVS chưa làm**. Vì vậy không coi cách khởi động lại này là
+nghiệm thu reconnect không reboot hoặc bảo đảm lưu mọi sự kiện offline.
+Chạy gateway ở terminal riêng theo [hướng dẫn Windows](WINDOWS_RUNBOOK.md).

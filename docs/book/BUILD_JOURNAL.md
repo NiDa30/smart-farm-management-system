@@ -1,5 +1,62 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026, 00:49 +07 — Chuẩn bị phép thử tưới nhóm 1
+
+Theo yêu cầu tiếp theo của người dùng, đã chạy backend bằng Git Bash mới,
+loại biến DB test trước khi helper nạp cấu hình runtime. Flyway nâng DB demo
+V9→V10, không xóa dữ liệu; backend subscribe AWS thành công. API rule trả
+enabled=false, RESTART_PAUSED, không active command. Frontend chạy cổng 3000.
+PUMP01 vẫn UNKNOWN/fresh=false, telemetry cuối đã cũ; gateway 9011 chưa chạy.
+Agent không có công cụ thao tác Wokwi/quan sát LED, chưa bật rule hoặc gửi
+control. Chỉ xác nhận quy tắc tắt sau startup ở API; ON/ACK/OFF sớm/cooldown
+live vẫn chờ người dùng thực hiện. Helper verify ở môi trường live chạy 4
+unit tests đạt, 37 integration tests skip; không thay thế lượt 41/41 local
+trước đó. Chi tiết bổ sung ở cuối LOCAL_CODEX_REPORT.md. Chưa commit/push.
+
+## 14/10/2026 — Rà soát sách và cập nhật xác nhận của người dùng
+
+Người dùng xác nhận cảnh báo đất thấp và nhiệt độ cao mở/đóng đúng ngưỡng.
+Quy tắc tưới tự động chưa nghiệm thu đầy đủ trên AWS/Wokwi thật. Phiên biên
+tập này không chạy code/tests hoặc truy cập AWS/Wokwi; không lấy code đang
+được agent khác sửa làm nguồn cập nhật hành vi trong sách.
+
+Bổ sung [hướng dẫn Windows](WINDOWS_RUNBOOK.md),
+[bảng bằng chứng](ACCEPTANCE_STATUS.md) và phần tổng hợp trong sổ lỗi.
+Restart simulator mất trạng thái RAM; NVS chưa làm. Các mục chờ xác nhận
+phía dưới phản ánh thời điểm lịch sử, cần đọc cùng bảng bằng chứng hiện tại.
+
+## 14/10/2026 — Audit local quy tắc tưới và thứ tự ACK/status
+
+Theo xác nhận người dùng: telemetry Wokwi lên Sensor Realtime, điều khiển thủ
+công/timer/lịch sử trạng thái, lịch sử cảm biến, cảnh báo LOW_SOIL 30/35 và
+HIGH_TEMPERATURE 35/33 hoạt động; firmware có `RELAY_OFF reason=CONNECTION_LOST`.
+Đây là bằng chứng người dùng cung cấp, không phải lần kiểm tra live của audit này.
+
+Phát hiện scheduler chỉ lấy latest có thể bỏ qua mẫu ướt giữa hai mẫu khô.
+Sửa đọc các mẫu chưa xét theo thời gian, lưu boot/sequence bằng migration V10;
+đổi boot làm đếm lại, timestamp/sequence cũ không tăng đếm. OFF heartbeat sau
+thời điểm gửi chưa đủ chứng minh OFF đã thực thi. Nay cần status OFF cùng boot
+có sequence lớn hơn ACK EXECUTED; khi thiếu ACK, chỉ chấp nhận OFF mới sau
+`expiresAt + durationSeconds` của ON (TTL 10 giây cộng runtime 20 giây).
+Khoảng nghỉ 60 giây bắt đầu khi backend xác nhận OFF, không bắt đầu từ PUBACK.
+
+Publish chưa rõ kết quả trước đây làm mất commandId trong rule/run. Nay giữ ID,
+tạm dừng và chỉ thử OFF một lần; chưa xác nhận OFF vẫn giữ lần chạy. Startup
+tạm dừng được tách khỏi scheduler có điều kiện MQTT: cả boot không bật MQTT
+cũng không giữ enabled từ DB. ACK SUCCESS sai reportedState bị từ chối;
+status khác boot có timestamp bằng nhau không được thay trạng thái hiện tại.
+UI tiếng Việt bổ sung lý do nghỉ/chờ lệnh/thiết bị/khóa an toàn/mẫu mới và ACK
+thực thi, đồng thời xóa thông báo lỗi cũ khi polling đã phục hồi.
+
+Kiểm tra local Windows: PostgreSQL 16.15 container riêng cổng 55439, DB
+watering_test, schema telemetry_test; transport mock, MQTT tắt. Maven verify
+đạt 41 tests, 0 failures/errors/skip; frontend lint/build đạt. Lượt đầu 37 tests
+đạt trước khi bổ sung các ca hồi quy cuối. Wrapper PowerShell lỗi Target[0]
+trên thư mục thường được sửa. Không truy cập DB demo, không phát lệnh AWS,
+không đổi IAM, không đọc secrets, không commit/push. Chưa nghiệm thu automation
+AWS/Wokwi thật; NVS và phục hồi mạng simulator vẫn để sau. Báo cáo đầy đủ:
+[LOCAL_CODEX_REPORT](../implementation/LOCAL_CODEX_REPORT.md).
+
 ## Quy tắc tưới Wokwi ENV01 → PUMP01
 
 Người dùng xác nhận cảnh báo ngưỡng hoạt động và đồng ý làm automation.

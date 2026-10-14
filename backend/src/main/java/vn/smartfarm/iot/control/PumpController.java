@@ -12,5 +12,5 @@ public class PumpController {
     @GetMapping("/history") public List<PumpService.StateChange> history() { return service.stateHistory(); }
     @GetMapping("/commands") public List<PumpService.Command> commands() { return service.commands(); }
     @PostMapping("/commands") @ResponseStatus(HttpStatus.ACCEPTED)
-    public PumpService.Command create(@RequestBody PumpService.Request request) { rule.manualHold(); return service.create(request); }
+    public PumpService.Command create(@RequestBody PumpService.Request request) { return rule.manualCommand(request); }
 }

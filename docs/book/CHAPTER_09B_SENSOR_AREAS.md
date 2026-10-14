@@ -23,13 +23,13 @@ có cùng bootId/sequence vẫn được lưu riêng theo deviceId.
 
 API cho phép GET/POST areas và sensors, GET metadata theo mã và latest/history
 của sensor đã đăng ký. Sensor mới có latest=null và latest endpoint trả 404 cho đến
-khi nhận reading hợp lệ. Mã uppercase2–32 ký tự, bắt đầu bằng chữ; tên1–80
+khi nhận reading hợp lệ. Mã uppercase 2–32 ký tự, bắt đầu bằng chữ; tên 1–80
 ký tự. Duplicate trả 409, khu vực không tồn tại/mã sai trả 400.
 
 Danh sách sensor đọc latest bằng một SQL lateral join để tránh request/query
 riêng cho từng thiết bị. UI lọc khu vực và chọn sensor; panel chi tiết được
 remount theo deviceId để không giữ số đo của sensor trước trong card mới.
-Polling/freshness và trạng thái mất kết nối giữ nguyên nguyên tắc chương9.
+Polling/freshness và trạng thái mất kết nối giữ nguyên nguyên tắc chương 9.
 
 ## Topic và quyền AWS
 
@@ -42,7 +42,7 @@ MQTT payload phải có deviceId hợp lệ; backend so sánh topic với chính
 và tra registry. Thiết bị chưa đăng ký hoặc topic khác farm/device bị từ chối.
 Foreign key là bảo vệ thêm ở DB. Payload không quyết định khu vực: registry
 quyết định. Hợp đồng telemetry.schema.json mở deviceId từ const ENV01 sang pattern,
-giữ các trường/phiên bản/giới hạn số còn lại, tương thích payloadENV01 cũ.
+giữ các trường/phiên bản/giới hạn số còn lại, tương thích payload ENV01 cũ.
 
 Thêm sensor trên web **chỉ đăng ký metadata**, không tạo AWS Thing/certificate
 hoặc nhập private key trong browser. Mỗi thiết bị thực phải có certificate và
@@ -57,7 +57,7 @@ Dừng backend cũ bằng Ctrl+C, giữ PostgreSQL/volume. Cập nhật code và
 policy local (thay ACCOUNT_ID bằng account thực, không cần secret):
 
 ```bash
-git pull --ff-only origin feat/day1-iot-foundation
+# Chỉ dùng bản đã bàn giao; không pull khi agent khác đang sửa.
 ./.local/day1-venv/Scripts/python.exe tools/backend/render_telemetry_iam.py --account-id ACCOUNT_ID
 notepad .local/aws/backend-telemetry-iam-policy.json
 ```

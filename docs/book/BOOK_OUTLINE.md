@@ -1,6 +1,11 @@
 # Dàn ý sách — Xây dựng hệ thống quản lý trang trại IoT
 
-Trạng thái: khung bản thảo. Chỉ viết phần “đã triển khai thành công” khi có bằng chứng tương ứng; các chương sau Day 1 hiện là dự kiến.
+Trạng thái: khung bản thảo và các chương thực hành đã có. Chỉ viết phần “đã
+triển khai thành công” khi có bằng chứng tương ứng. Các trạng thái “Windows
+live còn chờ” trong dàn ý bên dưới là mốc lịch sử; đọc
+[bảng nghiệm thu ngày 14/10/2026](ACCEPTANCE_STATUS.md) trước khi kết luận.
+Người dùng đã xác nhận cảnh báo mở/đóng đúng ngưỡng; automation chưa nghiệm
+thu đầy đủ. Các chương 11–13 thực hành nằm trong [mục lục sách](README.md).
 
 1. Bài toán trang trại và giới hạn MVP: người dùng, luồng nghiệp vụ, 7 ngày và tiêu chí nghiệm thu.
 2. Đọc và kiểm tra repository: frontend mock, dependency, môi trường cloud/Windows, Git branch và bảo vệ thay đổi cục bộ.

@@ -1,5 +1,12 @@
 # Hồ sơ xây dựng và bản thảo sách Smart Farm
 
+Người mới nên đọc [hướng dẫn chạy trên Windows](WINDOWS_RUNBOOK.md) trước,
+sau đó xem [trạng thái nghiệm thu](ACCEPTANCE_STATUS.md) để biết phần nào đã
+được người dùng xác nhận và phần nào mới có kiểm tra giả lập.
+
+Bản bàn giao tưới V10 có [mẫu nhật ký thử Wokwi](WOKWI_AUTOMATION_TEST_LOG.md)
+để ghi thao tác, thời điểm, commandId/run ID và bằng chứng; chưa có kết quả live.
+
 Đây là bộ nhớ bằng tài liệu của dự án, được lưu trong Git để sử dụng qua các phiên làm việc. Không dựa vào việc một cuộc trò chuyện luôn giữ được toàn bộ lịch sử.
 
 - [Nhật ký xây dựng](BUILD_JOURNAL.md): công việc, quyết định, bằng chứng, trạng thái hiện tại.

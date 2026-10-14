@@ -16,6 +16,13 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class PumpService {
     public record Request(String action, Integer durationSeconds) {}
+    public static class UncertainPublish extends ResponseStatusException {
+        public final UUID commandId;
+        public UncertainPublish(UUID id) {
+            super(HttpStatus.BAD_GATEWAY,"Publish not confirmed; inspect command history, do not automatically retry ON");
+            commandId=id;
+        }
+    }
     public record Command(UUID commandId, String action, Integer durationSeconds, Instant issuedAt,
         Instant expiresAt, String state, String reportedState, String errorCode) {}
     public record Status(String deviceId, String reportedState, boolean safetyLockout, boolean fresh,
@@ -56,6 +63,10 @@ public class PumpService {
                 rs.getString("state"),rs.getString("reported_state"),rs.getString("error_code")));
     }
     public synchronized Command create(Request request) {
+        return create(request, id -> {});
+    }
+    // Persist the rule's command reference before any bytes can reach the transport.
+    public synchronized Command create(Request request, java.util.function.Consumer<UUID> beforePublish) {
         if (!enabled) throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Local Wokwi control is disabled");
         if (request.action()==null || !Set.of("ON","OFF","RESET_LOCKOUT").contains(request.action())
             || (request.action().equals("ON") ? request.durationSeconds()==null || request.durationSeconds()<1 || request.durationSeconds()>3600 : request.durationSeconds()!=null))
@@ -78,6 +89,7 @@ public class PumpService {
         jdbc.update("INSERT INTO pump_command(command_id,action,duration_seconds,issued_at,expires_at,state) VALUES(?,?,?,?,?,'PENDING')",
             id,request.action(),request.durationSeconds(),Timestamp.from(issued),Timestamp.from(expires));
         try {
+            beforePublish.accept(id);
             var payload=mapper.createObjectNode();
             payload.put("schemaVersion",1).put("commandId",id.toString()).put("deviceId","PUMP01")
                 .put("action",request.action()).put("issuedAt",issued.toString()).put("expiresAt",expires.toString());
@@ -86,7 +98,7 @@ public class PumpService {
             jdbc.update("UPDATE pump_command SET state='SENT' WHERE command_id=? AND state='PENDING'",id);
         } catch (Exception error) {
             jdbc.update("UPDATE pump_command SET state='PUBLISH_UNCERTAIN' WHERE command_id=? AND state='PENDING'",id);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,"Publish not confirmed; inspect command history, do not automatically retry ON");
+            throw new UncertainPublish(id);
         }
         return jdbc.query("SELECT * FROM pump_command WHERE command_id=?", (rs,n) ->
             new Command(rs.getObject("command_id",UUID.class),rs.getString("action"),rs.getObject("duration_seconds",Integer.class),
@@ -117,7 +129,8 @@ public class PumpService {
                     INSERT INTO pump_status(singleton,boot_id,sequence,observed_at,reported_state,safety_lockout,state_reason) VALUES(1,?,?,?,?,?,?)
                     ON CONFLICT(singleton) DO UPDATE SET boot_id=EXCLUDED.boot_id,sequence=EXCLUDED.sequence,
                     observed_at=EXCLUDED.observed_at,received_at=CURRENT_TIMESTAMP,reported_state=EXCLUDED.reported_state,safety_lockout=EXCLUDED.safety_lockout,state_reason=EXCLUDED.state_reason
-                    WHERE EXCLUDED.observed_at >= pump_status.observed_at AND (EXCLUDED.boot_id <> pump_status.boot_id OR EXCLUDED.sequence > pump_status.sequence)
+                    WHERE (EXCLUDED.boot_id = pump_status.boot_id AND EXCLUDED.observed_at >= pump_status.observed_at AND EXCLUDED.sequence > pump_status.sequence)
+                       OR (EXCLUDED.boot_id <> pump_status.boot_id AND EXCLUDED.observed_at > pump_status.observed_at)
                     """,boot,node.path("sequence").asLong(),Timestamp.from(timestamp),state,node.path("safetyLockout").asBoolean(),reason);
             } else if (topic.equals("smartfarm/FARM001/PUMP01/ack")) {
                 if (!node.path("commandId").asText().matches("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")) throw new IllegalArgumentException();
@@ -127,6 +140,8 @@ public class PumpService {
                 if (!success && !node.path("status").asText().equals("FAILED")) throw new IllegalArgumentException();
                 String error=success ? null : node.path("errorCode").asText();
                 if (!success && (error.isBlank() || error.length()>80)) throw new IllegalArgumentException();
+                if (success && jdbc.queryForObject("SELECT COUNT(*) FROM pump_command WHERE command_id=? AND ((action='ON' AND ?<>'ON') OR (action IN ('OFF','RESET_LOCKOUT') AND ?<>'OFF'))",Integer.class,command,state,state)>0)
+                    throw new IllegalArgumentException();
                 jdbc.update("""
                     UPDATE pump_command SET state=?,reported_state=?,error_code=?,acknowledged_at=CURRENT_TIMESTAMP,ack_boot_id=?,ack_sequence=?
                     WHERE command_id=? AND state IN ('PENDING','SENT','PUBLISH_UNCERTAIN') AND ? >= issued_at AND ? <= expires_at + INTERVAL '5 seconds'
