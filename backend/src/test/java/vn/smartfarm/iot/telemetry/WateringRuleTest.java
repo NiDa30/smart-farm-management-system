@@ -220,4 +220,111 @@ class WateringRuleTest {
    jdbc.execute("DROP SCHEMA IF EXISTS "+schema+" CASCADE");
   }
  }
+ @Test void settingsApiPersistsVersionAndLeavesCurrentCooldownUnchanged() throws Exception {
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/automation/watering/settings"))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.durationSeconds").value(20));
+  Instant deadline=Instant.now().plusSeconds(90);
+  jdbc.update("UPDATE watering_rule SET cooldown_until=?,low_count=1,last_sample_at=CURRENT_TIMESTAMP",java.sql.Timestamp.from(deadline));
+  var saved=rule.saveSettings(new WateringRule.Settings(25,40,12,120,1));
+  assertEquals(2,saved.revision());assertEquals(saved,rule.settings());
+  assertEquals(deadline.toEpochMilli(),rule.state().cooldownUntil().toEpochMilli());
+  assertEquals(0,rule.state().lowCount());
+  assertNull(jdbc.queryForObject("SELECT last_sample_at FROM watering_rule",java.sql.Timestamp.class));
+  verify(transport,never()).publishCommand(any());
+ }
+ @Test void settingsRejectInvalidRangesAndNonIntegerJsonWithoutChanges() throws Exception {
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  var initial=rule.settings();
+  for (String body:java.util.List.of(
+   "{}","null",
+   "{\"dryThreshold\":30,\"wetThreshold\":34,\"durationSeconds\":20,\"cooldownSeconds\":60,\"revision\":1}",
+   "{\"dryThreshold\":30,\"wetThreshold\":35,\"durationSeconds\":31,\"cooldownSeconds\":60,\"revision\":1}",
+   "{\"dryThreshold\":30,\"wetThreshold\":35,\"durationSeconds\":20,\"cooldownSeconds\":59,\"revision\":1}",
+   "{\"dryThreshold\":30.5,\"wetThreshold\":35,\"durationSeconds\":20,\"cooldownSeconds\":60,\"revision\":1}",
+   "{\"dryThreshold\":\"30\",\"wetThreshold\":35,\"durationSeconds\":20,\"cooldownSeconds\":60,\"revision\":1}")) {
+   mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/automation/watering/settings").contentType("application/json").content(body))
+    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+   assertEquals(initial,rule.settings());
+  }
+ }
+ @Test void staleSettingsRevisionCannotOverwriteAnotherTab() throws Exception {
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  var one=new WateringRule.Settings(25,40,12,120,1);
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/automation/watering/settings")
+   .contentType("application/json").content(mapper.writeValueAsString(one)))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.revision").value(2));
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/automation/watering/settings")
+   .contentType("application/json").content(mapper.writeValueAsString(new WateringRule.Settings(20,40,10,180,1))))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isConflict());
+  assertEquals(12,rule.settings().durationSeconds());assertEquals(2,rule.settings().revision());
+  verify(transport,never()).publishCommand(any());
+ }
+ @Test void settingsCannotChangeWhileEnabledOrUnresolvedRunEvenAfterRestart() throws Exception {
+  rule.configure(true);
+  var change=new WateringRule.Settings(25,40,12,120,1);
+  assertEquals(org.springframework.http.HttpStatus.CONFLICT,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->rule.saveSettings(change)).getStatusCode());
+  sample(28,Instant.now().minusSeconds(5));rule.tick();sample(28,Instant.now());rule.tick();
+  assertNotNull(rule.state().activeCommand());rule.safeStartup();
+  assertFalse(rule.state().enabled());
+  assertEquals(org.springframework.http.HttpStatus.CONFLICT,assertThrows(org.springframework.web.server.ResponseStatusException.class,()->rule.saveSettings(change)).getStatusCode());
+  assertEquals(1,rule.settings().revision());
+ }
+ @Test void configuredThresholdsDriveOnDurationAndEarlyOffWithRunSnapshot() throws Exception {
+  rule.saveSettings(new WateringRule.Settings(25,45,7,120,1));
+  rule.configure(true);
+  sample(28,Instant.now().minusSeconds(8));sample(28,Instant.now().minusSeconds(6));rule.tick();
+  verify(transport,never()).publishCommand(any()); // old dry threshold 30 no longer controls watering
+  sample(24,Instant.now().minusSeconds(4));sample(24,Instant.now().minusSeconds(2));rule.tick();
+  var command=pump.commands().getFirst();assertEquals("ON",command.action());assertEquals(7,command.durationSeconds());
+  var run=rule.runs().getFirst();
+  assertEquals(25,run.dryThreshold());assertEquals(45,run.wetThreshold());assertEquals(7,run.durationSeconds());
+  assertEquals(120,run.cooldownSeconds());assertEquals(2,run.settingsRevision());
+  ack(command.commandId(),"ON");status("ON");
+  sample(40,Instant.now().minusMillis(20));rule.tick();assertEquals(1,pump.commands().size());
+  sample(45,Instant.now());rule.tick();assertEquals(1,pump.commands().stream().filter(c->c.action().equals("OFF")).count());
+ }
+ @Test void confirmedOffUsesConfiguredCooldownAndNextEditKeepsHistoricalRunSnapshot() throws Exception {
+  rule.saveSettings(new WateringRule.Settings(30,35,10,120,1));start();
+  UUID id=rule.state().activeCommand();ack(id,"ON");status("OFF");
+  Instant before=Instant.now();rule.tick();
+  assertNull(rule.state().activeCommand());
+  assertTrue(rule.state().cooldownUntil().isAfter(before.plusSeconds(119)));
+  assertTrue(rule.state().cooldownUntil().isBefore(Instant.now().plusSeconds(121)));
+  rule.configure(false);Instant deadline=rule.state().cooldownUntil();
+  rule.saveSettings(new WateringRule.Settings(25,40,5,60,2));
+  assertEquals(deadline,rule.state().cooldownUntil());
+  assertEquals(10,rule.runs().getFirst().durationSeconds());assertEquals(2,rule.runs().getFirst().settingsRevision());
+ }
+ @Test void restartPreservesSettingsButKeepsRuleDisabledAndDoesNotPublish() throws Exception {
+  var saved=rule.saveSettings(new WateringRule.Settings(90,100,30,3600,1));
+  rule.configure(true);rule.safeStartup();
+  assertEquals(saved,rule.settings());assertFalse(rule.state().enabled());
+  verify(transport,never()).publishCommand(any());
+ }
+ @Test void v11UpgradePreservesV10RunAndDoesNotInventHistoricalSettings() {
+  String schema="settings_upgrade_"+UUID.randomUUID().toString().replace("-", "");
+  UUID id=UUID.randomUUID();
+  try {
+   org.flywaydb.core.Flyway.configure().dataSource(jdbc.getDataSource()).schemas(schema).defaultSchema(schema).target("10").load().migrate();
+   jdbc.update("INSERT INTO "+schema+".pump_command(command_id,action,duration_seconds,issued_at,expires_at,state) VALUES(?,'ON',20,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+INTERVAL '10 seconds','SENT')",id);
+   jdbc.update("UPDATE "+schema+".watering_rule SET enabled=true,active_command=?,low_count=1,last_sample_boot=?,last_sample_sequence=99",id,sensorBoot);
+   jdbc.update("INSERT INTO "+schema+".watering_run(command_id,result) VALUES(?,'COMMAND_SENT')",id);
+   org.flywaydb.core.Flyway.configure().dataSource(jdbc.getDataSource()).schemas(schema).defaultSchema(schema).load().migrate();
+   assertEquals(id,jdbc.queryForObject("SELECT active_command FROM "+schema+".watering_rule",UUID.class));
+   assertTrue(jdbc.queryForObject("SELECT enabled FROM "+schema+".watering_rule",Boolean.class));
+   assertEquals(99,jdbc.queryForObject("SELECT last_sample_sequence FROM "+schema+".watering_rule",Long.class));
+   assertEquals(30,jdbc.queryForObject("SELECT dry_threshold FROM "+schema+".watering_rule",Integer.class));
+   assertEquals(35,jdbc.queryForObject("SELECT wet_threshold FROM "+schema+".watering_rule",Integer.class));
+   assertEquals(20,jdbc.queryForObject("SELECT duration_seconds FROM "+schema+".watering_rule",Integer.class));
+   assertEquals(60,jdbc.queryForObject("SELECT cooldown_seconds FROM "+schema+".watering_rule",Integer.class));
+   assertEquals(1,jdbc.queryForObject("SELECT settings_revision FROM "+schema+".watering_rule",Long.class));
+   assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM "+schema+".watering_run",Integer.class));
+   assertNull(jdbc.queryForObject("SELECT settings_revision FROM "+schema+".watering_run",Long.class));
+   assertNull(jdbc.queryForObject("SELECT duration_seconds FROM "+schema+".watering_run",Integer.class));
+  } finally { jdbc.execute("DROP SCHEMA IF EXISTS "+schema+" CASCADE"); }
+ }
+
 }

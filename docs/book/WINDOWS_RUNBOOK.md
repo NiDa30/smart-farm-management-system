@@ -1,5 +1,11 @@
 # Thực hành trên Windows: mở đúng terminal, chạy đúng thứ tự
 
+**Bản cloud mới có V11:** sau pull feature branch, restart backend để Flyway
+thêm cài đặt quy tắc tưới, giữ database hiện có. Xem [chương 17](CHAPTER_17_WATERING_SETTINGS.md)
+cho thao tác lưu/đối chiếu và giới hạn. Các đoạn V10 bên dưới là hướng dẫn của
+bản bàn giao trước; không coi phiên bản migration đó là mới nhất.
+
+
 Hướng dẫn này tổng hợp các lệnh đã ghi trong sách, không phải một lần chạy
 nghiệm thu mới. Dùng bản code đã được người phụ trách hoàn tất và bàn giao.
 Khi agent khác đang sửa code, không cập nhật nhánh hoặc restart để thử bản dở dang.

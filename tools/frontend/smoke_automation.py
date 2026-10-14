@@ -6,7 +6,7 @@ changes=[]
 def handler(route):
     if route.request.method=='PUT':
         value=route.request.post_data_json;changes.append(value);state['enabled']=value['enabled']
-    value=[] if route.request.url.endswith('/runs') else state
+    value=({'dryThreshold':30,'wetThreshold':35,'durationSeconds':20,'cooldownSeconds':60,'revision':1} if route.request.url.endswith('/settings') else [] if route.request.url.endswith('/runs') else state)
     route.fulfill(status=200,content_type='application/json',body=json.dumps(value))
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=shutil.which('chromium'))

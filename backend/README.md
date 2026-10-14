@@ -66,3 +66,14 @@ MAVEN_OPTS='-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts' \
 ```
 
 The settings file is machine-local, outside Git; TLS validation stays enabled. CRT runtime WSS proxy support is a separate live prerequisite: the probe accepts `AWS_IOT_PROXY_HOST` and `AWS_IOT_PROXY_PORT` for an HTTP CONNECT tunnel using supported CRT HttpProxyOptions. It does not automatically consume HTTPS_PROXY or embed proxy credentials. Use a supported tunnel or an authenticated laptop/network with outbound WSS443. Native self-test does not establish that live network path or SigV4 authentication works.
+
+
+## Versioned watering settings
+
+GET/PUT `/api/v1/automation/watering/settings` reads/saves integer dry/wet
+thresholds, automatic duration, cooldown and revision. Saves require a disabled
+rule, no unresolved run and the current revision. V11 keeps defaults 30/35/20/60;
+new runs store a settings snapshot, older runs keep null metadata. Saving settings
+never dispatches MQTT or enables watering. See [chapter 17](../docs/book/CHAPTER_17_WATERING_SETTINGS.md)
+and the [handoff](../docs/implementation/WATERING_SETTINGS_REPORT.md) for bounds,
+Windows restart and verification. Alert thresholds remain independent.

@@ -173,3 +173,19 @@ clock thiết bị nên clock chậm vẫn tạo bất định về độ mới 
 cách này cho bơm thật. Nếu lệch quá 10 giây vẫn từ chối, cần sửa nguồn giờ.
 Thử ON 3 giây một lần: yêu cầu ACK SUCCESS, LED sáng rồi tự tắt. Chưa có
 kết quả live xác nhận bản sửa này.
+
+
+## Cài đặt tưới V11: từ chối lưu hoặc chưa biết đã lưu chưa
+
+Đây là hướng dẫn xử lý các tình huống đã kiểm tra giả lập trong cloud, không
+phải báo cáo lỗi AWS của người dùng.
+
+- HTTP 409: tắt rule, chờ run có OFF xác nhận; nếu phiên bản đã đổi ở tab khác,
+  chọn Tải lại cài đặt rồi nhập lại. Không tự tăng revision để ép ghi đè.
+- Số không hợp lệ: thời gian tự động 1–30 giây, nghỉ 60–3600 giây, ngưỡng tắt
+  cao hơn ngưỡng đất khô ít nhất 5 điểm %. Dùng số nguyên.
+- Mất response/5xx/body sai: chưa biết PUT đã áp dụng hay chưa. Không bấm gửi
+  lại tự động; Tải lại đọc server để đối chiếu. Polling không xóa bản nháp.
+- Đã sửa cooldown nhưng vẫn nghỉ đến giờ cũ: đây là chủ đích giữ deadline đã
+  xác nhận. Cấu hình mới dùng cho lần chạy sau, không rút ngắn mốc đang có.
+- Alert và tưới khác ngưỡng: hai tính năng độc lập. Xem [chương 17](CHAPTER_17_WATERING_SETTINGS.md).

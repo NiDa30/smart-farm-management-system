@@ -18,6 +18,11 @@ Cloud còn chạy smoke trên ứng dụng thật: menu → Vite proxy → Sprin
 PostgreSQL trong schema test riêng; MQTT/control tắt. Đây là bằng chứng tích
 hợp API/UI Event Log, không phải bằng chứng AWS hoặc GPIO.
 
+Đợt cài đặt tưới V11 đạt **72 backend tests**, 24 browser fixtures quy tắc,
+11 frontend unit tests và lint/build, không skip. Smoke UI/API/PostgreSQL test
+đã lưu cấu hình và đọc lại sau restart backend; MQTT/control tắt. Ngưỡng mới
+trên Windows/AWS/Wokwi vẫn cần xác nhận, không thay bằng chứng V10.
+
 Người dùng đã nói “đã hoạt động” sau bước đất khô bật tự động; ghi nhận là
 user-reported một phần, chưa có timestamp/commandId/ACK/sequence để nghiệm thu
 trọn sáu ca. OFF sớm, cooldown, timer và restart giữa run vẫn chờ xác nhận.
@@ -34,6 +39,7 @@ Lượt helper cũ 4 đạt/37 skip là lịch sử, không thay kết quả ki�
 | Nhật ký sự kiện | API/UI, 5 backend tests, 7 browser fixtures và smoke toàn ứng dụng với PostgreSQL test đạt | Chưa kiểm tra Event Log trên dữ liệu Windows/AWS của người dùng; không phải immutable audit log |
 | Giám sát thiết bị | API/UI đọc registry, số đo, status, cảnh báo và lifecycle MQTT backend; cloud unit/integration/browser/smoke đạt | Chưa subscribe heartbeat mọi sensor; không chứng minh online/offline vật lý. Windows/AWS live còn chờ |
 | Tổng quan IoT | Snapshot registry/monitoring/alert/rule/events thật; cloud 64 backend, 7 dashboard browser và 9 unit frontend đạt; full-app smoke đạt | MQTT/control tắt trong cloud; chưa nghiệm thu Windows/AWS live cho dashboard |
+| Cài đặt tưới V11 | API phiên bản, giới hạn, khóa sửa khi active, snapshot run; backend/browser và smoke lưu/đọc sau restart đạt | Một rule, một backend process; không cấu hình ngưỡng alert; chưa nghiệm thu ngưỡng mới trên AWS/Wokwi |
 | NVS và phục hồi mạng | Restart simulation từng cần thiết khi gateway restart không phục hồi phiên | **NVS chưa làm**; restart mất RAM, không phải bằng chứng reconnect thành công |
 
 Tests với MQTT mock, API fixture, dữ liệu SQL thử hoặc native safety assertions

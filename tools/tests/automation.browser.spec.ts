@@ -4,6 +4,7 @@ type Rule = {
   enabled: boolean; lowCount: number; activeCommand: string | null;
   cooldownUntil: string | null; lastResult: string;
 };
+const defaults = () => ({ dryThreshold:30, wetThreshold:35, durationSeconds:20, cooldownSeconds:60, revision:1 });
 const disabled = (): Rule => ({ enabled: false, lowCount: 0, activeCommand: null, cooldownUntil: null, lastResult: 'DISABLED' });
 function deferred() {
   let resolve!: () => void;
@@ -13,6 +14,13 @@ function deferred() {
 async function fixtures(page: Page) {
   const state = {
     rule: disabled(),
+    settings: defaults(),
+    settingsRequests: [] as ReturnType<typeof defaults>[],
+    settingsStatus: 200,
+    settingsResponse: undefined as unknown,
+    malformedSettingsJson: false,
+    loseSettingsResponse: false,
+    settingsGate: null as Promise<void> | null,
     runs: [] as { id: number; startedAt: string; commandId: string | null; result: string }[],
     failGet: false,
     getCount: 0,
@@ -33,6 +41,18 @@ async function fixtures(page: Page) {
   });
   await page.route('**/api/**', async route => {
     const { pathname } = new URL(route.request().url());
+    if (pathname === '/api/v1/automation/watering/settings') {
+      if (route.request().method() === 'GET') { await route.fulfill({ json: state.settings }); return; }
+      const input = route.request().postDataJSON();
+      state.settingsRequests.push(input);
+      if (state.settingsGate) await state.settingsGate;
+      if (state.settingsStatus !== 200) { await route.fulfill({ status: state.settingsStatus, json: {} }); return; }
+      if (state.malformedSettingsJson) { await route.fulfill({ status:200, contentType:'application/json', body:'{' }); return; }
+      if (state.settingsResponse !== undefined) { await route.fulfill({ json:state.settingsResponse }); return; }
+      state.settings = { ...input, revision: input.revision+1 };
+      if (state.loseSettingsResponse) { await route.abort('connectionfailed'); return; }
+      await route.fulfill({ json: state.settings }); return;
+    }
     if (pathname === '/api/v1/automation/watering/runs' && route.request().method() === 'GET') {
       await route.fulfill({ json: state.runs }); return;
     }
@@ -81,10 +101,10 @@ test('bật và tắt chỉ đổi trạng thái sau phản hồi API, không op
     await page.getByRole('button', { name: enabled ? 'Bật quy tắc' : 'Tắt quy tắc' }).click();
     await expect.poll(() => api.requests.length).toBe(enabled ? 1 : 2);
     await expect(page.getByRole('status')).toHaveText(`Quy tắc đang ${before}`);
-    await expect(page.getByRole('button')).toBeDisabled();
+    await expect(page.getByRole('button', { name: /^(Bật|Tắt) quy tắc$/ })).toBeDisabled();
     gate.resolve();
     await expect(page.getByRole('status')).toHaveText(`Quy tắc đang ${after}`);
-    await expect(page.getByRole('button')).toBeEnabled();
+    await expect(page.getByRole('button', { name: /^(Bật|Tắt) quy tắc$/ })).toBeEnabled();
   }
   expect(api.requests).toEqual([{ enabled: true }, { enabled: false }]);
   expect(api.unexpected).toEqual([]);
@@ -112,7 +132,7 @@ test('hiển thị thời điểm cooldown do API cung cấp', async ({ page }) 
   const api = await fixtures(page);
   api.rule = { ...disabled(), enabled: true, lastResult: 'COOLDOWN', cooldownUntil: '2099-10-14T00:01:00Z' };
   await page.goto('/');
-  await expect(page.getByText(/Đang nghỉ ít nhất 60 giây sau OFF xác nhận/)).toBeVisible();
+  await expect(page.getByText(/Đang nghỉ sau OFF xác nhận/)).toBeVisible();
   await expect(page.getByText(/Nghỉ đến:.*2099/)).toBeVisible();
   expect(api.requests).toEqual([]); expect(api.unexpected).toEqual([]);
 });
@@ -121,11 +141,11 @@ test('lỗi GET rồi phục hồi xóa thông báo lỗi cũ', async ({ page })
   const api = await fixtures(page); api.failGet = true;
   await page.goto('/');
   await expect(page.getByRole('alert')).toHaveText('Không tải được quy tắc. Kiểm tra backend.');
-  await expect(page.getByRole('button')).toBeDisabled();
+  await expect(page.getByRole('button', { name: /^(Bật|Tắt) quy tắc$/ })).toBeDisabled();
   api.failGet = false;
   await expect(page.getByRole('status')).toHaveText('Quy tắc đang tắt');
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await expect(page.getByRole('button')).toBeEnabled();
+  await expect(page.getByRole('button', { name: /^(Bật|Tắt) quy tắc$/ })).toBeEnabled();
   expect(api.unexpected).toEqual([]);
 });
 
@@ -186,4 +206,115 @@ test('mất phản hồi PUT rồi GET xác nhận thay đổi thì xóa lỗi c
   await expect(page.getByRole('alert')).toHaveCount(0);
   expect(api.requests).toEqual([{ enabled: true }]);
   expect(api.unexpected).toEqual([]);
+});
+
+test('sửa cài đặt giữ bản nháp qua polling, lưu có phiên bản rồi mới cho bật', async ({ page }) => {
+  const api=await fixtures(page);
+  await page.goto('/');
+  const duration=page.getByLabel('Thời gian bật tự động (giây)');
+  await expect(duration).toHaveValue('20');
+  await duration.fill('12');
+  await page.getByLabel('Khoảng nghỉ sau OFF (giây)').fill('120');
+  await expect(page.getByRole('button',{name:'Bật quy tắc'})).toBeDisabled();
+  const count=api.getCount; await expect.poll(()=>api.getCount).toBeGreaterThan(count);
+  await expect(duration).toHaveValue('12');
+  const gate=deferred();api.settingsGate=gate.promise;
+  await page.getByRole('button',{name:'Lưu cài đặt',exact:true}).click();
+  await expect.poll(()=>api.settingsRequests.length).toBe(1);
+  await expect(page.getByText('Đã lưu cài đặt.',{exact:true})).toHaveCount(0);
+  gate.resolve();
+  await expect(page.getByText('Đã lưu cài đặt.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Bật quy tắc'})).toBeEnabled();
+  await expect(page.getByText(/Hai mẫu mới.*bật tối đa 12 giây.*Nghỉ 120 giây/)).toBeVisible();
+  expect(api.settingsRequests).toEqual([{...defaults(),durationSeconds:12,cooldownSeconds:120}]);
+  expect(api.unexpected).toEqual([]);
+});
+
+for (const active of [false,true]) test(`khóa sửa khi ${active?'run chưa xác nhận OFF':'quy tắc đang bật'}`,async({page})=>{
+  const api=await fixtures(page);
+  api.rule={...disabled(),enabled:!active,activeCommand:active?'unresolved':null};
+  await page.goto('/');
+  await expect(page.getByLabel('Thời gian bật tự động (giây)')).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Lưu cài đặt',exact:true})).toBeDisabled();
+  expect(api.settingsRequests).toEqual([]);
+});
+
+test('khoảng ngưỡng và thời gian không hợp lệ không gửi PUT',async({page})=>{
+  const api=await fixtures(page);
+  await page.goto('/');
+  await page.getByLabel('Ngưỡng đất khô (%)',{exact:true}).fill('34');
+  await expect(page.getByRole('button',{name:'Lưu cài đặt',exact:true})).toBeDisabled();
+  await page.getByLabel('Ngưỡng tắt sớm (%)',{exact:true}).fill('40');
+  await page.getByLabel('Thời gian bật tự động (giây)').fill('31');
+  await expect(page.getByRole('button',{name:'Lưu cài đặt',exact:true})).toBeDisabled();
+  await page.getByLabel('Thời gian bật tự động (giây)').fill('10.5');
+  await expect(page.getByRole('button',{name:'Lưu cài đặt',exact:true})).toBeDisabled();
+  expect(api.settingsRequests).toEqual([]);
+});
+
+test('xung đột hai tab giữ bản nháp và chỉ tải lại khi người dùng yêu cầu',async({page})=>{
+  const api=await fixtures(page);
+  await page.goto('/');
+  await page.getByLabel('Thời gian bật tự động (giây)').fill('12');
+  api.settings={...defaults(),durationSeconds:15,revision:2};
+  await expect(page.getByRole('alert')).toContainText('Cài đặt đã thay đổi ở phiên khác');
+  await expect(page.getByLabel('Thời gian bật tự động (giây)')).toHaveValue('12');
+  await expect(page.getByRole('button',{name:'Lưu cài đặt',exact:true})).toBeDisabled();
+  await page.getByRole('button',{name:'Tải lại cài đặt (bỏ thay đổi)',exact:true}).click();
+  await expect(page.getByLabel('Thời gian bật tự động (giây)')).toHaveValue('15');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Bật quy tắc'})).toBeEnabled();
+  expect(api.settingsRequests).toEqual([]);
+});
+
+test('409 không bị polling che lỗi, không coi là lưu thành công',async({page})=>{
+  const api=await fixtures(page);api.settingsStatus=409;
+  await page.goto('/');
+  await page.getByLabel('Thời gian bật tự động (giây)').fill('12');
+  await page.getByRole('button',{name:'Lưu cài đặt',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('Không lưu được');
+  const count=api.getCount;await expect.poll(()=>api.getCount).toBeGreaterThan(count);
+  await expect(page.getByRole('alert')).toContainText('Không lưu được');
+  await expect(page.getByLabel('Thời gian bật tự động (giây)')).toHaveValue('12');
+  expect(api.settingsRequests).toHaveLength(1);
+});
+
+test('mất phản hồi lưu không tự gửi lại; tải lại đối chiếu cài đặt đã lưu',async({page})=>{
+  const api=await fixtures(page);api.loseSettingsResponse=true;
+  await page.goto('/');
+  await page.getByLabel('Thời gian bật tự động (giây)').fill('12');
+  await page.getByRole('button',{name:'Lưu cài đặt',exact:true}).click();
+  await expect(page.getByRole('alert').filter({hasText:'Chưa xác nhận cài đặt'})).toBeVisible();
+  const count=api.getCount;await expect.poll(()=>api.getCount).toBeGreaterThan(count);
+  await expect(page.getByRole('button',{name:'Lưu cài đặt',exact:true})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Bật quy tắc'})).toBeDisabled();
+  await page.getByRole('button',{name:'Tải lại cài đặt (bỏ thay đổi)',exact:true}).click();
+  await expect(page.getByLabel('Thời gian bật tự động (giây)')).toHaveValue('12');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Bật quy tắc'})).toBeEnabled();
+  expect(api.settingsRequests).toHaveLength(1);
+});
+
+test('lịch sử giữ cấu hình cũ, không gán mặc định cho run trước V11',async({page})=>{
+  const api=await fixtures(page);
+  api.runs=[{id:1,startedAt:'2026-10-14T00:00:00Z',commandId:'old-command',result:'REPORTED_OFF'},
+    {...{id:2,startedAt:'2026-10-14T00:01:00Z',commandId:'new-command',result:'REPORTED_OFF'},dryThreshold:25,wetThreshold:40,durationSeconds:10,cooldownSeconds:120,settingsRevision:3} as typeof api.runs[number]];
+  await page.goto('/');
+  await expect(page.getByText('Cài đặt chưa được lưu cho lần chạy cũ.')).toBeVisible();
+  await expect(page.getByText('Cài đặt v3: dưới 25% / tắt từ 40% · bật 10s · nghỉ 120s')).toBeVisible();
+});
+
+for (const response of ['invalid-body','broken-json','server-error']) test(`không lặp PUT khi kết quả lưu chưa xác định: ${response}`,async({page})=>{
+  const api=await fixtures(page);
+  if (response==='invalid-body') api.settingsResponse={};
+  if (response==='broken-json') api.malformedSettingsJson=true;
+  if (response==='server-error') api.settingsStatus=503;
+  await page.goto('/');
+  await page.getByLabel('Thời gian bật tự động (giây)').fill('12');
+  await page.getByRole('button',{name:'Lưu cài đặt',exact:true}).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByText('Đã lưu cài đặt.',{exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Lưu cài đặt',exact:true})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Bật quy tắc'})).toBeDisabled();
+  expect(api.settingsRequests).toHaveLength(1);
 });

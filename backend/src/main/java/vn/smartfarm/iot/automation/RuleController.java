@@ -8,6 +8,8 @@ public class RuleController {
     private final WateringRule rule;
     public RuleController(WateringRule rule) { this.rule=rule; }
     @GetMapping public WateringRule.State state() { return rule.state(); }
+    @GetMapping("/settings") public WateringRule.Settings settings() { return rule.settings(); }
+    @PutMapping("/settings") public WateringRule.Settings saveSettings(@RequestBody WateringRule.Settings settings) { return rule.saveSettings(settings); }
     @GetMapping("/runs") public List<WateringRule.Run> runs() { return rule.runs(); }
     @PutMapping public WateringRule.State configure(@RequestBody Settings settings) {
         if (settings.enabled()==null) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);

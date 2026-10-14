@@ -16,7 +16,9 @@ import vn.smartfarm.iot.telemetry.TelemetryRepository;
 public class WateringRule {
     public record State(boolean enabled, int lowCount, UUID activeCommand, Instant cooldownUntil, String lastResult) {}
     private record TrackedCommand(String state,Instant issuedAt) {}
-    public record Run(long id,Instant startedAt,UUID commandId,String result) {}
+    public record Settings(int dryThreshold,int wetThreshold,int durationSeconds,int cooldownSeconds,long revision) {}
+    public record Run(long id,Instant startedAt,UUID commandId,String result,Integer dryThreshold,Integer wetThreshold,
+        Integer durationSeconds,Integer cooldownSeconds,Long settingsRevision) {}
     private final JdbcTemplate jdbc;
     private final PumpService pump;
     private final TelemetryRepository telemetry;
@@ -28,8 +30,23 @@ public class WateringRule {
         return jdbc.query("SELECT * FROM watering_rule WHERE singleton=1",(rs,n)->new State(rs.getBoolean("enabled"),rs.getInt("low_count"),rs.getObject("active_command",UUID.class),
             rs.getTimestamp("cooldown_until")==null ? null : rs.getTimestamp("cooldown_until").toInstant(),rs.getString("last_result"))).getFirst();
     }
+    public Settings settings() {
+        return jdbc.query("SELECT * FROM watering_rule WHERE singleton=1",(rs,n)->new Settings(rs.getInt("dry_threshold"),rs.getInt("wet_threshold"),rs.getInt("duration_seconds"),rs.getInt("cooldown_seconds"),rs.getLong("settings_revision"))).getFirst();
+    }
+    public synchronized Settings saveSettings(Settings input) {
+        if(input==null || input.dryThreshold()<1 || input.dryThreshold()>90 || input.wetThreshold()<input.dryThreshold()+5 || input.wetThreshold()>100
+            || input.durationSeconds()<1 || input.durationSeconds()>30 || input.cooldownSeconds()<60 || input.cooldownSeconds()>3600 || input.revision()<1)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Invalid thresholds, duration, cooldown or revision");
+        int changed=jdbc.update("""
+            UPDATE watering_rule SET dry_threshold=?,wet_threshold=?,duration_seconds=?,cooldown_seconds=?,
+              settings_revision=settings_revision+1,low_count=0,last_sample_at=NULL,last_sample_boot=NULL,last_sample_sequence=NULL
+            WHERE singleton=1 AND settings_revision=? AND enabled=false AND active_command IS NULL
+            """,input.dryThreshold(),input.wetThreshold(),input.durationSeconds(),input.cooldownSeconds(),input.revision());
+        if(changed!=1) throw new ResponseStatusException(HttpStatus.CONFLICT,"Disable rule and resolve active run; reload settings if revision changed");
+        return settings();
+    }
     public List<Run> runs() {
-        return jdbc.query("SELECT * FROM watering_run ORDER BY id DESC LIMIT 20",(rs,n)->new Run(rs.getLong("id"),rs.getTimestamp("started_at").toInstant(),rs.getObject("command_id",UUID.class),rs.getString("result")));
+        return jdbc.query("SELECT * FROM watering_run ORDER BY id DESC LIMIT 20",(rs,n)->new Run(rs.getLong("id"),rs.getTimestamp("started_at").toInstant(),rs.getObject("command_id",UUID.class),rs.getString("result"),rs.getObject("dry_threshold",Integer.class),rs.getObject("wet_threshold",Integer.class),rs.getObject("duration_seconds",Integer.class),rs.getObject("cooldown_seconds",Integer.class),rs.getObject("settings_revision",Long.class)));
     }
     // Restart never resumes automatic dispatch. Existing timed command still has its device cutoff.
     public synchronized void safeStartup() {
@@ -64,6 +81,7 @@ public class WateringRule {
     }
     public synchronized void tick() {
         var state=state();
+        var settings=settings();
         if (state.activeCommand()!=null) {
             pump.commands(); // expire outstanding ACKs
             var command=jdbc.query("SELECT state,issued_at FROM pump_command WHERE command_id=?",(rs,n)->new TrackedCommand(rs.getString("state"),rs.getTimestamp("issued_at").toInstant()),state.activeCommand()).stream().findFirst();
@@ -83,7 +101,7 @@ public class WateringRule {
                 jdbc.update("UPDATE watering_run SET result='EXECUTION_CONFIRMED' WHERE command_id=?",state.activeCommand());
             }
             var latest=telemetry.latest("ENV01");
-            if (!status.fresh() || latest.isEmpty() || !fresh(latest.get()) || latest.get().telemetry().soilMoisture()>=35) {
+            if (!status.fresh() || latest.isEmpty() || !fresh(latest.get()) || latest.get().telemetry().soilMoisture()>=settings.wetThreshold()) {
                 jdbc.update("UPDATE watering_rule SET stop_requested=true,last_result='STOP_REQUESTED' WHERE singleton=1"); sendStop();
             }
             return;
@@ -111,7 +129,7 @@ public class WateringRule {
             if (previous!=null && !stamp.isAfter(previous.toInstant())) continue;
             if (sample.bootId().equals(boot) && sequence!=null && sample.sequence()<=sequence) continue;
             boolean consecutive=previous!=null && !stamp.isAfter(previous.toInstant().plusSeconds(15)) && sample.bootId().equals(boot);
-            count=fresh(reading) && sample.soilMoisture()<30 ? (consecutive ? count+1 : 1) : 0;
+            count=fresh(reading) && sample.soilMoisture()<settings.dryThreshold() ? (consecutive ? count+1 : 1) : 0;
             previous=Timestamp.from(stamp); boot=sample.bootId(); sequence=sample.sequence();
             consumed=true;
             jdbc.update("UPDATE watering_rule SET last_sample_at=?,last_sample_boot=?,last_sample_sequence=?,low_count=?,last_result='WAITING_SAMPLES' WHERE singleton=1",previous,boot,sequence,Math.min(count,2));
@@ -120,9 +138,9 @@ public class WateringRule {
         else if (count==0) jdbc.update("UPDATE watering_rule SET last_result='SOIL_NOT_LOW' WHERE singleton=1");
         if (count<2) return;
         try {
-            var command=pump.create(new PumpService.Request("ON",20),id -> transaction.executeWithoutResult(tx -> {
+            var command=pump.create(new PumpService.Request("ON",settings.durationSeconds()),id -> transaction.executeWithoutResult(tx -> {
                 jdbc.update("UPDATE watering_rule SET active_command=?,low_count=0,last_result='COMMAND_PENDING' WHERE singleton=1",id);
-                jdbc.update("INSERT INTO watering_run(command_id,result) VALUES(?,'COMMAND_PENDING')",id);
+                jdbc.update("INSERT INTO watering_run(command_id,result,dry_threshold,wet_threshold,duration_seconds,cooldown_seconds,settings_revision) VALUES(?,'COMMAND_PENDING',?,?,?,?,?)",id,settings.dryThreshold(),settings.wetThreshold(),settings.durationSeconds(),settings.cooldownSeconds(),settings.revision());
             }));
             runResult(command.state().equals("EXECUTED") ? "EXECUTION_CONFIRMED" : "COMMAND_SENT");
         } catch (Exception error) {
@@ -130,9 +148,9 @@ public class WateringRule {
             jdbc.update("UPDATE watering_rule SET enabled=false,low_count=0,last_result='DISPATCH_FAILED' WHERE singleton=1");
             UUID uncertain=error instanceof PumpService.UncertainPublish failure ? failure.commandId : null;
             if (uncertain!=null) jdbc.update("UPDATE watering_rule SET active_command=?,stop_requested=true WHERE singleton=1",uncertain);
-            if (uncertain==null) jdbc.update("INSERT INTO watering_run(result) VALUES('DISPATCH_FAILED')");
+            if (uncertain==null) jdbc.update("INSERT INTO watering_run(result,dry_threshold,wet_threshold,duration_seconds,cooldown_seconds,settings_revision) VALUES('DISPATCH_FAILED',?,?,?,?,?)",settings.dryThreshold(),settings.wetThreshold(),settings.durationSeconds(),settings.cooldownSeconds(),settings.revision());
             else {
-                jdbc.update("INSERT INTO watering_run(command_id,result) SELECT ?,'DISPATCH_FAILED' WHERE NOT EXISTS (SELECT 1 FROM watering_run WHERE command_id=?)",uncertain,uncertain);
+                jdbc.update("INSERT INTO watering_run(command_id,result,dry_threshold,wet_threshold,duration_seconds,cooldown_seconds,settings_revision) SELECT ?,'DISPATCH_FAILED',?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM watering_run WHERE command_id=?)",uncertain,settings.dryThreshold(),settings.wetThreshold(),settings.durationSeconds(),settings.cooldownSeconds(),settings.revision(),uncertain);
                 runResult("DISPATCH_FAILED");
             }
         }
@@ -181,6 +199,6 @@ public class WateringRule {
     private void finish(String result) {
         var state=state();
         jdbc.update("UPDATE watering_run SET result=? WHERE command_id=?",result,state.activeCommand());
-        jdbc.update("UPDATE watering_rule SET active_command=NULL,stop_command=NULL,stop_requested=false,stop_attempted=false,low_count=0,cooldown_until=?,last_result=? WHERE singleton=1",Timestamp.from(Instant.now().plusSeconds(60)),result);
+        jdbc.update("UPDATE watering_rule SET active_command=NULL,stop_command=NULL,stop_requested=false,stop_attempted=false,low_count=0,cooldown_until=?,last_result=? WHERE singleton=1",Timestamp.from(Instant.now().plusSeconds(settings().cooldownSeconds())),result);
     }
 }

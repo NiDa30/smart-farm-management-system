@@ -1,5 +1,11 @@
 # Quy tắc tưới tự động đầu tiên
 
+**Cập nhật V11:** bốn giá trị 30/35/20/60 trong chương này là mặc định của
+bản V10. Nay có thể sửa trên giao diện theo [chương 17](CHAPTER_17_WATERING_SETTINGS.md).
+Thời hạn bảo thủ khi thiếu ACK là `expiresAt + durationSeconds`, không luôn
+cố định issuedAt + 30 giây. Các bằng chứng cũ dưới đây giữ theo phiên bản đã thử.
+
+
 **Bản bàn giao V10, cập nhật tài liệu 14/10/2026:** nội dung dưới đây dựa trên
 [báo cáo code local](../implementation/LOCAL_CODEX_REPORT.md), không suy luận
 từ code đang sửa. Dấu nhận diện báo cáo đã dùng được ghi trong

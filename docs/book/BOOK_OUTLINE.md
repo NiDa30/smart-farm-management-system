@@ -24,3 +24,5 @@ thu đầy đủ. Các chương 11–13 thực hành nằm trong [mục lục s�
 Phụ lục: sổ lỗi, lệnh Windows/Linux, glossary, mẫu schema/topic/policy đã ẩn thông tin tài khoản, checklist và bảng phiên bản được kiểm chứng.
 
 Mỗi chương gồm mục tiêu, điều kiện đầu vào, lý do chọn giải pháp, thực hành, kết quả mong đợi, lỗi thật gặp trong dự án, cách giải quyết, và tiêu chí hoàn thành. Chuẩn hóa lệnh để người đọc sao chép được; giữ ảnh đã che thông tin riêng. Không đưa bí mật từ `.local/`, filesystem image hay credentials vào bản thảo.
+
+Chương thực hành bổ sung: [17 — Cài đặt tưới có phiên bản](CHAPTER_17_WATERING_SETTINGS.md), lưu cấu hình, xung đột hai tab và giữ bằng chứng theo run.

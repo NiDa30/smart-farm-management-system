@@ -1,5 +1,25 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — Cài đặt tưới và bảo vệ bản nháp
+
+Tiếp tục từ b9cc51b. Thêm V11 giữ mặc định 30/35/20/60 và cấu hình có phiên bản.
+API chỉ cho sửa khi rule tắt và không có active run, không phát MQTT khi lưu.
+Scheduler dùng ngưỡng/thời gian đã lưu; mỗi run ghi cấu hình trước publish.
+Run cũ để metadata null, không gán dữ liệu không có bằng chứng. Khoảng nghỉ đang
+có giữ nguyên deadline khi sửa; cấu hình mới dùng cho lần sau. Alert giữ ngưỡng riêng.
+
+UI giữ bản nháp qua polling, chặn bật khi chưa lưu, phát hiện revision đổi từ
+tab khác. PUT chưa rõ kết quả khóa gửi lại và yêu cầu GET đối chiếu; không suy
+thành công từ HTTP 200 sai body. Thêm khóa sửa khi run chưa xác nhận OFF, kể cả
+sau backend restart. Tận dụng Jackson strict sẵn có thay vì thêm parser riêng.
+
+72 backend tests, 24 browser fixtures automation, 11 unit client đạt không skip;
+lint/build đạt. Smoke App/API/PostgreSQL test lưu và đọc sau restart, MQTT/control
+tắt, không gửi command hoặc bật rule. Migration V10 → V11 giữ run/boot/sequence,
+không mất dữ liệu cũ. Chương 17 và WATERING_SETTINGS_REPORT mô tả kiểm tra và giới hạn.
+Windows/AWS/Wokwi dùng ngưỡng mới chưa nghiệm thu; không đổi firmware/IAM/NVS.
+
+
 ## Tổng quan IoT dùng dữ liệu backend
 
 Từ bbbd231, thay IoTDashboard mock bằng GET /api/v1/dashboard/overview, chỉ
