@@ -831,3 +831,20 @@ Sau điều chỉnh IAM, lệnh CLI attach-policy không lỗi. Lần chạy scr
 3. Thu MQTT TLS/PUBACK và khoảng 60 telemetry hợp lệ trong 5 phút, thay đổi sensor ảo.
 4. Chạy backend probe với quyền runtime riêng, lưu bằng chứng đã làm sạch.
 5. Tiếp tục persistence/UI/control/safety/ACK theo kế hoạch sau khi gate Day 1 đạt.
+
+## 15/10/2026 — SOIL nhiều điểm, nền đầu A3
+
+- Thêm SOIL/v2 bằng V17; form khai báo ba điểm SOIL1/SOIL2/SOIL3, hiển thị và
+  history/CSV riêng. Partial packet không làm mới điểm thiếu, lỗi null khác 0.
+- Firmware/sơ đồ SOIL riêng ADC1 34/35/32, ba fault switches, SIMULATOR-only.
+  Helper provisioning/prepare thêm --node-type SOIL, giữ default WATER và
+  config/cert riêng. Không chuyển rule hiện tại khỏi ENV01 hoặc tạo command.
+- 152 backend, 22 browser node/history, 13 unit frontend, 17 Python WATER,
+  7 Python SOIL, native và Pio/buildfs/merge public đạt, không skip.
+- V16→V17 giữ flow status/history; smoke toàn app/API/PostgreSQL test có ba
+  packet/bảy readings, filter/CSV đúng, command0/run0. MQTT/control tắt.
+- Query xác minh ban đầu nhầm cột state; đọc V3 sửa thành reported_state.
+  Không có lỗi migration hoặc reset dữ liệu. Source/back button history được
+  cập nhật đồng bộ với smoke cũ.
+- [Chương27](CHAPTER_27_SOIL_MULTIPOINT.md) và [báo cáo](../implementation/LOCAL_SOIL_NODE_REPORT.md)
+  có Windows runbook/sáu ca còn Chưa chạy. Chưa nghiệm thu SOIL AWS/Wokwi thật.

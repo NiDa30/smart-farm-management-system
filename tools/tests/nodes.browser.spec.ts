@@ -10,7 +10,7 @@ async function fixture(page:Page){
   if(r.method()==='GET'&&path==='/api/v1/areas'){await route.fulfill({json:[{id:'AREA001',name:'Vườn dừa'}]});return;}
   if(r.method()==='GET'&&path==='/api/v1/nodes'){await route.fulfill({status:state.fail?503:200,json:state.snapshot});return;}
   if(r.method()==='GET'&&path.startsWith('/api/v1/nodes/')){await route.fulfill({status:state.detail?200:404,json:state.detail??{}});return;}
-  if(r.method()==='POST'&&path==='/api/v1/nodes'){const body=r.postDataJSON();state.posts.push(body);const n={...body,nodeType:'WATER',telemetryVersion:2,actuators:[],channels:body.channels.map((c:any)=>({...c,latest:null}))} as FarmNode;state.detail=n;
+  if(r.method()==='POST'&&['/api/v1/nodes','/api/v1/nodes/soil'].includes(path)){const body=r.postDataJSON();state.posts.push(body);const n={...body,nodeType:path.endsWith('/soil')?'SOIL':'WATER',telemetryVersion:2,actuators:[],channels:body.channels.map((c:any)=>({...c,latest:null}))} as FarmNode;state.detail=n;
    if(state.unknown){await route.abort('failed');return;}if(state.status===201)state.snapshot.nodes.push(n);await route.fulfill({status:state.status,json:state.status===201?n:{}});return;}
   state.unexpected.push(r.method()+' '+path);await route.abort();
  });return state;
@@ -74,7 +74,7 @@ async function historyFixture(page:Page){
   const rows=Array.from({length:size},(_,i)=>({sampleId:(next?100:200)-i,value:quality==='SENSOR_FAULT'||(!quality&&!api.paged&&i===0)?null:channelId==='LOW'?false:i===2?6:0,
    quality:quality??(!api.paged&&i===0?'SENSOR_FAULT':'VALID'),observedAt:new Date(Date.parse(q.get('to')!)-(next?10000:5000)-i).toISOString(),receivedAt:new Date().toISOString(),
    bootId:'37000000-0000-4000-8000-000000000001',sequence:(next?100:200)-i,calibrationVersion:channel.calibrationVersion,dataSource:source}));
-  const response={nodeId:bad?'WATER02':'WATER01',channel:{...channel,latest:undefined},from:q.get('from'),to:q.get('to'),dataSource:q.get('dataSource'),quality:q.get('quality'),snapshotId:200,items:rows,nextCursor:api.paged&&!next?'NEXT':null};
+  const response={nodeId:bad?'OTHER01':url.pathname.split('/')[4],channel:{...channel,latest:undefined},from:q.get('from'),to:q.get('to'),dataSource:q.get('dataSource'),quality:q.get('quality'),snapshotId:200,items:rows,nextCursor:api.paged&&!next?'NEXT':null};
   if(delayed)await delayed;await route.fulfill({status:fail?503:200,json:response});
  });return api;
 }
@@ -120,7 +120,7 @@ test('late water history response cannot replace a newer filter result',async({p
 test('invalid water range is rejected locally and returning resumes node view',async({page})=>{
  const api=await historyFixture(page);await openHistory(page);await expect(page.getByRole('table')).toBeVisible();const calls=api.calls.length;
  await page.getByLabel('Lịch sử từ',{exact:true}).fill('2020-01-01T00:00');await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();await expect(page.getByRole('alert')).toContainText('tối đa 31 ngày');expect(api.calls).toHaveLength(calls);
- await page.getByRole('button',{name:'Quay lại Node & trạm nước',exact:true}).click();await expect(page.getByRole('button',{name:'Khai báo trạm nước',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Quay lại danh sách node',exact:true}).click();await expect(page.getByRole('button',{name:'Khai báo trạm nước',exact:true})).toBeVisible();
 });
 
 test('water minute-only input does not remain dirty after applying equivalent time',async({page})=>{
@@ -128,4 +128,36 @@ test('water minute-only input does not remain dirty after applying equivalent ti
  const input=page.getByLabel('Lịch sử từ',{exact:true});const minute=(await input.inputValue()).slice(0,16);
  await input.fill(minute);await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();
  await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeEnabled();await expect(page.getByText('Bộ lọc đã đổi; áp dụng để xem kết quả và xuất CSV tương ứng.',{exact:true})).toHaveCount(0);
+});
+
+function soil():FarmNode {
+ const current=new Date().toISOString();
+ return {nodeId:'SOIL01',name:'Đất dãy 1',areaId:'AREA001',nodeType:'SOIL',telemetryVersion:2,actuators:[],channels:[0,100,null].map((value,i)=>({
+  channelId:`SOIL${i+1}`,metric:'SOIL_MOISTURE',unit:'%',calibrationVersion:'SIM_LINEAR_V1',latest:{value,quality:value===null?'SENSOR_FAULT':'VALID',observedAt:current,receivedAt:current,bootId:'41000000-0000-4000-8000-000000000001',sequence:1,calibrationVersion:'SIM_LINEAR_V1',dataSource:'SIMULATOR'}}))};
+}
+test('soil points keep independent zero, saturated and fault values',async({page})=>{
+ const state=await fixture(page);state.snapshot.nodes=[soil()];await page.goto('/');
+ await expect(page.getByRole('article',{name:'SOIL01 SOIL1',exact:true})).toContainText('0 %');
+ await expect(page.getByRole('article',{name:'SOIL01 SOIL2',exact:true})).toContainText('100 %');
+ const fault=page.getByRole('article',{name:'SOIL01 SOIL3',exact:true});await expect(fault).toContainText('—');await expect(fault).toContainText('Cảm biến báo lỗi');
+ await expect(page.getByLabel('Mức bồn SOIL01')).toHaveCount(0);expect(state.posts).toEqual([]);expect(state.unexpected).toEqual([]);
+});
+test('soil registration posts three simulator calibration identities and reconciles uncertain result',async({page})=>{
+ const state=await fixture(page);state.unknown=true;await page.goto('/');await page.getByRole('button',{name:'Khai báo node đất',exact:true}).click();
+ await page.getByLabel('Mã node',{exact:true}).fill('SOIL02');await page.getByLabel('Tên node đất',{exact:true}).fill('Dãy số 2');
+ await page.getByRole('button',{name:'Lưu khai báo',exact:true}).click();await expect(page.getByRole('button',{name:'Lưu khai báo',exact:true})).toBeDisabled();
+ expect(state.posts).toHaveLength(1);expect(state.posts[0].channels.map((c:any)=>[c.channelId,c.metric,c.calibrationVersion])).toEqual(['SOIL1','SOIL2','SOIL3'].map(id=>[id,'SOIL_MOISTURE','SIM_LINEAR_V1']));
+ await page.getByRole('button',{name:'Kiểm tra khai báo',exact:true}).click();await expect(page.getByRole('status')).toContainText('Đã đối chiếu khai báo SOIL02');expect(state.posts).toHaveLength(1);expect(state.unexpected).toEqual([]);
+});
+test('fresh soil point does not refresh old adjacent point; API outage blocks history',async({page})=>{
+ const state=await fixture(page);state.snapshot.nodes=[soil()];state.snapshot.nodes[0].channels[1].latest!.observedAt=new Date(Date.now()-60000).toISOString();await page.goto('/');
+ await expect(page.getByRole('article',{name:'SOIL01 SOIL1',exact:true})).toContainText('Dữ liệu mới');await expect(page.getByRole('article',{name:'SOIL01 SOIL2',exact:true})).toContainText('Dữ liệu cũ');
+ state.fail=true;await page.getByRole('button',{name:'Làm mới node'}).click();await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByRole('button',{name:'Lịch sử SOIL01 SOIL1',exact:true})).toBeDisabled();
+});
+test('soil history supports scoped filters and CSV with soil filename and no actuator calls',async({page})=>{
+ const api=await historyFixture(page);api.inventory.snapshot.nodes=[soil()];await page.goto('/');await page.getByRole('button',{name:'Lịch sử SOIL01 SOIL1',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Lịch sử kênh đất',exact:true})).toBeVisible();await expect(page.getByRole('table')).toContainText('0 %');await expect(page.getByRole('table')).toContainText('Lỗi cảm biến');
+ const download=page.waitForEvent('download');await page.getByRole('button',{name:'Xuất CSV trang này'}).click();expect((await download).suggestedFilename()).toBe('soil-history-SOIL01-SOIL1.csv');
+ await page.getByLabel('Chất lượng lịch sử').selectOption('SENSOR_FAULT');await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeDisabled();await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeEnabled();
+ expect(api.calls.at(-1)?.searchParams.get('quality')).toBe('SENSOR_FAULT');expect(api.inventory.posts).toEqual([]);expect(api.inventory.unexpected).toEqual([]);
 });

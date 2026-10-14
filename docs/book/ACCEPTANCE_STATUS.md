@@ -1,6 +1,19 @@
 # Trạng thái bằng chứng và nghiệm thu — 15/10/2026 (giờ Việt Nam)
 
-15/10/2026 giờ Việt Nam: local flow guard opt-in có code/native và ESP32 build
+## SOIL nhiều điểm — 15/10/2026
+
+V17 có SOIL/v2, UI/form/history/CSV, firmware Wokwi ba ADC và fault injection;
+152 backend +22 browser node/history +13 unit frontend +17 Python WATER +7
+Python SOIL, native/model/encoder và Pio/buildfs/merge public đạt, không skip.
+Full-app/API/PostgreSQL test đọc ba packet/bảy readings, CSV/nguồn/fault riêng;
+V16→V17 giữ flow status/history, command0/run0, MQTT/control tắt. Đây không phải
+SOIL live hoặc phần cứng thật. Sáu ca AWS/Wokwi ở
+[chương27](CHAPTER_27_SOIL_MULTIPOINT.md) vẫn Chưa chạy. Chưa có soil alerts,
+IRRIGATION/valve/coordinator hay tưới từ SOIL01; rule hiện tại dùng ENV01.
+
+
+
+Đợt flow guard trước V17 (15/10/2026 giờ Việt Nam): local flow guard opt-in có code/native và ESP32 build
 cả enabled/legacy; **144 backend**, 12 Safety browser, 10 Event browser, 6 unit
 Safety, 8 contract/4 wiring đạt; lint/build và full-app receive fixture đọc reason
 OFF/locked đạt. Không AWS/Wokwi/flow vật lý mới, không thêm migration sau V16.

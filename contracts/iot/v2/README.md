@@ -60,3 +60,22 @@ UI level summary requires LOW/HIGH fresh and coherent boot/sequence/time/source;
 otherwise UNKNOWN. It is not permission to run PUMP01. See
 [water monitor handoff](../../../docs/implementation/WATER_NODE_FIRMWARE_REPORT.md)
 and [chapter23](../../../docs/book/CHAPTER_23_WATER_NODE_MONITOR.md).
+
+## SOIL nhiều điểm (V17)
+
+[soil-telemetry.schema.json](soil-telemetry.schema.json) và
+[ví dụ](examples/soil-telemetry.json) dùng envelope v2, 1–8 kênh
+SOIL_MOISTURE/%, số VALID 0–100 hoặc SENSOR_FAULT/null. Khai báo bằng POST
+`/api/v1/nodes/soil`, body nodeId/name/areaId/channels giống cấu trúc WATER.
+Node phải là SOIL/v2, topic/device và từng metric/unit/calibration phải khớp.
+Một packet không được trùng channelId; JSON Schema không kiểm tra tính duy nhất
+theo một thuộc tính, backend kiểm tra thêm. Backend cũng kiểm tra duplicate
+JSON keys, giới hạn payload, thời gian tương lai và registry trước transaction.
+
+Không sửa schema nước để nhận metric đất. Router dùng decoder envelope chung
+nhưng registry riêng cho từng loại; SOIL không sinh water alerts, không ghi
+telemetry v1 hoặc điều khiển PUMP01. Snapshot/history giữ từng điểm riêng,
+packet một phần không làm mới điểm thiếu. Xem
+[chương 27](../../../docs/book/CHAPTER_27_SOIL_MULTIPOINT.md). Firmware demo
+có ba kênh và chỉ SIMULATOR; nguồn PHYSICAL trong contract là thông tin khai
+báo, không chứng minh phần cứng/hiệu chuẩn đã nghiệm thu.

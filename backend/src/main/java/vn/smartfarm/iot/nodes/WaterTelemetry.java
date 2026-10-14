@@ -6,7 +6,7 @@ import java.time.*;
 import java.util.*;
 import org.springframework.stereotype.Component;
 
-/** Water channels only; never coerce null/false/missing into a numeric zero. */
+/** Shared v2 envelope; strict water entry point retained for water-only callers. */
 @Component
 public class WaterTelemetry {
     public record Reading(String channelId,String metric,String unit,String quality,Object value,String calibrationVersion) {}
@@ -17,6 +17,9 @@ public class WaterTelemetry {
         "FLOW_RATE",new Metric("L/min",false,0,Double.MAX_VALUE),
         "WATER_TEMPERATURE",new Metric("°C",false,-55,125),
         "WATER_PRESSURE",new Metric("kPa",false,0,Double.MAX_VALUE));
+    public static final Map<String,Metric> SOIL_METRICS=Map.of("SOIL_MOISTURE",new Metric("%",false,0,100));
+    private static final Map<String,Metric> CHANNEL_METRICS;
+    static {var values=new HashMap<>(METRICS);values.putAll(SOIL_METRICS);CHANNEL_METRICS=Map.copyOf(values);}
     private final ObjectMapper mapper;
     private static final Set<String> ENVELOPE=Set.of("schemaVersion","deviceId","bootId","sequence","timestamp","uptimeMs","readings");
     private static final Set<String> READING=Set.of("channelId","metric","unit","quality","value","calibrationVersion");
@@ -44,7 +47,9 @@ public class WaterTelemetry {
         if(!value.isIntegralNumber()||!value.canConvertToLong()||value.longValue()<0||value.longValue()>9007199254740991L)throw new IllegalArgumentException("Integer required");
         return value.longValue();
     }
-    public Packet parse(byte[] bytes) {
+    public Packet parse(byte[] bytes) {return parse(bytes,METRICS);}
+    public Packet parseChannels(byte[] bytes) {return parse(bytes,CHANNEL_METRICS);}
+    private Packet parse(byte[] bytes,Map<String,Metric> metrics) {
         try {
             JsonNode node=object(bytes);
             if(node.has("dataSource")){Set<String> fields=new HashSet<>(ENVELOPE);fields.add("dataSource");fields(node,fields);}
@@ -62,7 +67,7 @@ public class WaterTelemetry {
             for(JsonNode value:values) {
                 fields(value,READING);String id=code(text(value,"channelId"));
                 if(!ids.add(id))throw new IllegalArgumentException();
-                String metric=text(value,"metric"),unit=text(value,"unit"),quality=text(value,"quality");Metric definition=METRICS.get(metric);
+                String metric=text(value,"metric"),unit=text(value,"unit"),quality=text(value,"quality");Metric definition=metrics.get(metric);
                 if(definition==null||!definition.unit().equals(unit))throw new IllegalArgumentException();
                 JsonNode raw=value.get("value");Object reading=null;
                 if(quality.equals("SENSOR_FAULT")) {if(!raw.isNull())throw new IllegalArgumentException();}
@@ -75,6 +80,6 @@ public class WaterTelemetry {
                 readings.add(new Reading(id,metric,unit,quality,reading,version));
             }
             return new Packet(device,UUID.fromString(boot),integer(node,"sequence"),timestamp,integer(node,"uptimeMs"),source,List.copyOf(readings));
-        }catch(Exception error){throw new IllegalArgumentException("Invalid water telemetry v2");}
+        }catch(Exception error){throw new IllegalArgumentException("Invalid channel telemetry v2");}
     }
 }

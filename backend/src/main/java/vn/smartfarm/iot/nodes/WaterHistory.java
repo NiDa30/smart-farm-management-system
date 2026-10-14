@@ -32,9 +32,9 @@ public class WaterHistory {
         if(quality!=null&&!Set.of("VALID","SENSOR_FAULT").contains(quality))throw bad("Invalid quality");
         var declaration=jdbc.query("""
             SELECT c.* FROM iot_channel c JOIN iot_node n ON n.node_id=c.node_id
-            WHERE c.node_id=? AND c.channel_id=? AND n.node_type='WATER' AND n.telemetry_version=2
+            WHERE c.node_id=? AND c.channel_id=? AND n.node_type IN ('WATER','SOIL') AND n.telemetry_version=2
             """,(rs,n)->new Channel(rs.getString("channel_id"),rs.getString("metric"),rs.getString("unit"),rs.getString("calibration_version")),node,channel)
-            .stream().findFirst().orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Water channel not found"));
+            .stream().findFirst().orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Channel not found"));
         String scope=String.join("\n",node,channel,start.toString(),end.toString(),source==null?"":source,quality==null?"":quality);
         Cursor point=null;
         if(cursor!=null){if(from==null||to==null)throw bad("Cursor requires explicit from/to");point=decode(cursor,scope,start,end);}

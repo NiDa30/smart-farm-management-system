@@ -39,6 +39,6 @@ with sync_playwright() as p:
   if channel=='LOW':assert [r['value'] for r in rows]==['true','true','false','false']
   else:assert all(float(r['value'])==0 for r in rows)
   page.screenshot(path=f'/tmp/water-history-{channel}.png',full_page=True,animations='disabled')
-  page.get_by_role('button',name='Quay lại Node & trạm nước',exact=True).click()
+  page.get_by_role('button',name='Quay lại danh sách node',exact=True).click()
  assert not errors,errors;assert not writes,writes
  browser.close();print('PASS full-app water history LOW/FLOW, filters and CSV: retained PostgreSQL data, GET-only, MQTT/control disabled')

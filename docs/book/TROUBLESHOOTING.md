@@ -201,3 +201,16 @@ bằng request record. Rerun toàn bộ88 tests backend đạt, không skip.
 Nếu ACK trả409 hoặc mất response, mở Đối chiếu trạng thái để đọc theo ID.
 Không ghi đè note đầu hoặc coi đã xem là đã bình thường. Chi tiết ở
 [chương19](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md).
+
+## SOIL nhiều điểm — 15/10/2026
+
+- **Query xác minh migration báo cột state không tồn tại:** schema pump_status
+  dùng reported_state (V3). Đã đọc migration, sửa query thành reported_state,
+  xác nhận V17 giữ OFF/FLOW_SENSOR_FAULT/history2/command0; không sửa dữ liệu.
+- **Điểm lỗi và giá trị 0:** 0% VALID vẫn hiển thị 0. SENSOR_FAULT phải null/—;
+  không chữa bằng thay null thành 0 hoặc dựa đó bật bơm. Demo fault switch
+  SOIL1/2/3 trái=lỗi, phải=bình thường. Đây là kịch bản, không phải ca live đã chạy.
+- **Đã pull nhưng sơ đồ không có ba núm:** SOIL dùng project riêng
+  .local/soil-nodes/SOIL01. Khai báo registry, chuẩn bị project đúng loại, build/
+  buildfs/merge và mở diagram ở đó. Không thay certificate ENV01 bằng cert SOIL.
+  Xem [chương27](CHAPTER_27_SOIL_MULTIPOINT.md); live còn Chưa chạy.

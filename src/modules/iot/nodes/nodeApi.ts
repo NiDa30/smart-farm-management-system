@@ -2,9 +2,9 @@ export const metrics={AIR_TEMPERATURE:'°C',AIR_HUMIDITY:'%RH',SOIL_MOISTURE:'%'
 export type Metric=keyof typeof metrics;
 export interface ChannelReading {value:number|boolean|null;quality:'VALID'|'SENSOR_FAULT';observedAt:string;receivedAt:string;bootId:string;sequence:number;calibrationVersion:string|null;dataSource?:'UNSPECIFIED'|'SIMULATOR'|'PHYSICAL'}
 export interface NodeChannel {channelId:string;metric:Metric;unit:string;calibrationVersion:string|null;latest:ChannelReading|null}
-export interface FarmNode {nodeId:string;name:string;areaId:string;nodeType:'ENVIRONMENT'|'WATER';telemetryVersion:1|2;channels:NodeChannel[];actuators:{actuatorId:string;actuatorType:'PUMP';commandContract:'PUMP_V1'}[]}
+export interface FarmNode {nodeId:string;name:string;areaId:string;nodeType:'ENVIRONMENT'|'WATER'|'SOIL';telemetryVersion:1|2;channels:NodeChannel[];actuators:{actuatorId:string;actuatorType:'PUMP';commandContract:'PUMP_V1'}[]}
 export interface NodesSnapshot {farmId:'FARM001';asOf:string;nodes:FarmNode[]}
-export interface WaterDeclaration {nodeId:string;name:string;areaId:string;channels:Omit<NodeChannel,'latest'>[]}
+export interface WaterDeclaration {nodeType?:'WATER'|'SOIL';nodeId:string;name:string;areaId:string;channels:Omit<NodeChannel,'latest'>[]}
 const obj=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const code=(v:unknown):v is string=>typeof v==='string'&&/^[A-Z][A-Z0-9_-]{1,31}$/.test(v);
 const date=(v:unknown):v is string=>typeof v==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v));
@@ -25,13 +25,13 @@ export function parseChannelReading(value:unknown,metric:Metric):ChannelReading 
 }
 export function parseNode(v:unknown):FarmNode {
  if(!obj(v)||!code(v.nodeId)||!code(v.areaId)||typeof v.name!=='string'||!v.name.trim()||v.name.length>80
- ||!((v.nodeType==='ENVIRONMENT'&&v.telemetryVersion===1)||(v.nodeType==='WATER'&&v.telemetryVersion===2))
+ ||!((v.nodeType==='ENVIRONMENT'&&v.telemetryVersion===1)||(['WATER','SOIL'].includes(v.nodeType)&&v.telemetryVersion===2))
  ||!Array.isArray(v.channels)||!v.channels.length||v.channels.length>8||!Array.isArray(v.actuators))throw new Error('Khai báo node không hợp lệ.');
  const ids=new Set<string>();
  for(const c of v.channels){
   if(!obj(c)||!code(c.channelId)||ids.has(c.channelId)||typeof c.metric!=='string'||!Object.hasOwn(metrics,c.metric)||c.unit!==metrics[c.metric as Metric]||!calibration(c.calibrationVersion))throw new Error('Kênh cảm biến không hợp lệ.');
   ids.add(c.channelId);
-  if((v.nodeType==='WATER')!==['WATER_PRESENT','FLOW_RATE','WATER_TEMPERATURE','WATER_PRESSURE'].includes(c.metric))throw new Error('Loại kênh không khớp node.');
+  if(!(v.nodeType==='SOIL'?c.metric==='SOIL_MOISTURE':v.nodeType==='WATER'?['WATER_PRESENT','FLOW_RATE','WATER_TEMPERATURE','WATER_PRESSURE'].includes(c.metric):['AIR_TEMPERATURE','AIR_HUMIDITY','SOIL_MOISTURE'].includes(c.metric)))throw new Error('Loại kênh không khớp node.');
   const r=c.latest;
   if(r!==null){
    parseChannelReading(r,c.metric as Metric);
@@ -54,13 +54,13 @@ export function channelFreshness(r:ChannelReading|null,serverNow:number){
 export class NodeSaveError extends Error {constructor(message:string,readonly uncertain:boolean){super(message);}}
 export async function createWaterNode(input:WaterDeclaration,signal:AbortSignal):Promise<FarmNode>{
  let r:Response;
- try{r=await fetch('/api/v1/nodes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input),signal});}
+ try{const {nodeType,...body}=input;r=await fetch(nodeType==='SOIL'?'/api/v1/nodes/soil':'/api/v1/nodes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});}
  catch{throw new NodeSaveError('Chưa rõ kết quả lưu. Kiểm tra khai báo trước khi gửi lại.',true);}
  if(r.status===400||r.status===409)throw new NodeSaveError(r.status===409?'Mã node/actuator đã tồn tại.':'Khai báo không hợp lệ hoặc khu vực không còn tồn tại.',false);
  try{if(r.status!==201)throw new Error();const n=parseNode(await r.json());if(!matchesDeclaration(n,input))throw new Error();return n;}
  catch{throw new NodeSaveError('Chưa xác nhận kết quả lưu. Kiểm tra khai báo theo mã.',true);}
 }
-export function matchesDeclaration(n:FarmNode,d:WaterDeclaration){return n.nodeId===d.nodeId&&n.name===d.name&&n.areaId===d.areaId&&n.nodeType==='WATER'
+export function matchesDeclaration(n:FarmNode,d:WaterDeclaration){return n.nodeId===d.nodeId&&n.name===d.name&&n.areaId===d.areaId&&n.nodeType===(d.nodeType??'WATER')
  &&n.channels.length===d.channels.length&&d.channels.every(c=>n.channels.some(x=>x.channelId===c.channelId&&x.metric===c.metric&&x.unit===c.unit&&x.calibrationVersion===c.calibrationVersion));}
 export const metricLabels:Record<Metric,string>={AIR_TEMPERATURE:'Nhiệt độ không khí',AIR_HUMIDITY:'Độ ẩm không khí',SOIL_MOISTURE:'Độ ẩm đất',WATER_PRESENT:'Phao có nước',FLOW_RATE:'Lưu lượng',WATER_TEMPERATURE:'Nhiệt độ nước',WATER_PRESSURE:'Áp suất nước'};
 

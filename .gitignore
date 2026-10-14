@@ -22,3 +22,9 @@ firmware/water-node/.pio/
 firmware/water-node/config/config.local.h
 firmware/water-node/data/*
 !firmware/water-node/data/.gitkeep
+
+# Private standalone soil-node project and outputs
+firmware/soil-node/.pio/
+firmware/soil-node/config/config.local.h
+firmware/soil-node/data/*
+!firmware/soil-node/data/.gitkeep

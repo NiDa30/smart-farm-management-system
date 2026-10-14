@@ -12,7 +12,7 @@ public class TelemetryRouter {
         if(!version.isIntegralNumber()||!version.canConvertToInt())throw new IllegalArgumentException("Invalid schema version");
         return switch(version.intValue()) {
             case 1 -> legacy.save(legacy.decodeRegistered(topic,bytes));
-            case 2 -> nodes.storeWater(topic,water.parse(bytes));
+            case 2 -> nodes.storeChannels(topic,water.parseChannels(bytes));
             default -> throw new IllegalArgumentException("Unsupported schema version");
         };
     }

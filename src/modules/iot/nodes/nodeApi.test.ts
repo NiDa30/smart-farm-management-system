@@ -43,3 +43,11 @@ test('provenance is validated and two different sources cannot form a tank state
  assert.equal(tankState(n,Date.parse(now)),'UNKNOWN');
  (n.channels[0].latest as any).dataSource='ASSUMED';assert.throws(()=>parse(n));
 });
+
+test('soil nodes accept only independent moisture channels and reconcile their declared type',()=>{
+ const n=node();n.nodeType='SOIL';n.nodeId='SOIL01';const c=n.channels[0];c.channelId='SOIL1';c.metric='SOIL_MOISTURE';c.unit='%';c.latest!.value=0;
+ assert.equal(parse(n).nodes[0].channels[0].latest!.value,0);
+ const d={nodeType:'SOIL' as const,nodeId:n.nodeId,name:n.name,areaId:n.areaId,channels:n.channels.map(({latest,...channel})=>channel)};
+ assert.equal(matchesDeclaration(n,d),true);assert.equal(matchesDeclaration(n,{...d,nodeType:'WATER'}),false);
+ c.latest!.value=100.01;assert.throws(()=>parse(n));c.latest!.value=0;c.metric='FLOW_RATE';c.unit='L/min';assert.throws(()=>parse(n));
+});

@@ -1,0 +1,215 @@
+{
+  "version": 1,
+  "author": "Smart Farm",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 180,
+      "left": 80,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "soil1",
+      "top": 0,
+      "left": 0,
+      "attrs": {
+        "value": "250",
+        "label": "SOIL1"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "fault1",
+      "top": 110,
+      "left": 0,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label1",
+      "top": -60,
+      "left": 0,
+      "attrs": {
+        "text": "SOIL1 - GPIO34\nFAULT switch: LEFT=fault | RIGHT=normal"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "soil2",
+      "top": 0,
+      "left": 200,
+      "attrs": {
+        "value": "500",
+        "label": "SOIL2"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "fault2",
+      "top": 110,
+      "left": 200,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label2",
+      "top": -60,
+      "left": 200,
+      "attrs": {
+        "text": "SOIL2 - GPIO35\nFAULT switch: LEFT=fault | RIGHT=normal"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "soil3",
+      "top": 0,
+      "left": 400,
+      "attrs": {
+        "value": "750",
+        "label": "SOIL3"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "fault3",
+      "top": 110,
+      "left": 400,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label3",
+      "top": -60,
+      "left": 400,
+      "attrs": {
+        "text": "SOIL3 - GPIO32\nFAULT switch: LEFT=fault | RIGHT=normal"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "scope",
+      "top": 460,
+      "left": 0,
+      "attrs": {
+        "text": "SOIL01 - 3 independent simulator probes\nNo pump/valve output. SIM_LINEAR_V1 is not physical calibration."
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "soil1:SIG",
+      "esp:34",
+      "green",
+      []
+    ],
+    [
+      "soil1:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "soil1:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "fault1:2",
+      "esp:27",
+      "blue",
+      []
+    ],
+    [
+      "fault1:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "soil2:SIG",
+      "esp:35",
+      "green",
+      []
+    ],
+    [
+      "soil2:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "soil2:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "fault2:2",
+      "esp:14",
+      "blue",
+      []
+    ],
+    [
+      "fault2:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "soil3:SIG",
+      "esp:32",
+      "green",
+      []
+    ],
+    [
+      "soil3:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "soil3:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "fault3:2",
+      "esp:25",
+      "blue",
+      []
+    ],
+    [
+      "fault3:1",
+      "esp:GND.2",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

@@ -48,3 +48,6 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 25. [Lịch sử kênh nước](CHAPTER_25_WATER_HISTORY.md): dữ liệu gốc, phân trang và CSV có nguồn/hiệu chuẩn từng mẫu.
 
 26. [Local flow guard](CHAPTER_26_LOCAL_FLOW_GUARD.md): ISR/xung, software timer độc lập loop, latch và kiểm thử prototype.
+
+27. [Node đất ba điểm](CHAPTER_27_SOIL_MULTIPOINT.md) — nền A3: kênh độc lập,
+    V17, firmware mô phỏng và project/certificate riêng; coordinator tưới còn sau.

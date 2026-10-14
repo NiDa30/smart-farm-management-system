@@ -36,6 +36,13 @@ range/source/quality và cursor; chưa tính tổng lít/chi phí.
 trên ENV01 GPIO25, mã/build/native; chưa Wokwi live hoặc WATER binding. Status
 FLOW_LOW/FLOW_SENSOR_FAULT chỉ nhận OFF/locked, chưa chứng minh guard enabled.
 
+15/10/2026 nền A3 có [SOIL ba điểm](../book/CHAPTER_27_SOIL_MULTIPOINT.md):
+V17, SOIL/v2, registry/UI/history/CSV và firmware mô phỏng riêng. SOIL1–3 giữ
+mẫu riêng, SIM_LINEAR_V1 chưa phải calibration vật lý; partial không refresh
+điểm thiếu. Chưa có IRRIGATION/zone coordinator/soil alerts hoặc tưới từ SOIL.
+Windows/AWS/Wokwi mới chưa nghiệm thu; rule vẫn ENV01. Xem
+[bàn giao](../implementation/LOCAL_SOIL_NODE_REPORT.md).
+
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.
 Đối chiếu [hợp đồng đang dùng](../../contracts/iot/v1/README.md),

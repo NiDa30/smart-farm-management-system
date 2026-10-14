@@ -64,3 +64,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Lịch sử kênh nước và CSV](CHAPTER_25_WATER_HISTORY.md): lọc range/source/quality, phân trang và xuất đúng trang; không tính tổng lít.
 
 - [Bảo vệ flow cục bộ](CHAPTER_26_LOCAL_FLOW_GUARD.md): opt-in ENV GPIO25, thời gian mồi và OFF/khóa; Wokwi live còn chờ.
+
+- [Node đất ba điểm](CHAPTER_27_SOIL_MULTIPOINT.md): SOIL/v2, UI/history và firmware Wokwi riêng; chưa điều khiển van hoặc nghiệm thu live.

@@ -200,3 +200,17 @@ Theo [chương 26](CHAPTER_26_LOCAL_FLOW_GUARD.md). Restart backend mới với
 build/buildfs/merge ENV và mở đúng firmware/esp32/diagram.json. Mặc định flag mới
 là 0, pull không tự bật. Chưa nghiệm thu Wokwi/flow vật lý; không coi status là
 bằng chứng calibration/guard enabled. Không tạo lại DB hoặc cert cho bước này.
+
+## SOIL01 ba điểm — nền A3 (15/10/2026)
+
+Đọc [chương27](CHAPTER_27_SOIL_MULTIPOINT.md) trước khi chạy: pull/restart
+backend để Flyway V17 nâng cấp, giữ PostgreSQL/config hiện có; frontend và
+gateway ở terminal riêng. Mở Sensor Realtime → Node & trạm nước → Khai báo
+node đất, giữ ba SIM_LINEAR_V1 cho mô phỏng. Chuẩn bị danh tính/cert **SOIL01
+riêng**, dùng hai helper hiện có với --node-type SOIL. Project sinh trong
+.local/soil-nodes/SOIL01; build/buildfs/merge theo project đó và mở đúng diagram.
+
+Không copy config.local.h hoặc PEM ENV01/WATER01 vào SOIL01. Source public không
+có endpoint/key, chỉ firmware build thành công không làm xuất hiện node live.
+Giữ sáu ca Wokwi trong chương27 là Chưa chạy đến khi có dữ liệu. Quy tắc tưới
+cũ vẫn ENV01; SOIL01 không có đầu ra bơm/van hoặc soil alerts trong lượt này.

@@ -58,7 +58,12 @@ public class NodeInventory {
     }
 
     @Transactional
-    public String registerWater(JsonNode input) {
+    public String registerWater(JsonNode input) {return register(input,"WATER",WaterTelemetry.METRICS);}
+
+    @Transactional
+    public String registerSoil(JsonNode input) {return register(input,"SOIL",WaterTelemetry.SOIL_METRICS);}
+
+    private String register(JsonNode input,String type,Map<String,WaterTelemetry.Metric> metrics) {
         WaterTelemetry.fields(input,Set.of("nodeId","name","areaId","channels"));
         String id=WaterTelemetry.code(WaterTelemetry.text(input,"nodeId")),area=WaterTelemetry.code(WaterTelemetry.text(input,"areaId"));
         String name=WaterTelemetry.text(input,"name").strip();
@@ -73,14 +78,14 @@ public class NodeInventory {
             WaterTelemetry.fields(channel,Set.of("channelId","metric","unit","calibrationVersion"));
             String channelId=WaterTelemetry.code(WaterTelemetry.text(channel,"channelId"));
             if(!ids.add(channelId))throw new IllegalArgumentException("Duplicate channel");
-            var metric=WaterTelemetry.METRICS.get(WaterTelemetry.text(channel,"metric"));
-            if(metric==null||!metric.unit().equals(WaterTelemetry.text(channel,"unit")))throw new IllegalArgumentException("Unsupported water metric/unit");
+            var metric=metrics.get(WaterTelemetry.text(channel,"metric"));
+            if(metric==null||!metric.unit().equals(WaterTelemetry.text(channel,"unit")))throw new IllegalArgumentException("Unsupported node metric/unit");
             if(!channel.get("calibrationVersion").isNull()) {
                 String version=WaterTelemetry.text(channel,"calibrationVersion");
                 if(version.isBlank()||version.length()>40)throw new IllegalArgumentException("Calibration version");
             }
         }
-        jdbc.update("INSERT INTO iot_node(node_id,name,area_id,node_type,telemetry_version) VALUES(?,?,?,'WATER',2)",id,name,area);
+        jdbc.update("INSERT INTO iot_node(node_id,name,area_id,node_type,telemetry_version) VALUES(?,?,?,?,2)",id,name,area,type);
         for(JsonNode channel:channels)jdbc.update("INSERT INTO iot_channel(node_id,channel_id,metric,unit,calibration_version) VALUES(?,?,?,?,?)",id,
             channel.get("channelId").textValue(),channel.get("metric").textValue(),channel.get("unit").textValue(),channel.get("calibrationVersion").isNull()?null:channel.get("calibrationVersion").textValue());
         return id;
@@ -88,9 +93,19 @@ public class NodeInventory {
 
     @Transactional
     public boolean storeWater(String topic,WaterTelemetry.Packet packet) {
-        if(!topic.equals("smartfarm/FARM001/"+packet.deviceId()+"/telemetry")||!Boolean.TRUE.equals(jdbc.queryForObject(
-            "SELECT EXISTS(SELECT 1 FROM iot_node WHERE node_id=? AND node_type='WATER' AND telemetry_version=2)",Boolean.class,packet.deviceId())))
-            throw new IllegalArgumentException("Unknown water node or topic mismatch");
+        if(!"WATER".equals(typeOf(packet.deviceId())))throw new IllegalArgumentException("Not a water node");
+        return storeChannels(topic,packet);
+    }
+    private String typeOf(String id) {
+        return jdbc.query("SELECT node_type FROM iot_node WHERE node_id=? AND telemetry_version=2",(rs,n)->rs.getString(1),id)
+            .stream().findFirst().orElseThrow(()->new IllegalArgumentException("Unknown v2 node"));
+    }
+
+    @Transactional
+    public boolean storeChannels(String topic,WaterTelemetry.Packet packet) {
+        String type=typeOf(packet.deviceId());
+        if(!topic.equals("smartfarm/FARM001/"+packet.deviceId()+"/telemetry")||!Set.of("WATER","SOIL").contains(type))
+            throw new IllegalArgumentException("Unknown channel node or topic mismatch");
         for(var reading:packet.readings()) {
             Integer count=jdbc.queryForObject("""
                 SELECT COUNT(*) FROM iot_channel WHERE node_id=? AND channel_id=? AND metric=? AND unit=?
@@ -107,7 +122,7 @@ public class NodeInventory {
             INSERT INTO channel_sample(sample_id,node_id,channel_id,quality,number_value,boolean_value,calibration_version) VALUES(?,?,?,?,?,?,?)
             """,rows.getFirst(),packet.deviceId(),reading.channelId(),reading.quality(),reading.value() instanceof Number?reading.value():null,
                 reading.value() instanceof Boolean?reading.value():null,reading.calibrationVersion());
-        waterAlerts.observe(packet,rows.getFirst());
+        if(type.equals("WATER"))waterAlerts.observe(packet,rows.getFirst());
         return true;
     }
 }

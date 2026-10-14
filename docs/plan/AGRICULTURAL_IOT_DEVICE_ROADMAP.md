@@ -304,8 +304,9 @@ cutoff theo WATER binding và water consumption vẫn chờ. Ngày 15/10/2026 c�
 [prototype flow guard local](../book/CHAPTER_26_LOCAL_FLOW_GUARD.md) trên ENV GPIO25,
 opt-in, grace/two-window/OFF-lock; native/build đạt nhưng chưa Wokwi/physical.
 Không coi A2 toàn bộ hoàn tất hoặc guard mặc định đang bật từ thay đổi này.
-A3–A6 còn trong kế hoạch. Không tự tạo Jira tasks hay AWS
-resources từ bảng backlog này.
+A3 đã bắt đầu nền SOIL ba điểm, xem [chương27](../book/CHAPTER_27_SOIL_MULTIPOINT.md);
+controller/van/coordinator A3 và A4–A6 còn trong kế hoạch. Không tự tạo Jira
+tasks hay AWS resources từ bảng backlog này.
 
 ## 11. Simulator, chi phí và sổ bằng chứng
 
@@ -601,3 +602,23 @@ khối lượng, confidence và số lượng cây trong bản ý tưởng khôn
 động vào DB, không thay rule/cấu hình hiện tại, không tạo Jira/AWS resources.
 Những câu trong nguồn nói một chức năng “đã xác định/đã mô tả trong tài liệu”
 không được dùng làm bằng chứng code hay runtime đã có chức năng đó.
+
+## Cập nhật triển khai 15/10/2026 — A3 bước đầu SOIL
+
+Đã thêm SOIL/v2 với migration V17, registry/API/UI/history/CSV theo từng điểm.
+Firmware và sơ đồ SOIL01 độc lập có ba ADC1 34/35/32, ba công tắc fault;
+SIM_LINEAR_V1 chỉ thang demo, không phải hiệu chuẩn đất thật. Helper WATER có
+--node-type SOIL để tạo project/cert riêng, mặc định WATER giữ nguyên.
+
+A3 mới hoàn thành **nền giám sát đất**, chưa hoàn tất SOIL+IRRIGATION trong
+bảng giai đoạn: chưa có van/controller IRRIGATION01, binding từng zone,
+coordinator chung bơm, soil alerts hoặc rule từ SOIL01. Mọi channel thuộc
+khu vực của node; chưa gán ba channel thành ba zone. Rule cũ vẫn ENV01/PUMP01.
+
+152 backend/22 browser node-history/13 unit frontend/17 Python WATER/7 Python
+SOIL, native/Pio và full-app PostgreSQL fixture đạt; MQTT/control tắt. Sáu ca
+SOIL AWS/Wokwi thật vẫn **Chưa chạy**, xem
+[chương27](../book/CHAPTER_27_SOIL_MULTIPOINT.md) và
+[báo cáo](../implementation/LOCAL_SOIL_NODE_REPORT.md). Phần A3 tiếp theo là
+controller một dãy và quyền bơm trước khi mở rộng bốn dãy; không suy ra đủ
+bảo vệ vật lý chỉ từ ACK hoặc telemetry mô phỏng.
