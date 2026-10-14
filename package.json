@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test:automation": "playwright test --config playwright.automation.config.ts"
+    "test:automation": "playwright test --config playwright.automation.config.ts",
+    "test:events": "playwright test --config playwright.events.config.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

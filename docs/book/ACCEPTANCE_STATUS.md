@@ -5,16 +5,19 @@ Nguồn là [nhật ký](BUILD_JOURNAL.md), [sổ lỗi](TROUBLESHOOTING.md) và
 trực tiếp của người dùng trong nhiệm vụ rà soát tài liệu. Không kiểm tra AWS,
 Wokwi hoặc code đang được agent khác sửa trong phiên biên tập này.
 
-Cập nhật theo [bản bàn giao code V10](../implementation/LOCAL_CODEX_REPORT.md):
-**41 test backend và 3 test telemetry frontend đạt**, không skip; lint/build đạt.
-Ba test frontend là `telemetryApi.test.ts`; **chưa có browser/E2E automation
-mới và chưa nghiệm thu AWS/Wokwi thật**. Dấu nhận diện báo cáo đã dùng nằm trong
-[báo cáo tài liệu](../implementation/LOCAL_DOCS_REPORT.md).
+Bản local chốt tại commit `3d8bcd9` ghi 47 kiểm tra backend và 13 browser
+fixtures automation đạt, không skip. Cloud tiếp quản đã chạy lại nền đó cùng
+5 kiểm tra Event Log mới: **52 backend tests đạt**, 13 browser fixtures
+quy tắc và 7 browser fixtures nhật ký đạt, 3 test telemetry đạt.
 
-Phần theo dõi runtime mới ghi backend đã áp dụng V10, API rule tắt nhưng chưa
-bật rule/gửi ON/OFF. Helper chạy 4 test đạt, 37 skip, khác lượt audit 41/41
-không skip. Chưa có telemetry/status mới hoặc GPIO để nghiệm thu tưới;
-mẫu nhật ký giữ “Chưa chạy” cho tất cả các ca.
+Cloud còn chạy smoke trên ứng dụng thật: menu → Vite proxy → Spring Boot →
+PostgreSQL trong schema test riêng; MQTT/control tắt. Đây là bằng chứng tích
+hợp API/UI Event Log, không phải bằng chứng AWS hoặc GPIO.
+
+Người dùng đã nói “đã hoạt động” sau bước đất khô bật tự động; ghi nhận là
+user-reported một phần, chưa có timestamp/commandId/ACK/sequence để nghiệm thu
+trọn sáu ca. OFF sớm, cooldown, timer và restart giữa run vẫn chờ xác nhận.
+Lượt helper cũ 4 đạt/37 skip là lịch sử, không thay kết quả kiểm tra cuối.
 
 | Hạng mục | Bằng chứng đã có | Giới hạn / việc còn chờ |
 |---|---|---|
@@ -23,7 +26,8 @@ mẫu nhật ký giữ “Chưa chạy” cho tất cả các ca.
 | Điều khiển thủ công, timer, lịch sử trạng thái | Nhật ký ghi xác nhận của người dùng; có serial `RELAY_OFF reason=CONNECTION_LOST` | Chưa chứng minh runtime 60 phút, bơm vật lý hoặc toàn bộ phục hồi mạng |
 | Lịch sử cảm biến | Người dùng xác nhận trang hoạt động | CSV live và phạm vi dữ liệu xuất vẫn cần xác nhận riêng |
 | Cảnh báo đất thấp / nhiệt độ cao | Người dùng xác nhận mở và đóng đúng ngưỡng: đất `<30%` / `>=35%`; nhiệt độ `>35°C` / `<=33°C` | Xác nhận này không nghiệm thu quy tắc tưới hoặc mọi tình huống restart/mất dữ liệu |
-| Quy tắc tưới tự động | Bản bàn giao V10 ghi tests với transport giả lập và PostgreSQL test | **Chưa nghiệm thu đầy đủ trên AWS/Wokwi thật**; chưa có browser/E2E automation mới |
+| Quy tắc tưới tự động | Tests transport giả lập/PostgreSQL và 13 browser fixtures đạt; người dùng xác nhận bước bật tự động hoạt động | **Chưa nghiệm thu đầy đủ AWS/Wokwi** cho OFF sớm, cooldown, timer và restart giữa run |
+| Nhật ký sự kiện | API/UI, 5 backend tests, 7 browser fixtures và smoke toàn ứng dụng với PostgreSQL test đạt | Chưa kiểm tra Event Log trên dữ liệu Windows/AWS của người dùng; không phải immutable audit log |
 | NVS và phục hồi mạng | Restart simulation từng cần thiết khi gateway restart không phục hồi phiên | **NVS chưa làm**; restart mất RAM, không phải bằng chứng reconnect thành công |
 
 Tests với MQTT mock, API fixture, dữ liệu SQL thử hoặc native safety assertions
@@ -42,5 +46,4 @@ môi trường, giá trị cảm biến theo thời gian, commandId, ACK thực 
 GPIO và run history. Đối chiếu riêng ca đất khô, đất đủ ẩm/tắt sớm, cutoff,
 khoảng nghỉ, thao tác thủ công, thiếu ACK và restart. Kịch bản này là danh sách
 cần xác nhận, không phải kết quả đã đạt.
-Ghi kết quả vào [mẫu nhật ký Wokwi](WOKWI_AUTOMATION_TEST_LOG.md); các ca hiện
-đều là “Chưa chạy”.
+Ghi kết quả vào [mẫu nhật ký Wokwi](WOKWI_AUTOMATION_TEST_LOG.md); các ca chưa có bằng chứng chi tiết vẫn để “Chưa chạy”.

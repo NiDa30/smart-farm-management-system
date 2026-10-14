@@ -12,6 +12,7 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4177',
     browserName: 'chromium',
     serviceWorkers: 'block',
+    launchOptions: process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
     trace: 'retain-on-failure',
   },
   webServer: {

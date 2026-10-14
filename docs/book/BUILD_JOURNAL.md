@@ -1,5 +1,31 @@
 # Nhật ký xây dựng Smart Farm
 
+## Cloud tiếp quản commit 3d8bcd9 và triển khai nhật ký sự kiện
+
+Người dùng push toàn bộ bàn giao local lên feature branch. Cloud fast-forward
+từ 943d22a đến 3d8bcd9, giữ cấu hình Wokwi và các file người dùng đã commit.
+Nhánh fetch chỉ cập nhật FETCH_HEAD do refspec checkout; merge FETCH_HEAD sau
+khi đối chiếu SHA, không reset hoặc force. Event Log chưa nằm trong bản push,
+vẫn dùng iotEventLogs mock, nên hoàn thiện trước các chức năng khác.
+
+GET /api/v1/events tổng hợp alert mở/đóng, command tạo/ACK, pump state history
+và watering run. Cursor theo timestamp+ID, range cố định, lọc category/device;
+chỉ đọc DB, không gọi command timeout hoặc publish. Không cần migration mới.
+Command/run hiển thị kết quả hiện đang lưu chứ không dựng lịch sử chuyển
+trạng thái đã không được lưu. Alert chỉ có thời gian thiết bị; ACK chỉ có
+thời gian backend nhận, không bịa timestamp hoặc liên kết theo giờ gần nhau.
+
+Cloud: PostgreSQL test container riêng cổng 55439, không dùng DB demo 5433.
+52 Java tests đạt không skip; 13 browser fixtures automation và 7 fixtures
+Event Log đạt; 3 unit telemetry đạt; lint/build đạt. Smoke toàn app qua menu,
+Vite proxy, Spring Boot và DB event_smoke riêng đạt với MQTT/control=false.
+Không có lệnh AWS hoặc GPIO trong lượt kiểm tra. Mẫu UI test phải dùng type
+IoTEvent để nullable fields đúng, lỗi typecheck ban đầu đã sửa rồi chạy lại.
+
+Người dùng trước đó xác nhận bật tự động hoạt động, chưa có chi tiết cho sáu
+ca nghiệm thu. Không đánh dấu OFF sớm/cooldown/restart là live PASS. Sách cập
+nhật số liệu mới, giữ các báo cáo local cũ làm bằng chứng lịch sử.
+
 ## 14/10/2026, 00:49 +07 — Chuẩn bị phép thử tưới nhóm 1
 
 Theo yêu cầu tiếp theo của người dùng, đã chạy backend bằng Git Bash mới,
@@ -326,8 +352,8 @@ trong ignored private .local/postgres/db.env, Flyway V1, telemetry validator,
 MQTT subscription liên tục, JDBC INSERT ON CONFLICT chống trùng và API
 latest/history trên loopback8080. API chưa có authentication, chỉ cho local.
 Validator từ chối trường lạ/thiếu, numeric coercion, UUID/time sai, số vượt range,
-duplicate JSON keys và timestamp tương lai quá60 giây. History tối đa31 ngày,
-limit1..1000, source-time ordering; device cố địnhENV01/FARM001.
+duplicate JSON keys và timestamp tương lai quá60 giây. History tối đa 31 ngày,
+limit 1..1000, source-time ordering; device cố địnhENV01/FARM001.
 
 Cloud Docker đã chạy PostgreSQL thật. Lần kiểm tra đầu tiên chạy khi image còn
 đang tải nên test context lỗi Connection refused; chờ Compose healthy rồi chạy

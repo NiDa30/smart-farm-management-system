@@ -5,6 +5,12 @@
 tests mock hoặc từ kết quả mong đợi. Tham khảo [chương 13](CHAPTER_13_AUTOMATIC_WATERING.md),
 [Windows](WINDOWS_RUNBOOK.md) và [phạm vi nghiệm thu](ACCEPTANCE_STATUS.md).
 
+## Xác nhận mới chưa đủ chi tiết
+
+Người dùng đã báo bước bật tự động hoạt động. Chưa có mốc thời gian,
+commandId hoặc log để đối chiếu từng điều kiện, nên không tự đánh dấu cả ca
+1 hoặc các ca còn lại là PASS. Giữ kết quả này là user-reported một phần.
+
 ## Thông tin phiên và điều kiện đầu vào
 
 - Ngày/giờ UTC bắt đầu và kết thúc: Chưa chạy.
