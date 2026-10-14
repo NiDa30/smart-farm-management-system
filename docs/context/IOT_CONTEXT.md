@@ -30,6 +30,8 @@ WATER live được nghiệm thu hoặc điều khiển PUMP01 từ telemetry n�
 V16 thêm cảnh báo nước và xác nhận đã xem, [chương 24](../book/CHAPTER_24_WATER_ALERTS.md):
 hai mẫu fresh liên tiếp, đợt riêng theo nguồn; không dispatch command, không
 coi flow 0 là lỗi bơm. Overview/Event Log/Safety chưa hợp nhất water alerts.
+Sau V16 có [history/CSV nước](../book/CHAPTER_25_WATER_HISTORY.md) theo channel,
+range/source/quality và cursor; chưa tính tổng lít/chi phí hoặc no-flow cutoff.
 
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.

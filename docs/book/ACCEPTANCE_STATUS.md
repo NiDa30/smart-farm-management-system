@@ -1,5 +1,11 @@
 # Trạng thái bằng chứng và nghiệm thu — 14/10/2026
 
+Lịch sử WATER/CSV: **141 backend tests**, 18 browser node/history, 12 unit
+node/history đạt; lint/build và smoke full app/CSV từ DB fixture giữ nguyên đạt.
+Không migration mới sau V16 hoặc AWS/Wokwi mới; chưa tổng lít/no-flow cutoff.
+Xem [chương 25](CHAPTER_25_WATER_HISTORY.md) và [báo cáo](../implementation/WATER_HISTORY_REPORT.md).
+
+
 Cảnh báo nước V16: **132 backend tests**, 17 browser alerts và 4 unit frontend
 nước đạt, không skip; lint/build đạt. Trung tâm Cảnh báo → Trạm nước lưu đợt,
 nguồn, bằng chứng packet và đã xem; không phát lệnh bơm. Migration V15 giữ

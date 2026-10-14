@@ -151,3 +151,7 @@ process local; không gửi MQTT hay AWS. Sau đó React đọc API thật, lưu
 restart process backend, đọc lại và nhận hai mẫu bình thường để hết đợt.
 Xem bằng chứng và lệnh tái lập trong [báo cáo](../implementation/WATER_ALERTS_REPORT.md).
 Các kiểm tra này chưa thay cho nghiệm thu AWS/Wokwi hoặc phần cứng thật.
+
+
+Bước tiếp theo đã có: [chương 25 — Lịch sử kênh nước và CSV](CHAPTER_25_WATER_HISTORY.md).
+Lịch sử giữ dữ liệu từng kênh, không tính tổng lít hoặc điều khiển bơm.

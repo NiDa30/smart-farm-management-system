@@ -9,6 +9,20 @@ const obj=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.
 const code=(v:unknown):v is string=>typeof v==='string'&&/^[A-Z][A-Z0-9_-]{1,31}$/.test(v);
 const date=(v:unknown):v is string=>typeof v==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v));
 const calibration=(v:unknown)=>v===null||typeof v==='string'&&v.trim().length>0&&v.length<=40;
+export function parseChannelReading(value:unknown,metric:Metric):ChannelReading {
+ const r=value;
+ if(!obj(r)||(r.dataSource!==undefined&&!['UNSPECIFIED','SIMULATOR','PHYSICAL'].includes(r.dataSource))||!date(r.observedAt)||!date(r.receivedAt)||typeof r.bootId!=='string'||!/^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(r.bootId)||!Number.isSafeInteger(r.sequence)||r.sequence<0||!calibration(r.calibrationVersion))throw new Error('Reading không hợp lệ.');
+ if(r.quality==='SENSOR_FAULT'){if(r.value!==null)throw new Error('Reading lỗi phải rỗng.');}
+ else if(r.quality==='VALID'){
+  if(metric==='WATER_PRESENT'){if(typeof r.value!=='boolean')throw new Error('Phao cần giá trị boolean.');}
+  else if(typeof r.value!=='number'||!Number.isFinite(r.value)
+   ||(['FLOW_RATE','WATER_PRESSURE','AIR_HUMIDITY','SOIL_MOISTURE'].includes(metric)&&r.value<0)
+   ||(['AIR_HUMIDITY','SOIL_MOISTURE'].includes(metric)&&r.value>100)
+   ||(metric==='AIR_TEMPERATURE'&&(r.value < -40||r.value>80))
+   ||(metric==='WATER_TEMPERATURE'&&(r.value < -55||r.value>125)))throw new Error('Giá trị ngoài phạm vi.');
+ }else throw new Error('Quality không hợp lệ.');
+ return r as ChannelReading;
+}
 export function parseNode(v:unknown):FarmNode {
  if(!obj(v)||!code(v.nodeId)||!code(v.areaId)||typeof v.name!=='string'||!v.name.trim()||v.name.length>80
  ||!((v.nodeType==='ENVIRONMENT'&&v.telemetryVersion===1)||(v.nodeType==='WATER'&&v.telemetryVersion===2))
@@ -20,16 +34,7 @@ export function parseNode(v:unknown):FarmNode {
   if((v.nodeType==='WATER')!==['WATER_PRESENT','FLOW_RATE','WATER_TEMPERATURE','WATER_PRESSURE'].includes(c.metric))throw new Error('Loại kênh không khớp node.');
   const r=c.latest;
   if(r!==null){
-   if(!obj(r)||(r.dataSource!==undefined&&!['UNSPECIFIED','SIMULATOR','PHYSICAL'].includes(r.dataSource))||!date(r.observedAt)||!date(r.receivedAt)||typeof r.bootId!=='string'||!/^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(r.bootId)||!Number.isSafeInteger(r.sequence)||r.sequence<0||!calibration(r.calibrationVersion))throw new Error('Reading không hợp lệ.');
-   if(r.quality==='SENSOR_FAULT'){if(r.value!==null)throw new Error('Reading lỗi phải rỗng.');}
-   else if(r.quality==='VALID'){
-    if(c.metric==='WATER_PRESENT'){if(typeof r.value!=='boolean')throw new Error('Phao cần giá trị boolean.');}
-    else if(typeof r.value!=='number'||!Number.isFinite(r.value)
-     ||(['FLOW_RATE','WATER_PRESSURE','AIR_HUMIDITY','SOIL_MOISTURE'].includes(c.metric)&&r.value<0)
-     ||(['AIR_HUMIDITY','SOIL_MOISTURE'].includes(c.metric)&&r.value>100)
-     ||(c.metric==='AIR_TEMPERATURE'&&(r.value < -40||r.value>80))
-     ||(c.metric==='WATER_TEMPERATURE'&&(r.value < -55||r.value>125)))throw new Error('Giá trị ngoài phạm vi.');
-   }else throw new Error('Quality không hợp lệ.');
+   parseChannelReading(r,c.metric as Metric);
   }
  }
  if(!v.actuators.every((a:unknown)=>obj(a)&&code(a.actuatorId)&&a.actuatorType==='PUMP'&&a.commandContract==='PUMP_V1')||new Set(v.actuators.map((a:any)=>a.actuatorId)).size!==v.actuators.length)throw new Error('Actuator không hợp lệ.');

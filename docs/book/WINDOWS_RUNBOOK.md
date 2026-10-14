@@ -182,3 +182,11 @@ Chỉ thử nước có thể dùng `SMARTFARM_CONTROL_ENABLED=false bash tools/
 Mở Trung tâm Cảnh báo → Trạm nước, đợi hai packet mới; flow 0 không tự báo mất
 dòng. Không cần flash lại cho thay đổi backend/UI này. Đối chiếu
 [chương 24](CHAPTER_24_WATER_ALERTS.md) trước thử phao/lỗi/đã xem.
+
+
+### Lịch sử WATER và CSV (sau V16)
+
+Pull/restart backend, mở Sensor Realtime → Node & trạm nước → nút Lịch sử của
+kênh WATER. Chọn giờ máy/range tối đa 31 ngày, nguồn và quality, bấm Áp dụng.
+CSV chỉ chứa trang hiện tại; thay bộ lọc/API lỗi sẽ khóa export. Không có
+migration/flash mới. Xem [chương 25](CHAPTER_25_WATER_HISTORY.md).

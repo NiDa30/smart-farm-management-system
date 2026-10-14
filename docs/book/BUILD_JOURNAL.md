@@ -1,5 +1,16 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — Lịch sử nước và CSV sau V16
+
+Thêm read-only history theo node/channel/range/source/quality, cursor giờ đo/ID
+và cap ID. Web có lịch sử từng kênh WATER, CSV đúng trang, giữ false/0/fault/null,
+source, calibration và giờ gốc; chưa tổng lít/cost. Không migration/firmware/AWS mới.
+141 backend, 18 browser node/history và 12 unit frontend đạt, lint/build đạt.
+Full app dùng lại 4 packet V16, LOW/FLOW/filters/download CSV đạt, command/run=0.
+Lỗi input native datetime-local và so sánh phút/giây được sửa, có ca hồi quy.
+Xem [chương 25](CHAPTER_25_WATER_HISTORY.md) và [báo cáo](../implementation/WATER_HISTORY_REPORT.md).
+
+
 ## 14/10/2026 — A2: Trung tâm Cảnh báo trạm nước
 
 V16 thêm cursor/state/episode cảnh báo nước, parser/router/store cập nhật cùng

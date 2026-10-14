@@ -296,8 +296,10 @@ và UI khai báo, xem [chương22](../book/CHAPTER_22_NODES_AND_WATER_CHANNELS.m
 chủ động chạy theo [chương23](../book/CHAPTER_23_WATER_NODE_MONITOR.md), chưa
 fleet onboarding tự động. A2 monitoring có code/build nhưng live/A0 cần đối
 chiếu; V16 có central water alert LOW/fault, source riêng và đã xem
-([chương 24](../book/CHAPTER_24_WATER_ALERTS.md)); chưa live. Liên kết pump ON,
-flow fault/grace/cutoff, water history/consumption vẫn chờ.
+([chương 24](../book/CHAPTER_24_WATER_ALERTS.md)); chưa live.
+Sau V16 có [water history/CSV](../book/CHAPTER_25_WATER_HISTORY.md), dữ liệu gốc
+và source/calibration theo mẫu; chưa live. Liên kết pump ON, flow fault/grace/
+cutoff và water consumption vẫn chờ.
 A3–A6 còn trong kế hoạch. Không tự tạo Jira tasks hay AWS
 resources từ bảng backlog này.
 

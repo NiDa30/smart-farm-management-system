@@ -60,3 +60,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Trạm nước độc lập trên Wokwi](CHAPTER_23_WATER_NODE_MONITOR.md): firmware/pulse flow, project và certificate riêng; live còn chờ.
 
 - [Cảnh báo trạm nước](CHAPTER_24_WATER_ALERTS.md): hai mẫu mới, hồ sơ/nguồn và xác nhận đã xem; không điều khiển bơm.
+
+- [Lịch sử kênh nước và CSV](CHAPTER_25_WATER_HISTORY.md): lọc range/source/quality, phân trang và xuất đúng trang; không tính tổng lít.

@@ -60,3 +60,72 @@ test('floats from different samples cannot imply tank ready',async({page})=>{
  n.channels.push({...n.channels[0],channelId:'HIGH',latest:{...r,value:true,sequence:r.sequence+1}});
  await page.goto('/');await expect(page.getByLabel('Mức bồn WATER01')).toContainText('Chưa xác định mức bồn');
 });
+
+function gate(){let resolve!:()=>void;const promise=new Promise<void>(r=>{resolve=r;});return {promise,resolve};}
+async function historyFixture(page:Page){
+ const inventory=await fixture(page);
+ const api={inventory,calls:[] as URL[],fail:false,bad:false,paged:false,delay:null as Promise<void>|null};
+ await page.route('**/api/v1/nodes/*/channels/*/history?**',async route=>{
+  const url=new URL(route.request().url());api.calls.push(url);const q=url.searchParams;
+  const channelId=url.pathname.split('/')[6],channel=inventory.snapshot.nodes[0].channels.find(c=>c.channelId===channelId)!;
+  const delayed=api.delay;api.delay=null;const bad=api.bad,fail=api.fail;
+  const source=q.get('dataSource')??'SIMULATOR',quality=q.get('quality'),next=!!q.get('cursor');
+  const size=api.paged?(next?1:100):3;
+  const rows=Array.from({length:size},(_,i)=>({sampleId:(next?100:200)-i,value:quality==='SENSOR_FAULT'||(!quality&&!api.paged&&i===0)?null:channelId==='LOW'?false:i===2?6:0,
+   quality:quality??(!api.paged&&i===0?'SENSOR_FAULT':'VALID'),observedAt:new Date(Date.parse(q.get('to')!)-(next?10000:5000)-i).toISOString(),receivedAt:new Date().toISOString(),
+   bootId:'37000000-0000-4000-8000-000000000001',sequence:(next?100:200)-i,calibrationVersion:channel.calibrationVersion,dataSource:source}));
+  const response={nodeId:bad?'WATER02':'WATER01',channel:{...channel,latest:undefined},from:q.get('from'),to:q.get('to'),dataSource:q.get('dataSource'),quality:q.get('quality'),snapshotId:200,items:rows,nextCursor:api.paged&&!next?'NEXT':null};
+  if(delayed)await delayed;await route.fulfill({status:fail?503:200,json:response});
+ });return api;
+}
+async function openHistory(page:Page,channel='FLOW'){await page.goto('/');await page.getByRole('button',{name:`Lịch sử WATER01 ${channel}`,exact:true}).click();await expect(page.getByRole('region',{name:'Lịch sử kênh nước',exact:true})).toBeVisible();}
+
+test('water history distinguishes fault/null and valid zero without changing source',async({page})=>{
+ const api=await historyFixture(page);await openHistory(page);const table=page.getByRole('table',{name:'Mẫu lịch sử kênh nước'});
+ await expect(table).toContainText('Lỗi cảm biến');await expect(table).toContainText('0 L/min');await expect(table).toContainText('Mô phỏng (thiết bị khai báo)');await expect(table).toContainText('FLOW-V1');
+ expect(api.inventory.posts).toEqual([]);expect(api.inventory.unexpected).toEqual([]);
+});
+test('water history shows false as no water, not missing',async({page})=>{
+ await historyFixture(page);await openHistory(page,'LOW');await expect(page.getByRole('table')).toContainText('Không có nước');
+});
+test('changed water filters block CSV until applied and request correct source and quality',async({page})=>{
+ const api=await historyFixture(page);await openHistory(page);await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeEnabled();
+ await page.getByLabel('Nguồn lịch sử').selectOption('PHYSICAL');await page.getByLabel('Chất lượng lịch sử').selectOption('SENSOR_FAULT');await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeDisabled();
+ await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();await expect(page.getByRole('table')).toContainText('Phần cứng (thiết bị khai báo)');
+ expect(api.calls.at(-1)?.searchParams.get('dataSource')).toBe('PHYSICAL');expect(api.calls.at(-1)?.searchParams.get('quality')).toBe('SENSOR_FAULT');
+});
+test('water history paginates without appending hidden rows or exporting more than displayed',async({page})=>{
+ const api=await historyFixture(page);api.paged=true;await openHistory(page);await expect(page.getByRole('table').getByRole('row')).toHaveCount(101);
+ await page.getByRole('button',{name:'Trang tiếp theo',exact:true}).click();await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
+ expect(api.calls.at(-1)?.searchParams.get('cursor')).toBe('NEXT');await expect(page.getByRole('button',{name:'Trang tiếp theo',exact:true})).toBeDisabled();
+ await page.getByRole('button',{name:'Tải lại từ đầu',exact:true}).click();await expect(page.getByRole('table').getByRole('row')).toHaveCount(101);
+});
+test('water CSV download includes current page metadata, raw zero, fault and source',async({page})=>{
+ const api=await historyFixture(page);await openHistory(page);await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeEnabled();
+ const download=page.waitForEvent('download');await page.getByRole('button',{name:'Xuất CSV trang này'}).click();const file=await download;
+ expect(file.suggestedFilename()).toBe('water-history-WATER01-FLOW.csv');
+ const stream=await file.createReadStream();let csv='';for await(const chunk of stream!)csv+=chunk.toString('utf8');
+ expect(csv).toContain('SIMULATOR');expect(csv).toContain('SENSOR_FAULT');expect(csv).toContain(',0,');expect(csv.split('\r\n')).toHaveLength(5);expect(api.inventory.posts).toEqual([]);
+});
+test('water history API outage or wrong identity disables export and recovers',async({page})=>{
+ const api=await historyFixture(page);await openHistory(page);await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeEnabled();
+ for(const key of ['fail','bad'] as const){api[key]=true;await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeDisabled();api[key]=false;await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();await expect(page.getByRole('alert')).toHaveCount(0);}
+});
+test('late water history response cannot replace a newer filter result',async({page})=>{
+ const api=await historyFixture(page);await openHistory(page);await expect(page.getByRole('table')).toBeVisible();const delayed=gate();api.delay=delayed.promise;
+ await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();await expect.poll(()=>api.calls.length).toBe(2);
+ await page.getByLabel('Nguồn lịch sử').selectOption('PHYSICAL');await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();await expect(page.getByRole('table')).toContainText('Phần cứng (thiết bị khai báo)');
+ delayed.resolve();await expect(page.getByRole('table')).not.toContainText('Mô phỏng (thiết bị khai báo)');
+});
+test('invalid water range is rejected locally and returning resumes node view',async({page})=>{
+ const api=await historyFixture(page);await openHistory(page);await expect(page.getByRole('table')).toBeVisible();const calls=api.calls.length;
+ await page.getByLabel('Lịch sử từ',{exact:true}).fill('2020-01-01T00:00');await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();await expect(page.getByRole('alert')).toContainText('tối đa 31 ngày');expect(api.calls).toHaveLength(calls);
+ await page.getByRole('button',{name:'Quay lại Node & trạm nước',exact:true}).click();await expect(page.getByRole('button',{name:'Khai báo trạm nước',exact:true})).toBeVisible();
+});
+
+test('water minute-only input does not remain dirty after applying equivalent time',async({page})=>{
+ await historyFixture(page);await openHistory(page);await expect(page.getByRole('table')).toBeVisible();
+ const input=page.getByLabel('Lịch sử từ',{exact:true});const minute=(await input.inputValue()).slice(0,16);
+ await input.fill(minute);await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();
+ await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeEnabled();await expect(page.getByText('Bộ lọc đã đổi; áp dụng để xem kết quả và xuất CSV tương ứng.',{exact:true})).toHaveCount(0);
+});
