@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {channelFreshness,createWaterNode,matchesDeclaration,metricLabels,NodeSaveError,parseNode,parseNodes,type NodesSnapshot,type WaterDeclaration} from './nodeApi';
+import {channelFreshness,createWaterNode,matchesDeclaration,metricLabels,NodeSaveError,parseNode,parseNodes,tankState,tankLabels,sourceLabels,type NodesSnapshot,type WaterDeclaration} from './nodeApi';
 const labels={EMPTY:'Chưa có dữ liệu',CLOCK_SKEW:'Lệch giờ nguồn',STALE:'Dữ liệu cũ',SENSOR_FAULT:'Cảm biến báo lỗi',FRESH:'Dữ liệu mới'};
 export function WaterNodesPanel(){
  const [snapshot,setSnapshot]=useState<NodesSnapshot|null>(null),[areas,setAreas]=useState<{id:string;name:string}[]>([]),[error,setError]=useState(''),[reload,setReload]=useState(0),[now,setNow]=useState(performance.now());
@@ -41,17 +41,19 @@ export function WaterNodesPanel(){
  }
  return <div className="space-y-4">
   <header className="flex justify-between gap-3"><div><h2 className="text-xl font-bold">Node & trạm nước</h2><p className="text-sm text-slate-500">Một node vật lý có nhiều kênh cảm biến và actuator được gán.</p></div><button type="button" disabled={!!error||!snapshot||!areas.length||form} onClick={()=>{setForm(true);setId('');setName('');setArea(areas[0]?.id??'');setFlowCalibration('');setWithTemp(false);setUncertain(false);setFormError('');}} className="border rounded-lg p-2 disabled:opacity-40">Khai báo trạm nước</button></header>
-  <p className="bg-amber-50 p-3 rounded text-sm">Khai báo chỉ lưu registry. Chưa tự tạo Thing/certificate, nạp firmware hoặc thêm thiết bị vào Wokwi. Dữ liệu nước v2 chưa điều khiển PUMP01 hay thay liên động phao GPIO27.</p>
+  <p className="bg-amber-50 p-3 rounded text-sm">Khai báo chỉ lưu registry. Chưa tự tạo Thing/certificate, nạp firmware hoặc thêm thiết bị vào Wokwi. Trạm mô phỏng cần firmware WATER riêng. Dữ liệu nước v2 chưa điều khiển PUMP01 hay thay liên động phao GPIO27.</p>
   {message&&<p role="status">{message}</p>}{error&&<p role="alert" className="text-rose-700">{error}</p>}
   <button type="button" onClick={()=>setReload(v=>v+1)} className="underline">Làm mới node</button>
   {!snapshot&&!error&&<p>Đang tải node…</p>}{snapshot&&!snapshot.nodes.length&&<p>Chưa có node được khai báo.</p>}
   {snapshot?.nodes.map(n=><section key={n.nodeId} aria-label={`Node ${n.nodeId}`} className="bg-white border rounded-xl p-4 space-y-3">
    <h3 className="font-bold">{n.name} · {n.nodeId}</h3><p className="text-sm">{areas.find(a=>a.id===n.areaId)?.name??n.areaId} · {n.nodeType==='WATER'?'Trạm nước':'Môi trường'} · Hợp đồng v{n.telemetryVersion}</p>
+   {n.nodeType==='WATER'&&<p aria-label={`Mức bồn ${n.nodeId}`} className="text-sm font-semibold">{error?'Chưa xác định mức bồn':tankLabels[tankState(n,serverNow)]} · Chẩn đoán từ hai phao cùng mẫu, không phải quyền bật bơm.</p>}
    <p className="text-sm">Actuator: {n.actuators.length?n.actuators.map(a=>`${a.actuatorId} (${a.commandContract})`).join(', '):'Chưa có actuator được gán'}</p>
    <div className="grid sm:grid-cols-2 gap-3">{n.channels.map(c=>{const r=c.latest,state=channelFreshness(r,serverNow);return <article key={c.channelId} aria-label={`${n.nodeId} ${c.channelId}`} className="border rounded p-3">
     <h4 className="font-semibold">{c.channelId} · {metricLabels[c.metric]}</h4>
     <p className="text-xl">{!r||r.value===null?'—':typeof r.value==='boolean'?(r.value?'Có nước':'Không có nước'):r.value.toLocaleString('vi-VN',{maximumFractionDigits:2})} {c.unit==='boolean'?'':c.unit}</p>
     <p className="text-sm">{error?'Chưa xác nhận dữ liệu mới':labels[state]}{r?.quality==='SENSOR_FAULT'&&state!=='SENSOR_FAULT'?' · Mẫu đã lưu báo lỗi cảm biến':''}</p>
+    <p className="text-xs text-slate-500">Nguồn: {r?sourceLabels[r.dataSource??'UNSPECIFIED']:'Chưa có mẫu để xác định nguồn'}</p>
     <p className="text-xs text-slate-500">Hiệu chuẩn: {r?.calibrationVersion??c.calibrationVersion??'Chưa khai báo phiên bản hiệu chuẩn'}</p>
     <p className="text-xs text-slate-500">Đo: {r?new Date(r.observedAt).toLocaleString('vi-VN'):'—'} · Nhận: {r?new Date(r.receivedAt).toLocaleString('vi-VN'):'—'}</p>
    </article>;})}</div>

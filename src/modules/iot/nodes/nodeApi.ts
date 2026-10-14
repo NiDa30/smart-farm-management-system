@@ -1,6 +1,6 @@
 export const metrics={AIR_TEMPERATURE:'°C',AIR_HUMIDITY:'%RH',SOIL_MOISTURE:'%',WATER_PRESENT:'boolean',FLOW_RATE:'L/min',WATER_TEMPERATURE:'°C',WATER_PRESSURE:'kPa'} as const;
 export type Metric=keyof typeof metrics;
-export interface ChannelReading {value:number|boolean|null;quality:'VALID'|'SENSOR_FAULT';observedAt:string;receivedAt:string;bootId:string;sequence:number;calibrationVersion:string|null}
+export interface ChannelReading {value:number|boolean|null;quality:'VALID'|'SENSOR_FAULT';observedAt:string;receivedAt:string;bootId:string;sequence:number;calibrationVersion:string|null;dataSource?:'UNSPECIFIED'|'SIMULATOR'|'PHYSICAL'}
 export interface NodeChannel {channelId:string;metric:Metric;unit:string;calibrationVersion:string|null;latest:ChannelReading|null}
 export interface FarmNode {nodeId:string;name:string;areaId:string;nodeType:'ENVIRONMENT'|'WATER';telemetryVersion:1|2;channels:NodeChannel[];actuators:{actuatorId:string;actuatorType:'PUMP';commandContract:'PUMP_V1'}[]}
 export interface NodesSnapshot {farmId:'FARM001';asOf:string;nodes:FarmNode[]}
@@ -20,7 +20,7 @@ export function parseNode(v:unknown):FarmNode {
   if((v.nodeType==='WATER')!==['WATER_PRESENT','FLOW_RATE','WATER_TEMPERATURE','WATER_PRESSURE'].includes(c.metric))throw new Error('Loại kênh không khớp node.');
   const r=c.latest;
   if(r!==null){
-   if(!obj(r)||!date(r.observedAt)||!date(r.receivedAt)||typeof r.bootId!=='string'||!/^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(r.bootId)||!Number.isSafeInteger(r.sequence)||r.sequence<0||!calibration(r.calibrationVersion))throw new Error('Reading không hợp lệ.');
+   if(!obj(r)||(r.dataSource!==undefined&&!['UNSPECIFIED','SIMULATOR','PHYSICAL'].includes(r.dataSource))||!date(r.observedAt)||!date(r.receivedAt)||typeof r.bootId!=='string'||!/^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(r.bootId)||!Number.isSafeInteger(r.sequence)||r.sequence<0||!calibration(r.calibrationVersion))throw new Error('Reading không hợp lệ.');
    if(r.quality==='SENSOR_FAULT'){if(r.value!==null)throw new Error('Reading lỗi phải rỗng.');}
    else if(r.quality==='VALID'){
     if(c.metric==='WATER_PRESENT'){if(typeof r.value!=='boolean')throw new Error('Phao cần giá trị boolean.');}
@@ -58,3 +58,18 @@ export async function createWaterNode(input:WaterDeclaration,signal:AbortSignal)
 export function matchesDeclaration(n:FarmNode,d:WaterDeclaration){return n.nodeId===d.nodeId&&n.name===d.name&&n.areaId===d.areaId&&n.nodeType==='WATER'
  &&n.channels.length===d.channels.length&&d.channels.every(c=>n.channels.some(x=>x.channelId===c.channelId&&x.metric===c.metric&&x.unit===c.unit&&x.calibrationVersion===c.calibrationVersion));}
 export const metricLabels:Record<Metric,string>={AIR_TEMPERATURE:'Nhiệt độ không khí',AIR_HUMIDITY:'Độ ẩm không khí',SOIL_MOISTURE:'Độ ẩm đất',WATER_PRESENT:'Phao có nước',FLOW_RATE:'Lưu lượng',WATER_TEMPERATURE:'Nhiệt độ nước',WATER_PRESSURE:'Áp suất nước'};
+
+export function tankState(node:FarmNode,serverNow:number){
+ const low=node.channels.find(c=>c.channelId==='LOW'&&c.metric==='WATER_PRESENT')?.latest;
+ const high=node.channels.find(c=>c.channelId==='HIGH'&&c.metric==='WATER_PRESENT')?.latest;
+ if(!low||!high)return 'UNKNOWN';
+ const a=channelFreshness(low,serverNow),b=channelFreshness(high,serverNow);
+ if(['STALE','CLOCK_SKEW'].includes(a)||['STALE','CLOCK_SKEW'].includes(b))return 'UNKNOWN';
+ if(low.bootId!==high.bootId||low.sequence!==high.sequence||low.observedAt!==high.observedAt
+  ||(low.dataSource??'UNSPECIFIED')!==(high.dataSource??'UNSPECIFIED'))return 'UNKNOWN';
+ if(a==='SENSOR_FAULT'||b==='SENSOR_FAULT'||typeof low.value!=='boolean'||typeof high.value!=='boolean')return 'SENSOR_FAULT';
+ if(!low.value&&high.value)return 'SENSOR_FAULT';
+ return low.value?(high.value?'FULL':'MID'):'EMPTY';
+}
+export const tankLabels={UNKNOWN:'Chưa xác định mức bồn',SENSOR_FAULT:'Tín hiệu phao lỗi hoặc không nhất quán',FULL:'Nước đạt phao HIGH',MID:'Có nước ở LOW, chưa đạt HIGH',EMPTY:'Không có nước tại phao LOW/HIGH'};
+export const sourceLabels={UNSPECIFIED:'Chưa khai báo nguồn đo',SIMULATOR:'Mô phỏng (thiết bị khai báo)',PHYSICAL:'Phần cứng (thiết bị khai báo)'};

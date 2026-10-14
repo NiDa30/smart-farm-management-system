@@ -45,3 +45,18 @@ test('outage keeps historical values visibly unavailable, then recovers',async({
 test('bad response cannot populate node inventory',async({page})=>{
  const state=await fixture(page);(state.snapshot.nodes[0].channels[0].latest as any).value=0;await page.goto('/');await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByRole('region',{name:'Node WATER01'})).toHaveCount(0);await expect(page.getByRole('button',{name:'Khai báo trạm nước',exact:true})).toBeDisabled();
 });
+
+test('coherent simulator floats show level, source and no pump permission',async({page})=>{
+ const state=await fixture(page),n=state.snapshot.nodes[0],r=n.channels[0].latest!;
+ r.dataSource='SIMULATOR';r.value=true;
+ n.channels.push({...n.channels[0],channelId:'HIGH',latest:{...r,value:false}});
+ await page.goto('/');
+ await expect(page.getByLabel('Mức bồn WATER01')).toContainText('Có nước ở LOW, chưa đạt HIGH');
+ await expect(page.getByRole('article',{name:'WATER01 LOW'})).toContainText('Mô phỏng (thiết bị khai báo)');
+ await expect(page.getByLabel('Mức bồn WATER01')).toContainText('không phải quyền bật bơm');expect(state.posts).toHaveLength(0);
+});
+test('floats from different samples cannot imply tank ready',async({page})=>{
+ const state=await fixture(page),n=state.snapshot.nodes[0],r=n.channels[0].latest!;
+ n.channels.push({...n.channels[0],channelId:'HIGH',latest:{...r,value:true,sequence:r.sequence+1}});
+ await page.goto('/');await expect(page.getByLabel('Mức bồn WATER01')).toContainText('Chưa xác định mức bồn');
+});

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class WaterTelemetry {
     public record Reading(String channelId,String metric,String unit,String quality,Object value,String calibrationVersion) {}
-    public record Packet(String deviceId,UUID bootId,long sequence,Instant timestamp,long uptimeMs,List<Reading> readings) {}
+    public record Packet(String deviceId,UUID bootId,long sequence,Instant timestamp,long uptimeMs,String dataSource,List<Reading> readings) {}
     public record Metric(String unit,boolean binary,double minimum,double maximum) {}
     public static final Map<String,Metric> METRICS=Map.of(
         "WATER_PRESENT",new Metric("boolean",true,0,0),
@@ -46,7 +46,11 @@ public class WaterTelemetry {
     }
     public Packet parse(byte[] bytes) {
         try {
-            JsonNode node=object(bytes);fields(node,ENVELOPE);
+            JsonNode node=object(bytes);
+            if(node.has("dataSource")){Set<String> fields=new HashSet<>(ENVELOPE);fields.add("dataSource");fields(node,fields);}
+            else fields(node,ENVELOPE);
+            String source=node.has("dataSource")?text(node,"dataSource"):"UNSPECIFIED";
+            if(!Set.of("UNSPECIFIED","SIMULATOR","PHYSICAL").contains(source))throw new IllegalArgumentException();
             if(integer(node,"schemaVersion")!=2)throw new IllegalArgumentException();
             String device=code(text(node,"deviceId")),boot=text(node,"bootId");
             if(!boot.matches("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}"))throw new IllegalArgumentException();
@@ -70,7 +74,7 @@ public class WaterTelemetry {
                 if(!calibration.isNull()) {version=text(value,"calibrationVersion");if(version.isBlank()||version.length()>40)throw new IllegalArgumentException();}
                 readings.add(new Reading(id,metric,unit,quality,reading,version));
             }
-            return new Packet(device,UUID.fromString(boot),integer(node,"sequence"),timestamp,integer(node,"uptimeMs"),List.copyOf(readings));
+            return new Packet(device,UUID.fromString(boot),integer(node,"sequence"),timestamp,integer(node,"uptimeMs"),source,List.copyOf(readings));
         }catch(Exception error){throw new IllegalArgumentException("Invalid water telemetry v2");}
     }
 }

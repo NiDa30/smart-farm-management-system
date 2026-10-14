@@ -51,4 +51,13 @@ class WaterTelemetryTest {
   }
   var n=sample();reading(n).put("metric","FLOW_RATE").put("unit","L/min").put("value",Double.POSITIVE_INFINITY);assertThrows(IllegalArgumentException.class,()->parse(n));
  }
+ @Test void acceptsFirmwareBuilderSampleAndKeepsProvenance() throws Exception {
+  try(var stream=getClass().getResourceAsStream("/water-firmware-packet.json")){
+   assertNotNull(stream);var node=(ObjectNode)mapper.readTree(stream);node.put("timestamp",Instant.now().toString());
+   var parsed=parse(node);assertEquals("SIMULATOR",parsed.dataSource());assertEquals(6.0,parsed.readings().get(2).value());
+   node.remove("dataSource");assertEquals("UNSPECIFIED",parse(node).dataSource());
+   node.put("dataSource","UNKNOWN");assertThrows(IllegalArgumentException.class,()->parse(node));
+   node.putNull("dataSource");assertThrows(IllegalArgumentException.class,()->parse(node));
+  }
+ }
 }

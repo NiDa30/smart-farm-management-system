@@ -107,4 +107,29 @@ class NodeInventoryTest {
   register();assertThrows(IllegalArgumentException.class,()->router.store(topic,value.replace("ENV01","WATER01").getBytes()));
   assertThrows(IllegalArgumentException.class,()->router.store("smartfarm/FARM001/ENV01/telemetry",packet(1,Instant.now())));
  }
+ @Test void provenancePersistsPerSampleAndDuplicateCannotReclassifyIt() throws Exception {
+  register();var node=(com.fasterxml.jackson.databind.node.ObjectNode)mapper.readTree(packet(1,Instant.now()));
+  node.put("dataSource","SIMULATOR");assertTrue(router.store(topic,mapper.writeValueAsBytes(node)));
+  assertTrue(water().channels().stream().allMatch(c->c.latest().dataSource().equals("SIMULATOR")));
+  node.put("dataSource","PHYSICAL");assertFalse(router.store(topic,mapper.writeValueAsBytes(node)));
+  assertTrue(water().channels().stream().allMatch(c->c.latest().dataSource().equals("SIMULATOR")));
+  node.put("sequence",2);node.put("timestamp",Instant.now().toString());node.remove("dataSource");assertTrue(router.store(topic,mapper.writeValueAsBytes(node)));
+  assertTrue(water().channels().stream().allMatch(c->c.latest().dataSource().equals("UNSPECIFIED")));
+ }
+ @Test void compiledFirmwarePacketStoresThreeChannelsWithoutEnvironmentTelemetry() throws Exception {
+  long commandsBefore=jdbc.queryForObject("SELECT COUNT(*) FROM pump_command",Long.class);
+  String input=declaration.replace("\"FLOW-V1\"","null");
+  var registration=(com.fasterxml.jackson.databind.node.ObjectNode)mapper.readTree(input);
+  var channels=(com.fasterxml.jackson.databind.node.ArrayNode)registration.path("channels");
+  channels.add(mapper.createObjectNode().put("channelId","HIGH").put("metric","WATER_PRESENT").put("unit","boolean").putNull("calibrationVersion"));
+  nodes.registerWater(registration);
+  try(var stream=getClass().getResourceAsStream("/water-firmware-packet.json")){
+   assertNotNull(stream);var payload=(com.fasterxml.jackson.databind.node.ObjectNode)mapper.readTree(stream);payload.put("timestamp",Instant.now().toString());
+   assertTrue(router.store(topic,mapper.writeValueAsBytes(payload)));
+   assertEquals(3,water().channels().size());
+   assertTrue(water().channels().stream().allMatch(c->c.latest()!=null&&c.latest().dataSource().equals("SIMULATOR")));
+   assertEquals(6.0,water().channels().stream().filter(c->c.channelId().equals("FLOW")).findFirst().orElseThrow().latest().value());
+   assertEquals(commandsBefore,jdbc.queryForObject("SELECT COUNT(*) FROM pump_command",Long.class));
+  }
+ }
 }

@@ -40,3 +40,23 @@ old packets are historical data, not authority to start a pump.
 No automatic watering, alerts or PUMP01 status is generated from v2 yet.
 Existing GPIO27 local interlock remains the control safety source. See the
 [implementation report](../../../docs/implementation/NODE_CHANNELS_REPORT.md).
+
+
+## A2 monitor and provenance
+
+Standalone source firmware/water-node publishes LOW/HIGH/FLOW, no actuator
+commands. Optional envelope dataSource is SIMULATOR/PHYSICAL/UNSPECIFIED; older
+v2 packets default UNSPECIFIED. This is device-declared provenance, not hardware
+attestation. V15 persists the value per node_sample; duplicates cannot rewrite
+source or receipt. Legacy v1 remains unchanged/unspecified.
+
+Firmware debounces the float pair, reports inconsistent/warming inputs as
+fault/null and counts GPIO pulses for FLOW using actual elapsed time. Zero
+pulses cannot distinguish no water from sensor disconnection. Invalid window,
+overflow, invalid factor/calibration or excess frequency become flow fault,
+not numeric zero. No pressure/temp or new pump no-flow policy is implemented.
+
+UI level summary requires LOW/HIGH fresh and coherent boot/sequence/time/source;
+otherwise UNKNOWN. It is not permission to run PUMP01. See
+[water monitor handoff](../../../docs/implementation/WATER_NODE_FIRMWARE_REPORT.md)
+and [chapter23](../../../docs/book/CHAPTER_23_WATER_NODE_MONITOR.md).

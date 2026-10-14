@@ -1,5 +1,10 @@
 # Chương 22 — Node vật lý, kênh cảm biến và hợp đồng nước v2
 
+> Chương này ghi mốc A1. Sau đó đã có [A2 WATER monitor](CHAPTER_23_WATER_NODE_MONITOR.md)
+> và V15 provenance; các câu “chưa có firmware” bên dưới là giới hạn tại mốc A1.
+> AWS/Wokwi live mới và pump no-flow protection vẫn chưa được nghiệm thu.
+
+
 Ngày 14/10/2026, triển khai nền A1 từ [ý tưởng 18 nhóm thiết bị](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md).
 Đợt này có code, API, giao diện và kiểm tra cloud; chưa có WATER01 chạy AWS
 hay firmware trạm nước độc lập. Không thay sơ đồ Wokwi ở chương21.

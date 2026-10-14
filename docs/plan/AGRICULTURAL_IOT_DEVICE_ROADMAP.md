@@ -4,7 +4,7 @@ Cập nhật: 14/10/2026. Nguồn: hai bản ý tưởng người dùng gửi v�
 nông nghiệp và roadmap hợp nhất Monitoring/Nutrition & Treatment/Optimization.
 Mốc nền relay/phao: `9730558`; nền node/kênh v2: `705094f`, xem
 [báo cáo A1](../implementation/NODE_CHANNELS_REPORT.md).
-**Đây là kiến trúc đích và backlog. Code/tests A1 đã có; các node mới,
+**Đây là kiến trúc đích và backlog. Code/tests A1 và A2 monitoring đã có; các node mới,
 Decision Engine, dinh dưỡng, tối ưu và AI chưa được nghiệm thu hoạt động.**
 Trạng thái kiểm chứng đọc tại [bảng nghiệm thu](../book/ACCEPTANCE_STATUS.md).
 
@@ -79,6 +79,7 @@ cầu mà vẫn giữ ranh giới hợp đồng.
 | Manual ON/OFF/timer, ACK/status; rule đất khô, cooldown, lịch tuần giờ VN | Dispatcher hiện giới hạn một PUMP01, chưa hỗ trợ 4 van dùng chung bơm |
 | Registry sensor/khu vực, history/CSV, hai cảnh báo ngưỡng và xác nhận đã xem | Thêm registry không tự provision certificate hay flash firmware |
 | A1/V14: nhiều node khai báo, channel/actuator binding, telemetry nước v2 và Sensor Realtime → Node & trạm nước | Có LOW/HIGH/FLOW/nhiệt nước và contract pressure; chưa có WATER firmware live hoặc control nhiều bơm |
+| A2 monitoring: firmware WATER độc lập, LOW/HIGH/FLOW, source badge và project/certificate helper riêng | Chưa nghiệm thu AWS/Wokwi mới; chưa flow-based pump shutdown hoặc central water alert |
 | Relay/LED tải NO + phao GPIO27, firmware opt-in WATER_LOW | Code/build/native/API tests đã có; relay/phao Wokwi mới chưa nghiệm thu live |
 
 Giữ các topic `smartfarm/FARM001/ENV01/telemetry` và
@@ -97,7 +98,7 @@ bồn hiện đang có nước.
 ## 3. Danh mục 18 nhóm thiết bị trong ý tưởng
 
 Các linh kiện là lựa chọn khảo sát, chưa phải BOM chốt để mua. Mọi nhóm ngoài
-phần demo và nền A1 ở mục 2 đều ở trạng thái thiết kế/chưa nghiệm thu live.
+phần demo và nền A1/A2 monitoring ở mục 2 đều ở trạng thái thiết kế/chưa nghiệm thu live.
 Danh mục 18 nhóm được giữ nguyên; NUTRIENT01 là cấu hình node dinh dưỡng đề
 xuất kết hợp năng lực đất/chất lượng nước, không phải node đã provision.
 Drone/robot ở mục 17 là nền tảng mở rộng sau, chưa thêm vào sơ đồ hiện tại.
@@ -291,9 +292,11 @@ và nguồn dữ liệu, không báo đã có một Thing độc lập khi chưa
 
 Nền A1 đã có model node/channel, mapping legacy, water contract/router/storage
 và UI khai báo, xem [chương22](../book/CHAPTER_22_NODES_AND_WATER_CHANNELS.md).
-Chưa có tự động AWS provisioning hoặc firmware WATER riêng. Bước kế tiếp A2
-là dữ liệu/logic trạm nước với nghiệm thu A0 vẫn phải được đối chiếu. A2–A6
-còn trong kế hoạch. Không tự tạo Jira tasks hay AWS
+Đã có firmware monitor WATER riêng và helper provisioning do người dùng
+chủ động chạy theo [chương23](../book/CHAPTER_23_WATER_NODE_MONITOR.md), chưa
+fleet onboarding tự động. A2 monitoring có code/build nhưng live/A0 cần đối
+chiếu; liên kết pump ON, flow fault/grace/cutoff và central alert vẫn chờ.
+A3–A6 còn trong kế hoạch. Không tự tạo Jira tasks hay AWS
 resources từ bảng backlog này.
 
 ## 11. Simulator, chi phí và sổ bằng chứng
@@ -579,7 +582,7 @@ mặc định cần thêm microservice, cloud AI hoặc hạ tầng tính phí n
 Phê duyệt đề xuất, job đã thực hiện và outcome đo thật là ba trạng thái riêng.
 
 **Thứ tự gần nhất:** giữ ENV01/PUMP01 v1 và water v2 tương thích → đối chiếu
-A0 relay/phao → xây A2 WATER firmware và phép đo/flow fault có hiệu chuẩn →
+A0 relay/phao → nghiệm thu A2 monitor, bổ sung liên kết pump/flow safety có hiệu chuẩn →
 A3 một dãy rồi 4 dãy → A4 weather gate. Hoàn thiện model cây/zone và nguồn dữ
 liệu dinh dưỡng theo Phase 1/3, không nhảy từ water registry sang tự châm phân.
 Mỗi mốc cần implementation report, fault tests và bằng chứng live riêng trước

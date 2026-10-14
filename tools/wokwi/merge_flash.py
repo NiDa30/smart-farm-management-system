@@ -43,8 +43,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--core-dir", type=Path, default=Path(
         os.environ.get("PLATFORMIO_CORE_DIR", str(Path.home() / ".platformio"))))
+    parser.add_argument("--project-dir", type=Path, default=ROOT / "firmware/esp32",
+                        help="PlatformIO project (default: legacy ENV01 project)")
     args = parser.parse_args()
-    build = ROOT / "firmware/esp32/.pio/build/esp32dev"
+    build = args.project_dir.resolve() / ".pio/build/esp32dev"
     table = (build / "partitions.bin").read_bytes()
     layout = partitions(table)
     boot_app = args.core_dir / "packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin"

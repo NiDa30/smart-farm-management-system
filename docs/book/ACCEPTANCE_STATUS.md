@@ -1,5 +1,13 @@
 # Trạng thái bằng chứng và nghiệm thu — 14/10/2026
 
+A2 monitoring: **119 backend tests**, 9 browser node, 6 unit node, 17 Python water
+helpers/contracts/SDK mocks/diagram + 2 flash regression đạt; native model và
+packet, ESP32 build/FS rỗng/merge và lint/build đạt. Full app/API/PostgreSQL
+MID/source/fault/zero/stale fixture đạt, command0/run0, MQTT/control tắt.
+**Chưa AWS/Wokwi live mới hoặc bảo vệ bơm dựa flow.** Firmware monitor không
+có actuator output. Xem [chương23](CHAPTER_23_WATER_NODE_MONITOR.md).
+
+
 Đợt nền A1/V14: **116 backend tests** không skip,7browser node,4unit node và
 3Python water contract đạt; lint/build đạt. Full app/API/PostgreSQL registry
 save→restart→read đạt, v2 measurement là SQL fixture sau restart, không AWS;

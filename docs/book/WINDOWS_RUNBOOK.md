@@ -1,5 +1,11 @@
 # Thực hành trên Windows: mở đúng terminal, chạy đúng thứ tự
 
+**A2 monitoring/V15:** WATER có firmware riêng. Xem [chương23](CHAPTER_23_WATER_NODE_MONITOR.md)
+để khai báo, render/apply quyền phù hợp, certificate riêng và chuẩn bị project
+.local/water-nodes/WATER01. Không chỉ rebuild ENV hoặc copy key ENV sang WATER.
+Backend restart migrate V15, v1 giữ nguyên; live mới còn chờ.
+
+
 **A1/V14 node/kênh:** sau pull restart backend để migrate. Trong Sensor
 Realtime chọn Node & trạm nước để khai báo; không phải thiết bị tự provision.
 Đợt này không đổi firmware/diagram; hướng dẫn [chương22](CHAPTER_22_NODES_AND_WATER_CHANNELS.md).

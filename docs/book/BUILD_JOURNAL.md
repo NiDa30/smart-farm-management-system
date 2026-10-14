@@ -1,5 +1,23 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — A2 monitoring: WATER firmware và nguồn dữ liệu
+
+Thêm firmware/water-node độc lập: LOW/HIGH debounce và lỗi bất nhất, ISR đếm
+xung FLOW, elapsed window/rate/calibration guard. Clock/gate Wokwi là tín hiệu
+mô phỏng, không có random measurement hay pump output. Thêm helper certificate
+monitor-only và private project riêng theo node; retry attach dùng cert cũ,
+checkpoint chặn mint thêm khi CreateKeys chưa rõ kết quả. Không dùng lại ENV key.
+
+V15/source optional giữ v2 cũ UNSPECIFIED; web nguồn đo thiết bị khai báo và
+mức bồn chỉ từ phao fresh/cùng packet. 119 backend, 9 browser node, 6 unit node,
+17 Python water + 2 flash regression, native model/packet và build/buildfs/merge
+rỗng đạt. C++ packet được schema và Java parser/SQL kiểm tra. Full app/API/DB
+fixture MID/fault/zero/stale đạt, command0/run0; MQTT/control tắt. Không AWS/
+Wokwi live mới; A2 flow-based cutoff/central alert/NVS chưa làm. Xem
+[chương23](CHAPTER_23_WATER_NODE_MONITOR.md) và
+[báo cáo](../implementation/WATER_NODE_FIRMWARE_REPORT.md).
+
+
 ## 14/10/2026 — A1 node/kênh và telemetry nước riêng
 
 Theo lộ trình18nhóm, V14 thêm physical node/channel/actuator mapping, giữ

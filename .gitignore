@@ -16,3 +16,9 @@ firmware/esp32/data/*
 !firmware/esp32/data/.gitkeep
 firmware/esp32/certs/
 __pycache__/
+
+# Private standalone water-node project and outputs
+firmware/water-node/.pio/
+firmware/water-node/config/config.local.h
+firmware/water-node/data/*
+!firmware/water-node/data/.gitkeep

@@ -20,7 +20,7 @@ class WaterContractsTest(unittest.TestCase):
         self.value['readings'][0]['quality']='SENSOR_FAULT'
         with self.assertRaises(ValidationError):self.schema.validate(self.value)
     def test_missing_fields_unsupported_version_or_negative_flow(self):
-        for key in list(self.value):
+        for key in self.schema.schema["required"]:
             v=copy.deepcopy(self.value);del v[key]
             with self.subTest(key=key),self.assertRaises(ValidationError):self.schema.validate(v)
         for change in ('version','flow','readings','extra'):

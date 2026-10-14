@@ -40,3 +40,5 @@ tham chiếu [lộ trình 18 nhóm thiết bị](../plan/AGRICULTURAL_IOT_DEVICE
 Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trúc mục tiêu riêng.
 
 22. [Node vật lý và kênh nước](CHAPTER_22_NODES_AND_WATER_CHANNELS.md): A1 có code/tests; tiếp tục A2 firmware và nghiệm thu trạm nước.
+
+23. [WATER monitor độc lập](CHAPTER_23_WATER_NODE_MONITOR.md): A2 monitoring có code/build/helpers, provenance và chẩn đoán; chưa hoàn thành pump no-flow protection.

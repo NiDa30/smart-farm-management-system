@@ -24,7 +24,9 @@ Không đổi tên PUMP01 thành controller IRRIGATION01 chỉ vì ý tưởng c
 Cập nhật A1/V14: có physical node/channel/actuator mapping, water telemetry v2
 và Sensor Realtime → Node & trạm nước. Đọc [chương22](../book/CHAPTER_22_NODES_AND_WATER_CHANNELS.md)
 và [contract nước](../../contracts/iot/v2/README.md). Registry không provision
-AWS; chưa có WATER firmware/live hoặc điều khiển PUMP01 từ telemetry nước v2.
+AWS. Sau đó A2 có firmware monitor WATER riêng, V15 dataSource và chẩn đoán
+phao/flow, xem [chương23](../book/CHAPTER_23_WATER_NODE_MONITOR.md). Chưa có
+WATER live được nghiệm thu hoặc điều khiển PUMP01 từ telemetry nước v2.
 
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.

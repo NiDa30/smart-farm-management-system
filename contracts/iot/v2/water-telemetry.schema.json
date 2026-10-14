@@ -235,6 +235,13 @@
           }
         ]
       }
+    },
+    "dataSource": {
+      "enum": [
+        "UNSPECIFIED",
+        "SIMULATOR",
+        "PHYSICAL"
+      ]
     }
   },
   "required": [

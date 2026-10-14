@@ -11,7 +11,7 @@ import vn.smartfarm.iot.registry.SensorRegistry;
 
 @Service
 public class NodeInventory {
-    public record Reading(Object value,String quality,Instant observedAt,Instant receivedAt,UUID bootId,long sequence,String calibrationVersion) {}
+    public record Reading(Object value,String quality,Instant observedAt,Instant receivedAt,UUID bootId,long sequence,String calibrationVersion,String dataSource) {}
     public record Channel(String channelId,String metric,String unit,String calibrationVersion,Reading latest) {}
     public record Actuator(String actuatorId,String actuatorType,String commandContract) {}
     public record Node(String nodeId,String name,String areaId,String nodeType,int telemetryVersion,List<Channel> channels,List<Actuator> actuators) {}
@@ -27,9 +27,9 @@ public class NodeInventory {
         Map<String,List<Channel>> channels=new HashMap<>();
         jdbc.query("""
             SELECT c.*,m.quality,m.number_value,m.boolean_value,m.calibration_version AS sample_calibration,
-             s.observed_at,s.received_at,s.boot_id,s.sequence
+             s.observed_at,s.received_at,s.boot_id,s.sequence,s.data_source
             FROM iot_channel c LEFT JOIN LATERAL (
-             SELECT m.*,s.id,s.observed_at,s.received_at,s.boot_id,s.sequence
+             SELECT m.*,s.id,s.observed_at,s.received_at,s.boot_id,s.sequence,s.data_source
              FROM channel_sample m JOIN node_sample s ON s.id=m.sample_id
              WHERE m.node_id=c.node_id AND m.channel_id=c.channel_id
              ORDER BY s.observed_at DESC,s.sequence DESC,s.id DESC LIMIT 1
@@ -40,11 +40,11 @@ public class NodeInventory {
                 if(rs.getTimestamp("observed_at")!=null) {
                     Object value=rs.getObject("boolean_value");if(value==null)value=rs.getObject("number_value");
                     reading=new Reading(value,rs.getString("quality"),rs.getTimestamp("observed_at").toInstant(),rs.getTimestamp("received_at").toInstant(),
-                        rs.getObject("boot_id",UUID.class),rs.getLong("sequence"),rs.getString("sample_calibration"));
+                        rs.getObject("boot_id",UUID.class),rs.getLong("sequence"),rs.getString("sample_calibration"),rs.getString("data_source"));
                 } else if(legacy.containsKey(node)) {
                     var item=legacy.get(node);var t=item.telemetry();
                     Object value=switch(metric){case "AIR_TEMPERATURE"->t.temperature();case "AIR_HUMIDITY"->t.humidity();case "SOIL_MOISTURE"->t.soilMoisture();default->null;};
-                    if(value!=null)reading=new Reading(value,"VALID",t.timestamp(),item.receivedAt(),t.bootId(),t.sequence(),null);
+                    if(value!=null)reading=new Reading(value,"VALID",t.timestamp(),item.receivedAt(),t.bootId(),t.sequence(),null,"UNSPECIFIED");
                 }
                 channels.computeIfAbsent(node,key->new ArrayList<>()).add(new Channel(rs.getString("channel_id"),metric,rs.getString("unit"),rs.getString("calibration_version"),reading));
             });
@@ -98,9 +98,9 @@ public class NodeInventory {
             if(count==null||count!=1)throw new IllegalArgumentException("Undeclared channel/metric/unit/calibration");
         }
         var rows=jdbc.query("""
-            INSERT INTO node_sample(node_id,boot_id,sequence,observed_at,uptime_ms) VALUES(?,?,?,?,?)
+            INSERT INTO node_sample(node_id,boot_id,sequence,observed_at,uptime_ms,data_source) VALUES(?,?,?,?,?,?)
             ON CONFLICT(node_id,boot_id,sequence) DO NOTHING RETURNING id
-            """,(rs,n)->rs.getLong("id"),packet.deviceId(),packet.bootId(),packet.sequence(),Timestamp.from(packet.timestamp()),packet.uptimeMs());
+            """,(rs,n)->rs.getLong("id"),packet.deviceId(),packet.bootId(),packet.sequence(),Timestamp.from(packet.timestamp()),packet.uptimeMs(),packet.dataSource());
         if(rows.isEmpty())return false;
         for(var reading:packet.readings())jdbc.update("""
             INSERT INTO channel_sample(sample_id,node_id,channel_id,quality,number_value,boolean_value,calibration_version) VALUES(?,?,?,?,?,?,?)
