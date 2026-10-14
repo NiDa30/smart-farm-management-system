@@ -12,3 +12,9 @@ For the standalone WATER monitor, follow [chapter23](../docs/book/CHAPTER_23_WAT
 and create a private .local/water-nodes/NODE_ID project from
 [firmware/water-node](../firmware/water-node/README.md). It has its own client
 and certificates; the legacy diagram in this folder does not include it.
+
+
+ENV local flow guard now uses firmware/esp32/diagram.json (GPIO25 clock/gate),
+not this legacy root circuit. Follow [chapter26](../docs/book/CHAPTER_26_LOCAL_FLOW_GUARD.md)
+for opt-in config/build/merge and live tests. WATER monitor remains a separate
+project; its telemetry is not wired into the ENV guard automatically.

@@ -79,7 +79,8 @@ cầu mà vẫn giữ ranh giới hợp đồng.
 | Manual ON/OFF/timer, ACK/status; rule đất khô, cooldown, lịch tuần giờ VN | Dispatcher hiện giới hạn một PUMP01, chưa hỗ trợ 4 van dùng chung bơm |
 | Registry sensor/khu vực, history/CSV, hai cảnh báo ngưỡng và xác nhận đã xem | Thêm registry không tự provision certificate hay flash firmware |
 | A1/V14: nhiều node khai báo, channel/actuator binding, telemetry nước v2 và Sensor Realtime → Node & trạm nước | Có LOW/HIGH/FLOW/nhiệt nước và contract pressure; chưa có WATER firmware live hoặc control nhiều bơm |
-| A2 monitoring: firmware WATER độc lập, LOW/HIGH/FLOW, source badge và project/certificate helper riêng | Có V16 central water alerts/đã xem; chưa nghiệm thu AWS/Wokwi mới hoặc flow-based pump shutdown |
+| A2 monitoring: firmware WATER độc lập, LOW/HIGH/FLOW, source badge và project/certificate helper riêng | Có V16 alerts/đã xem và history/CSV; chưa AWS/Wokwi mới hoặc điều khiển theo WATER binding |
+| Local flow guard ENV GPIO25 opt-in: mồi, hai cửa sổ thấp, OFF/khóa | Native/build đạt; mặc định tắt; chưa Wokwi/physical hoặc bằng chứng enablement từ status |
 | Relay/LED tải NO + phao GPIO27, firmware opt-in WATER_LOW | Code/build/native/API tests đã có; relay/phao Wokwi mới chưa nghiệm thu live |
 
 Giữ các topic `smartfarm/FARM001/ENV01/telemetry` và
@@ -299,7 +300,10 @@ chiếu; V16 có central water alert LOW/fault, source riêng và đã xem
 ([chương 24](../book/CHAPTER_24_WATER_ALERTS.md)); chưa live.
 Sau V16 có [water history/CSV](../book/CHAPTER_25_WATER_HISTORY.md), dữ liệu gốc
 và source/calibration theo mẫu; chưa live. Liên kết pump ON, flow fault/grace/
-cutoff và water consumption vẫn chờ.
+cutoff theo WATER binding và water consumption vẫn chờ. Ngày 15/10/2026 có
+[prototype flow guard local](../book/CHAPTER_26_LOCAL_FLOW_GUARD.md) trên ENV GPIO25,
+opt-in, grace/two-window/OFF-lock; native/build đạt nhưng chưa Wokwi/physical.
+Không coi A2 toàn bộ hoàn tất hoặc guard mặc định đang bật từ thay đổi này.
 A3–A6 còn trong kế hoạch. Không tự tạo Jira tasks hay AWS
 resources từ bảng backlog này.
 

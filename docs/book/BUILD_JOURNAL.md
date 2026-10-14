@@ -1,5 +1,18 @@
 # Nhật ký xây dựng Smart Farm
 
+## 15/10/2026 (giờ Việt Nam) — Bảo vệ flow cục bộ opt-in
+
+ENV thêm FLOW GPIO25, clock/gate Wokwi, FlowInterlock với mồi và hai cửa sổ
+thấp, sensor-fault guards, timer callback ép GPIO OFF và latch. Phao/timer cũ
+còn tác dụng; flow về không auto ON. Default tắt/legacy fallback0. Shared
+status encoder, parser/schema OFF+locked và nhãn Control/Safety/Event Log.
+144 backend, 12 Safety browser +10 Event browser, 6 Safety unit, 8 contract và
+4 wiring tests, 3 native executable, firmware opt-in/legacy, lint/build đạt.
+Full app read-only nhận fixture status local, command/run0; không AWS/Wokwi live.
+Không migration mới. Xem [chương 26](CHAPTER_26_LOCAL_FLOW_GUARD.md) và
+[báo cáo](../implementation/LOCAL_FLOW_GUARD_REPORT.md).
+
+
 ## 14/10/2026 — Lịch sử nước và CSV sau V16
 
 Thêm read-only history theo node/channel/range/source/quality, cursor giờ đo/ID

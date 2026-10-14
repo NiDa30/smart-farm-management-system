@@ -106,10 +106,38 @@
     {
       "type": "wokwi-text",
       "id": "label_scope",
-      "top": 365,
+      "top": 415,
       "left": 0,
       "attrs": {
-        "text": "FARM001 / ENV01 - AWS IoT\nChi mo phong, khong do luu luong hay xac nhan bom that"
+        "text": "FARM001 / ENV01 - AWS IoT\nFlow clock la tin hieu mo phong; khong chung minh bom/nuoc that"
+      }
+    },
+    {
+      "type": "wokwi-clock-generator",
+      "id": "pump_flow_clock",
+      "top": 240,
+      "left": -145,
+      "attrs": {
+        "frequency": "45"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "pump_flow_gate",
+      "top": 250,
+      "left": 25,
+      "attrs": {
+        "value": "",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_flow_guard",
+      "top": 300,
+      "left": -140,
+      "attrs": {
+        "text": "FLOW LOCAL - GPIO25 (mo phong)\nTRAI: 45 Hz ~6 L/min | PHAI: 0 xung\nGuard opt-in: moi 5s, 2 cua so thap -> OFF/khoa"
       }
     }
   ],
@@ -212,6 +240,24 @@
     ],
     [
       "water_float:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pump_flow_clock:CLK",
+      "pump_flow_gate:1",
+      "blue",
+      []
+    ],
+    [
+      "pump_flow_gate:2",
+      "esp:25",
+      "blue",
+      []
+    ],
+    [
+      "pump_flow_gate:3",
       "esp:GND.2",
       "black",
       []

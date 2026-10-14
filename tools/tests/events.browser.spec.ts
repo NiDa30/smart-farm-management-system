@@ -79,3 +79,9 @@ test('human alert acknowledgement is distinct from device command ACK',async({pa
  await page.getByRole('button',{name:'Chi tiết alert-seen:1',exact:true}).click();
  await expect(page.getByRole('region',{name:'Chi tiết sự kiện'})).toContainText('Thời gian thiết bị: Không được lưu');
 });
+
+for(const [reason,label] of [['FLOW_LOW','Thiếu lưu lượng tại bộ điều khiển'],['FLOW_SENSOR_FAULT','Tín hiệu lưu lượng tại bộ điều khiển lỗi']])test(`event details translate ${reason} as device report`,async({page})=>{
+ const state=await fixtures(page);state.items=[{...event('device:1'),category:'DEVICE',type:'DEVICE_STATE',action:null,state:'OFF',reason,sourceAt:at,commandId:null,runId:null}];
+ await page.goto('/');await page.getByRole('button',{name:'Chi tiết device:1',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Chi tiết sự kiện',exact:true})).toContainText(label);
+});

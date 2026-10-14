@@ -24,3 +24,14 @@
 
 // Wokwi-only future issuedAt tolerance; production/default remains 2 seconds.
 #define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 2
+
+// Local flow protection, opt-in. GPIO25 clock/gate in Wokwi is simulated, not water.
+#define FARM_FLOW_INTERLOCK_ENABLED 0
+#define FARM_FLOW_PIN 25
+#define FARM_FLOW_SIMULATOR 1
+#define FARM_FLOW_PULSES_PER_LITRE 450.0
+#define FARM_FLOW_MINIMUM_LPM 1.0
+#define FARM_FLOW_MAXIMUM_HZ 2000.0
+#define FARM_FLOW_GRACE_MS 5000
+// PHYSICAL mode (SIMULATOR=0) requires a declared calibration version and field validation.
+#define FARM_FLOW_CALIBRATION_VERSION ""

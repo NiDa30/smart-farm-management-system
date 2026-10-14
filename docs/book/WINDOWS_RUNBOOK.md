@@ -190,3 +190,13 @@ Pull/restart backend, mở Sensor Realtime → Node & trạm nước → nút L�
 kênh WATER. Chọn giờ máy/range tối đa 31 ngày, nguồn và quality, bấm Áp dụng.
 CSV chỉ chứa trang hiện tại; thay bộ lọc/API lỗi sẽ khóa export. Không có
 migration/flash mới. Xem [chương 25](CHAPTER_25_WATER_HISTORY.md).
+
+
+### Local flow guard ENV GPIO25 — opt-in
+
+Theo [chương 26](CHAPTER_26_LOCAL_FLOW_GUARD.md). Restart backend mới với
+`SMARTFARM_CONTROL_ENABLED=true bash tools/backend/run_backend_windows.sh` khi thử
+điều khiển. Giữ config.local.h/private data đang có, bật flow+phao interlock,
+build/buildfs/merge ENV và mở đúng firmware/esp32/diagram.json. Mặc định flag mới
+là 0, pull không tự bật. Chưa nghiệm thu Wokwi/flow vật lý; không coi status là
+bằng chứng calibration/guard enabled. Không tạo lại DB hoặc cert cho bước này.

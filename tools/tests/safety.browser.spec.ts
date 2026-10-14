@@ -100,3 +100,11 @@ test('dry reservoir shows device lockout and history without sending commands',a
  await expect(page.getByRole('region',{name:'Lịch sử relay'})).toContainText('Bồn cạn nước hoặc đứt dây phao');
  expect(state.unexpected).toEqual([]);
 });
+
+for(const [reason,label] of [['FLOW_LOW','Thiếu lưu lượng tại bộ điều khiển'],['FLOW_SENSOR_FAULT','Tín hiệu lưu lượng tại bộ điều khiển lỗi']])test(`local ${reason} is reported locked OFF without sending commands`,async({page})=>{
+ const state=await fixtures(page),v=safetyFixture();v.relay!.stateReason=reason;v.relay!.safetyLockout=true;
+ v.stateHistory=[{id:7,observedAt:v.asOf,receivedAt:v.asOf,reportedState:'OFF',safetyLockout:true,changeType:'STATE_CHANGED',stateReason:reason}];state.value=v;
+ await page.goto('/');const relay=page.getByRole('region',{name:'Relay và khóa an toàn'});
+ await expect(relay).toContainText('Trạng thái hiện tại: OFF');await expect(relay).toContainText(label);await expect(relay).toContainText('Thiết bị báo đang khóa');
+ await expect(page.getByRole('region',{name:'Lịch sử relay'})).toContainText(label);expect(state.unexpected).toEqual([]);
+});

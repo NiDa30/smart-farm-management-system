@@ -61,7 +61,9 @@
         "TIMER_EXPIRED",
         "CONNECTION_LOST",
         "DEVICE_FAULT",
-        "WATER_LOW"
+        "WATER_LOW",
+        "FLOW_LOW",
+        "FLOW_SENSOR_FAULT"
       ]
     }
   },
@@ -94,6 +96,38 @@
           "reportedState",
           "safetyLockout",
           "activeCommandId"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stateReason": {
+            "enum": [
+              "FLOW_LOW",
+              "FLOW_SENSOR_FAULT"
+            ]
+          }
+        },
+        "required": [
+          "stateReason"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deviceId": {
+            "const": "PUMP01"
+          },
+          "reportedState": {
+            "const": "OFF"
+          },
+          "safetyLockout": {
+            "const": true
+          }
+        },
+        "required": [
+          "reportedState",
+          "safetyLockout"
         ]
       }
     }

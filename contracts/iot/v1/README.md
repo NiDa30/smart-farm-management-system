@@ -29,3 +29,13 @@ python -m venv .local/day1-venv
 .local/day1-venv/bin/pip install -r tools/requirements-day1.txt
 .local/day1-venv/bin/python -m unittest discover -s tools/tests -v
 ```
+
+
+## Additive local flow trip reasons (15 October 2026, Vietnam time)
+
+PUMP01 status accepts stateReason FLOW_LOW or FLOW_SENSOR_FAULT only with
+reportedState OFF and safetyLockout true. Main firmware and native tests use
+the shared PumpStatusPacket encoder. No flow telemetry field/topic, capability
+attestation or WATER01 binding is added. New reasons are device reports and do
+not prove physical calibration or local guard enablement. Existing private
+firmware configs default to flow guard disabled; see chapter26 in docs/book.

@@ -9,6 +9,8 @@
 #include <esp_timer.h>
 #include <esp_sntp.h>
 #include "RelaySafety.h"
+#include "FlowInterlock.h"
+#include "PumpStatusPacket.h"
 
 #if __has_include("config.local.h")
 #include "config.local.h"
@@ -32,6 +34,38 @@ static_assert(!FARM_WATER_INTERLOCK_ENABLED ||
   (FARM_WATER_LEVEL_PIN != FARM_RELAY_PIN && FARM_WATER_LEVEL_PIN != FARM_DHT_PIN && FARM_WATER_LEVEL_PIN != FARM_SOIL_PIN),
   "Water switch must use a separate GPIO");
 
+// Backward-compatible opt-in for existing private configurations.
+#ifndef FARM_FLOW_INTERLOCK_ENABLED
+#define FARM_FLOW_INTERLOCK_ENABLED 0
+#endif
+#ifndef FARM_FLOW_PIN
+#define FARM_FLOW_PIN 25
+#endif
+#ifndef FARM_FLOW_SIMULATOR
+#define FARM_FLOW_SIMULATOR 1
+#endif
+#ifndef FARM_FLOW_PULSES_PER_LITRE
+#define FARM_FLOW_PULSES_PER_LITRE 450.0
+#endif
+#ifndef FARM_FLOW_MINIMUM_LPM
+#define FARM_FLOW_MINIMUM_LPM 1.0
+#endif
+#ifndef FARM_FLOW_MAXIMUM_HZ
+#define FARM_FLOW_MAXIMUM_HZ 2000.0
+#endif
+#ifndef FARM_FLOW_GRACE_MS
+#define FARM_FLOW_GRACE_MS 5000
+#endif
+#ifndef FARM_FLOW_CALIBRATION_VERSION
+#define FARM_FLOW_CALIBRATION_VERSION ""
+#endif
+static_assert(FARM_FLOW_INTERLOCK_ENABLED==0||FARM_FLOW_INTERLOCK_ENABLED==1,"Flow opt-in must be 0 or 1");
+static_assert(FARM_FLOW_SIMULATOR==0||FARM_FLOW_SIMULATOR==1,"Flow source must be 0 or 1");
+static_assert(!FARM_FLOW_INTERLOCK_ENABLED||FARM_WATER_INTERLOCK_ENABLED,"Flow guard requires reservoir interlock too");
+static_assert(!FARM_FLOW_INTERLOCK_ENABLED||FARM_FLOW_PIN==25,"This adapter supports dedicated GPIO25 only");
+static_assert(!FARM_FLOW_INTERLOCK_ENABLED||(FARM_FLOW_PIN!=FARM_RELAY_PIN&&FARM_FLOW_PIN!=FARM_DHT_PIN
+  &&FARM_FLOW_PIN!=FARM_SOIL_PIN&&FARM_FLOW_PIN!=FARM_WATER_LEVEL_PIN),"Flow must have a separate GPIO");
+
 #ifndef FARM_WOKWI_CLOCK_TOLERANCE_SECONDS
 #define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 2
 #endif
@@ -49,12 +83,49 @@ static bool controlEnabled = false;
 static String commandTopic, pumpStatusTopic, ackTopic, activeCommand;
 struct CommandPacket { char payload[769]; bool retained; };
 static QueueHandle_t commandQueue;
-static esp_timer_handle_t relayTimer;
+static esp_timer_handle_t relayTimer, flowTimer;
+static FlowInterlock flowGuard({FARM_FLOW_INTERLOCK_ENABLED==1,
+  FARM_FLOW_SIMULATOR==1||strspn(FARM_FLOW_CALIBRATION_VERSION," \t\r\n")<strlen(FARM_FLOW_CALIBRATION_VERSION),
+  FARM_FLOW_PULSES_PER_LITRE,FARM_FLOW_MINIMUM_LPM,FARM_FLOW_MAXIMUM_HZ,FARM_FLOW_GRACE_MS});
+static volatile uint32_t flowPulses=0;
+static volatile bool flowOverflow=false;
+static volatile FlowInterlock::Fault pendingFlowFault=FlowInterlock::NONE;
 static portMUX_TYPE relayMux = portMUX_INITIALIZER_UNLOCKED;
 enum OffCause { NO_CAUSE, TIMER_CAUSE, NETWORK_CAUSE };
 static volatile OffCause offCause = NO_CAUSE;
 static const char* stateReason = "BOOT";
 static volatile bool forcedOff = false, controlFault = false;
+
+static const char* flowReason(FlowInterlock::Fault fault) {
+  return fault==FlowInterlock::LOW_FLOW?"FLOW_LOW":"FLOW_SENSOR_FAULT";
+}
+static void IRAM_ATTR flowPulse() {
+  portENTER_CRITICAL_ISR(&relayMux);
+  if(flowPulses==UINT32_MAX)flowOverflow=true;else ++flowPulses;
+  portEXIT_CRITICAL_ISR(&relayMux);
+}
+// Independent ESP timer task: no network, allocations or Serial in this callback.
+static void sampleFlow(void*) {
+  portENTER_CRITICAL(&relayMux);
+  uint32_t pulses=flowPulses;bool overflow=flowOverflow;flowPulses=0;flowOverflow=false;
+  if(forcedOff)flowGuard.stop();
+  auto fault=flowGuard.sample(millis(),pulses,overflow);
+  if(fault!=FlowInterlock::NONE) {
+    pendingFlowFault=fault;forcedOff=true;
+    digitalWrite(FARM_RELAY_PIN,FARM_RELAY_OFF_LEVEL);
+  }
+  portEXIT_CRITICAL(&relayMux);
+}
+static void stopFlow() {
+  portENTER_CRITICAL(&relayMux);flowGuard.stop();portEXIT_CRITICAL(&relayMux);
+}
+// RelaySafety stays loop-owned. The callback has already forced the GPIO OFF.
+static bool settleFlowFault() {
+  portENTER_CRITICAL(&relayMux);auto fault=pendingFlowFault;pendingFlowFault=FlowInterlock::NONE;portEXIT_CRITICAL(&relayMux);
+  if(fault==FlowInterlock::NONE)return false;
+  relay.fail(activeCommand.c_str(),flowReason(fault));stateReason=flowReason(fault);activeCommand="";
+  esp_timer_stop(relayTimer);return true;
+}
 
 static bool waterPresent() {
   return !FARM_WATER_INTERLOCK_ENABLED || digitalRead(FARM_WATER_LEVEL_PIN) == LOW;
@@ -88,7 +159,7 @@ static void forceRelayOff(void*) {
 }
 static void applyRelayOutput() {
   portENTER_CRITICAL(&relayMux);
-  digitalWrite(FARM_RELAY_PIN, controlEnabled && connected && !forcedOff && waterPresent() && relay.isOn()
+  digitalWrite(FARM_RELAY_PIN, controlEnabled && connected && !forcedOff && flowGuard.fault()==FlowInterlock::NONE && waterPresent() && relay.isOn()
     ? !FARM_RELAY_OFF_LEVEL : FARM_RELAY_OFF_LEVEL);
   portEXIT_CRITICAL(&relayMux);
 }
@@ -129,12 +200,9 @@ static void publishStatus() {
 static void publishPumpStatus() {
   if (!controlEnabled || !connected) return;
   JsonDocument doc;
-  base(doc); doc["deviceId"] = "PUMP01";
-  doc["connection"] = "ONLINE";
-  doc["reportedState"] = relay.isOn() && !forcedOff ? "ON" : "OFF";
-  doc["safetyLockout"] = relay.lockout();
-  doc["stateReason"] = stateReason;
-  if (activeCommand.length()) doc["activeCommandId"] = activeCommand; else doc["activeCommandId"] = nullptr;
+  base(doc);
+  fillPumpStatus(doc,relay.isOn() && !forcedOff?"ON":"OFF",relay.lockout(),stateReason,
+    activeCommand.length()?activeCommand.c_str():nullptr);
   String payload; serializeJson(doc, payload);
   esp_mqtt_client_publish(client, pumpStatusTopic.c_str(), payload.c_str(), 0, 1, 0);
 }
@@ -162,6 +230,7 @@ static void handleCommand(const CommandPacket &packet) {
   const bool off = strcmp(action,"OFF")==0;
   const bool reset = strcmp(action,"RESET_LOCKOUT")==0;
   const char* error = nullptr;
+  settleFlowFault();
   checkWaterSupply();
   bool wasOn = relay.isOn();
   if (packet.retained) error = "RETAINED_COMMAND";
@@ -182,12 +251,19 @@ static void handleCommand(const CommandPacket &packet) {
       relay.fail(id,"DEVICE_FAULT"); error = "DEVICE_FAULT";
     } else {
       portENTER_CRITICAL(&relayMux);
-      if (connected) { forcedOff = false; offCause = NO_CAUSE; }
+      auto flowError=flowGuard.start(millis());flowPulses=0;flowOverflow=false;
+      if(flowError!=FlowInterlock::NONE){pendingFlowFault=flowError;error=flowReason(flowError);}
+      else if (connected) { forcedOff = false; offCause = NO_CAUSE; }
       portEXIT_CRITICAL(&relayMux);
       activeCommand = id;
     }
   }
-  if (!relay.isOn()) { esp_timer_stop(relayTimer); activeCommand = ""; }
+  if(!error&&reset&&!relay.lockout()) {
+    portENTER_CRITICAL(&relayMux);auto flowError=flowGuard.reset();
+    if(flowError!=FlowInterlock::NONE){pendingFlowFault=flowError;error=flowReason(flowError);}portEXIT_CRITICAL(&relayMux);
+  }
+  settleFlowFault();
+  if (!relay.isOn()) { stopFlow();esp_timer_stop(relayTimer); activeCommand = ""; }
   if (!connected) { relay.fail(id,"CONNECTION_LOST"); error = "CONNECTION_LOST"; }
   // Recheck after parsing/arming so a switch change cannot energize the output.
   checkWaterSupply();
@@ -199,6 +275,8 @@ static void handleCommand(const CommandPacket &packet) {
     else if (reset) stateReason = "LOCKOUT_RESET";
   } else if (strcmp(error,"DEVICE_FAULT")==0) stateReason = "DEVICE_FAULT";
   else if (strcmp(error,"CONNECTION_LOST")==0) stateReason = "CONNECTION_LOST";
+  portENTER_CRITICAL(&relayMux);auto latchedFlow=flowGuard.fault();portEXIT_CRITICAL(&relayMux);
+  if(latchedFlow!=FlowInterlock::NONE&&relay.lockout())stateReason=flowReason(latchedFlow);
   if (!waterPresent()) stateReason = "WATER_LOW";
   applyRelayOutput();
   if (error && (strcmp(error,"EXPIRED")==0 || strcmp(error,"CLOCK_SKEW")==0 || strcmp(error,"INVALID_LIFETIME")==0 || strcmp(error,"CLOCK_NOT_READY")==0)) {
@@ -300,6 +378,12 @@ void setup() {
   esp_timer_create_args_t timerArgs = {};
   timerArgs.callback = forceRelayOff; timerArgs.name = "relay_cutoff";
   bool timerReady = esp_timer_create(&timerArgs,&relayTimer)==ESP_OK;
+  if(FARM_FLOW_INTERLOCK_ENABLED){
+    pinMode(FARM_FLOW_PIN,INPUT_PULLDOWN);attachInterrupt(digitalPinToInterrupt(FARM_FLOW_PIN),flowPulse,RISING);
+    esp_timer_create_args_t flowArgs={};flowArgs.callback=sampleFlow;flowArgs.name="flow_guard";
+    timerReady=timerReady&&esp_timer_create(&flowArgs,&flowTimer)==ESP_OK;
+    timerReady=timerReady&&esp_timer_start_periodic(flowTimer,250000)==ESP_OK;
+  }
   controlEnabled = FARM_CONTROL_ENABLED == 1 && strcmp(FARM_DEVICE_ID,"ENV01")==0 && strcmp(FARM_ID,"FARM001")==0 && commandQueue && timerReady;
   commandTopic = String("smartfarm/") + FARM_ID + "/PUMP01/command";
   ackTopic = String("smartfarm/") + FARM_ID + "/PUMP01/ack";
@@ -309,6 +393,10 @@ void setup() {
   if (FARM_WATER_INTERLOCK_ENABLED) Serial.printf("Water interlock enabled: GPIO%d closed=water, open=dry\n", FARM_WATER_LEVEL_PIN);
   else Serial.println("Water interlock disabled: set FARM_WATER_INTERLOCK_ENABLED=1 and rebuild");
   checkWaterSupply();
+  if(FARM_FLOW_INTERLOCK_ENABLED){
+    Serial.printf("FLOW_GUARD enabled source=%s GPIO%d graceMs=%u minLpm=%.3f\n",FARM_FLOW_SIMULATOR?"SIMULATOR":"PHYSICAL_DECLARED",FARM_FLOW_PIN,unsigned(FARM_FLOW_GRACE_MS),double(FARM_FLOW_MINIMUM_LPM));
+    if(!flowGuard.validConfig()){relay.trip();forcedOff=true;stateReason="FLOW_SENSOR_FAULT";Serial.println("FLOW_GUARD invalid configuration; relay locked OFF");}
+  }else Serial.println("FLOW_GUARD disabled; opt in and rebuild for local flow protection");
   uint8_t id[16];
   esp_fill_random(id, sizeof(id));
   id[6] = (id[6] & 0x0f) | 0x40;
@@ -340,18 +428,24 @@ void loop() {
   portENTER_CRITICAL(&relayMux); fault=controlFault; controlFault=false; portEXIT_CRITICAL(&relayMux);
   if (fault) { relay.trip(); stateReason="DEVICE_FAULT"; activeCommand=""; esp_timer_stop(relayTimer); }
   bool wasRunning = relay.isOn();
+  bool flowStopped=settleFlowFault();
   OffCause cause;
   portENTER_CRITICAL(&relayMux); cause=offCause; offCause=NO_CAUSE; portEXIT_CRITICAL(&relayMux);
-  if (wasRunning && cause == TIMER_CAUSE) { relay.stop(); stateReason="TIMER_EXPIRED"; }
-  else if (wasRunning && (cause == NETWORK_CAUSE || !link || forcedOff)) { relay.trip(); stateReason="CONNECTION_LOST"; }
+  if (!flowStopped && wasRunning && cause == TIMER_CAUSE) { relay.stop(); stateReason="TIMER_EXPIRED"; }
+  else if (!flowStopped && wasRunning && (cause == NETWORK_CAUSE || !link || forcedOff)) { relay.trip(); stateReason="CONNECTION_LOST"; }
   bool stopped = relay.tickSafety(now, link);
   if (stopped && wasRunning) stateReason="TIMER_EXPIRED";
   stopped = stopped || (wasRunning && !relay.isOn());
   bool waterChanged = checkWaterSupply();
   stopped = stopped || (wasRunning && !relay.isOn());
   applyRelayOutput();
-  if (stopped) { activeCommand = ""; esp_timer_stop(relayTimer); publishPumpStatus(); Serial.printf("RELAY_OFF reason=%s\n",stateReason); }
+  if (stopped||flowStopped) { stopFlow();activeCommand = ""; esp_timer_stop(relayTimer); publishPumpStatus(); Serial.printf("RELAY_OFF reason=%s\n",stateReason); }
   else if (waterChanged) publishPumpStatus();
+  static uint32_t lastFlowDiagnostic=0;
+  if(FARM_FLOW_INTERLOCK_ENABLED&&now-lastFlowDiagnostic>=1000){
+    lastFlowDiagnostic=now;portENTER_CRITICAL(&relayMux);bool measured=flowGuard.measured();double rate=flowGuard.lpm();auto fault=flowGuard.fault();bool watching=flowGuard.running();portEXIT_CRITICAL(&relayMux);
+    Serial.printf("FLOW_GUARD source=%s watching=%d sampled=%d lpm=%.3f fault=%s\n",FARM_FLOW_SIMULATOR?"SIMULATOR":"PHYSICAL_DECLARED",watching,measured,rate,fault==FlowInterlock::NONE?"NONE":flowReason(fault));
+  }
   static uint32_t lastPumpStatus = 0;
   if (controlEnabled && link && now-lastPumpStatus>=5000) { lastPumpStatus=now; publishPumpStatus(); }
   if (controlEnabled && link) {

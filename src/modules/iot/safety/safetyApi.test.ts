@@ -35,3 +35,17 @@ test('water-low device history remains a lockout with a Vietnamese reason',()=>{
  assert.equal(parsed.stateHistory[0].stateReason,'WATER_LOW');
  assert.match(reasonLabels.WATER_LOW,/cạn nước/);
 });
+
+
+test('local flow trip reasons remain device-reported locked OFF observations',()=>{
+ for(const reason of ['FLOW_LOW','FLOW_SENSOR_FAULT']){
+  const v=safetyFixture();v.relay!.stateReason=reason;v.relay!.reportedState='OFF';v.relay!.safetyLockout=true;
+  v.stateHistory=[{id:1,observedAt:v.relay!.observedAt,receivedAt:v.relay!.receivedAt,reportedState:'OFF',safetyLockout:true,stateReason:reason,changeType:'STATE_CHANGED'}];
+  assert.equal(parseSafety(v).stateHistory[0].stateReason,reason);assert.match(reasonLabels[reason],/thiết bị báo/);
+ }
+});
+
+test('flow fault observations must be OFF and locked, not an ON permission',()=>{
+ const v=safetyFixture();v.relay!.stateReason='FLOW_LOW';v.relay!.reportedState='ON';v.relay!.safetyLockout=true;assert.throws(()=>parseSafety(v));
+ v.relay!.reportedState='OFF';v.relay!.safetyLockout=false;assert.throws(()=>parseSafety(v));
+});

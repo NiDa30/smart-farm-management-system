@@ -1,4 +1,11 @@
-# Trạng thái bằng chứng và nghiệm thu — 14/10/2026
+# Trạng thái bằng chứng và nghiệm thu — 15/10/2026 (giờ Việt Nam)
+
+15/10/2026 giờ Việt Nam: local flow guard opt-in có code/native và ESP32 build
+cả enabled/legacy; **144 backend**, 12 Safety browser, 10 Event browser, 6 unit
+Safety, 8 contract/4 wiring đạt; lint/build và full-app receive fixture đọc reason
+OFF/locked đạt. Không AWS/Wokwi/flow vật lý mới, không thêm migration sau V16.
+Guard chưa được chứng minh đang bật từ status. Xem [chương 26](CHAPTER_26_LOCAL_FLOW_GUARD.md).
+
 
 Lịch sử WATER/CSV: **141 backend tests**, 18 browser node/history, 12 unit
 node/history đạt; lint/build và smoke full app/CSV từ DB fixture giữ nguyên đạt.

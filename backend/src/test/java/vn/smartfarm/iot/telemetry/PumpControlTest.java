@@ -167,4 +167,41 @@ class PumpControlTest {
         pump.receive("smartfarm/FARM001/PUMP01/status",template.replace("ab6cfc5e-18ff-4a01-852b-03604df6b52f",UUID.randomUUID().toString()).replace("\"ON\"","\"OFF\"").getBytes());
         assertEquals("ON",pump.status().reportedState());
     }
+    @Test void flowTripsRequireLockedOffAndCannotDispatchAnotherOn() throws Exception {
+        long seq=1;
+        for(String reason:java.util.List.of("FLOW_LOW","FLOW_SENSOR_FAULT")) {
+            var payload=mapper.createObjectNode().put("schemaVersion",1).put("deviceId","PUMP01")
+                .put("bootId","ab6cfc5e-18ff-4a01-852b-03604df6b52f").put("sequence",seq++)
+                .put("timestamp",Instant.now().toString()).put("connection","ONLINE")
+                .put("reportedState","OFF").put("safetyLockout",true).put("stateReason",reason);
+            pump.receive("smartfarm/FARM001/PUMP01/status",mapper.writeValueAsBytes(payload));
+            assertEquals(reason,pump.stateHistory().getFirst().stateReason());assertTrue(pump.status().safetyLockout());
+            assertEquals(409,assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("ON",20))).getStatusCode().value());
+            verify(transport,never()).publishCommand(any());
+        }
+    }
+    @Test void rejectsFlowFaultReasonPairedWithOnOrWithoutLockout() throws Exception {
+        var payload=mapper.createObjectNode().put("schemaVersion",1).put("deviceId","PUMP01")
+            .put("bootId","ab6cfc5e-18ff-4a01-852b-03604df6b52f").put("sequence",1)
+            .put("timestamp",Instant.now().toString()).put("connection","ONLINE").put("stateReason","FLOW_LOW")
+            .put("reportedState","ON").put("safetyLockout",true);
+        assertThrows(IllegalArgumentException.class,()->pump.receive("smartfarm/FARM001/PUMP01/status",mapper.writeValueAsBytes(payload)));
+        payload.put("reportedState","OFF").put("safetyLockout",false);
+        assertThrows(IllegalArgumentException.class,()->pump.receive("smartfarm/FARM001/PUMP01/status",mapper.writeValueAsBytes(payload)));
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM pump_status",Integer.class));
+    }
+
+    @Test void nativeFlowGuardPacketReachesStoredStatusAndHistory() throws Exception {
+        try(var input=getClass().getResourceAsStream("/flow-trip-status.json")){
+            assertNotNull(input);var node=(com.fasterxml.jackson.databind.node.ObjectNode)mapper.readTree(input);
+            node.put("timestamp",Instant.now().toString());
+            pump.receive("smartfarm/FARM001/PUMP01/status",mapper.writeValueAsBytes(node));
+            assertEquals("OFF",pump.status().reportedState());assertTrue(pump.status().safetyLockout());
+            assertEquals("FLOW_LOW",pump.stateHistory().getFirst().stateReason());
+            assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM pump_state_history WHERE state_reason='FLOW_LOW'",Integer.class));
+            assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM pump_command",Integer.class));
+            verify(transport,never()).publishCommand(any());
+        }
+    }
+
 }

@@ -40,3 +40,12 @@ class AgricultureWiringTest(unittest.TestCase):
         self.edge('relay_led:C', 'esp:GND.1')
         self.assertFalse(any('pump_relay:NC' in edge for edge in self.edges))
         self.assertEqual(sum('relay_r:1' in edge for edge in self.edges), 1)
+
+
+    def test_flow_gate_uses_separate_gpio_and_simulated_clock(self):
+        self.assertEqual(self.parts['pump_flow_clock']['type'], 'wokwi-clock-generator')
+        self.assertEqual(self.parts['pump_flow_clock']['attrs']['frequency'], '45')
+        self.edge('pump_flow_clock:CLK', 'pump_flow_gate:1')
+        self.edge('pump_flow_gate:2', 'esp:25')
+        self.edge('pump_flow_gate:3', 'esp:GND.2')
+        self.assertEqual(sum('esp:25' in edge for edge in self.edges), 1)

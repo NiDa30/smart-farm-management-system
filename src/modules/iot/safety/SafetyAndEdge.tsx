@@ -97,8 +97,8 @@ export const SafetyPanel:React.FC<{navigate:(route:string)=>void}>=({navigate})=
     </>}
     <section className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm space-y-2" aria-label="Giới hạn đang triển khai">
       <h2 className="font-semibold">Giới hạn đang triển khai</h2>
-      <p>Mã firmware hiện có boot OFF, timer cục bộ, OFF khi mất kết nối và khóa an toàn. Trang này chưa xác minh phiên bản firmware đang nạp hoặc việc bảo vệ thực sự tác động GPIO.</p>
-      <p>Chưa có đo lưu lượng/mực nước, chống chạy khô đã kiểm chứng, OTA, thống kê flash gateway hoặc NVS để phục hồi trạng thái. Không dùng trạng thái relay làm bằng chứng nước đã chảy.</p>
+      <p>Mã firmware có boot OFF, timer, phao cạn và bảo vệ lưu lượng bật theo cấu hình riêng. Trang này chưa xác minh cấu hình/phiên bản đang nạp hoặc việc bảo vệ thực sự tác động GPIO.</p>
+      <p>Lý do FLOW do bộ điều khiển tự báo, chưa chứng minh hiệu chuẩn hoặc nước thật. Telemetry WATER riêng chưa điều khiển PUMP01. OTA, NVS và bảo vệ trên phần cứng thật chưa nghiệm thu; trạng thái relay không chứng minh nước đã chảy.</p>
       <p>Đặt lại khóa hoặc gửi OFF qua trang Điều khiển Actuator để theo dõi ACK và status mới; trang này không tự gửi lệnh.</p>
     </section>
     <nav aria-label="Màn hình liên quan" className="flex flex-wrap gap-3">

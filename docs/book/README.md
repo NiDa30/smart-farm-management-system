@@ -62,3 +62,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Cảnh báo trạm nước](CHAPTER_24_WATER_ALERTS.md): hai mẫu mới, hồ sơ/nguồn và xác nhận đã xem; không điều khiển bơm.
 
 - [Lịch sử kênh nước và CSV](CHAPTER_25_WATER_HISTORY.md): lọc range/source/quality, phân trang và xuất đúng trang; không tính tổng lít.
+
+- [Bảo vệ flow cục bộ](CHAPTER_26_LOCAL_FLOW_GUARD.md): opt-in ENV GPIO25, thời gian mồi và OFF/khóa; Wokwi live còn chờ.

@@ -17,19 +17,20 @@ const nullableText=(v:unknown)=>v===null||text(v);
 const nullableDate=(v:unknown)=>v===null||date(v);
 const count=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0;
 const states=['ON','OFF'];
-const reasons=['BOOT','COMMAND_ON','COMMAND_OFF','LOCKOUT_RESET','TIMER_EXPIRED','CONNECTION_LOST','DEVICE_FAULT','WATER_LOW'];
+const reasons=['BOOT','COMMAND_ON','COMMAND_OFF','LOCKOUT_RESET','TIMER_EXPIRED','CONNECTION_LOST','DEVICE_FAULT','WATER_LOW','FLOW_LOW','FLOW_SENSOR_FAULT'];
 const reason=(v:unknown)=>v===null||text(v)&&reasons.includes(v);
+const flowConsistent=(r:{stateReason:string|null;reportedState:string;safetyLockout:boolean})=>!['FLOW_LOW','FLOW_SENSOR_FAULT'].includes(r.stateReason??'')||r.reportedState==='OFF'&&r.safetyLockout;
 const uuid=(v:unknown)=>text(v)&&/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
 export function parseSafety(value:unknown):SafetySnapshot {
   const v=value as SafetySnapshot;
   if(!v||v.farmId!=='FARM001'||!date(v.asOf)||!v.mqtt||!['DISABLED','STARTING','CONNECTED','DISCONNECTED','STOPPED'].includes(v.mqtt.state)
     ||!date(v.mqtt.changedAt)||!nullableDate(v.mqtt.lastProcessedAt)||typeof v.controlEnabled!=='boolean'||typeof v.controlTransportConnected!=='boolean'
     ||!(v.sensor===null||v.sensor&&date(v.sensor.observedAt)&&date(v.sensor.receivedAt)&&Number.isFinite(v.sensor.soilMoisture)&&v.sensor.soilMoisture>=0&&v.sensor.soilMoisture<=100)
-    ||!(v.relay===null||v.relay&&date(v.relay.observedAt)&&date(v.relay.receivedAt)&&states.includes(v.relay.reportedState)&&typeof v.relay.safetyLockout==='boolean'&&reason(v.relay.stateReason))
+    ||!(v.relay===null||v.relay&&date(v.relay.observedAt)&&date(v.relay.receivedAt)&&states.includes(v.relay.reportedState)&&typeof v.relay.safetyLockout==='boolean'&&reason(v.relay.stateReason)&&flowConsistent(v.relay))
     ||!v.rule||typeof v.rule.enabled!=='boolean'||!count(v.rule.lowCount)||v.rule.lowCount>2||!(v.rule.activeCommand===null||uuid(v.rule.activeCommand))||!nullableDate(v.rule.cooldownUntil)||!text(v.rule.lastResult)
     ||!validSettings(v.settings)||!v.queue||!count(v.queue.unresolved)||!count(v.queue.overdue)||v.queue.overdue>v.queue.unresolved
     ||!Array.isArray(v.recentProblems)||v.recentProblems.length>10||!v.recentProblems.every(c=>c&&uuid(c.commandId)&&['ON','OFF','RESET_LOCKOUT'].includes(c.action)&&date(c.issuedAt)&&date(c.expiresAt)&&['PENDING','SENT','PUBLISH_UNCERTAIN','FAILED','TIMED_OUT'].includes(c.state)&&nullableText(c.errorCode))
-    ||!Array.isArray(v.stateHistory)||v.stateHistory.length>50||!v.stateHistory.every(h=>h&&count(h.id)&&h.id>0&&date(h.observedAt)&&date(h.receivedAt)&&states.includes(h.reportedState)&&typeof h.safetyLockout==='boolean'&&['FIRST_STATUS','NEW_BOOT','STATE_CHANGED'].includes(h.changeType)&&reason(h.stateReason)))
+    ||!Array.isArray(v.stateHistory)||v.stateHistory.length>50||!v.stateHistory.every(h=>h&&count(h.id)&&h.id>0&&date(h.observedAt)&&date(h.receivedAt)&&states.includes(h.reportedState)&&typeof h.safetyLockout==='boolean'&&['FIRST_STATUS','NEW_BOOT','STATE_CHANGED'].includes(h.changeType)&&reason(h.stateReason)&&flowConsistent(h)))
     throw new Error('Phản hồi an toàn không hợp lệ.');
   return v;
 }
@@ -41,5 +42,5 @@ export function safetyFreshness(observation:{observedAt:string;receivedAt:string
   if(!Number.isFinite(source)||!Number.isFinite(receipt)||source>now+2000||receipt>now+2000)return 'CLOCK_SKEW';
   return now-source<15000&&now-receipt<15000?'FRESH':'STALE';
 }
-export const reasonLabels:Record<string,string>={BOOT:'Khởi động, relay OFF',COMMAND_ON:'Nhận lệnh bật',COMMAND_OFF:'Nhận lệnh tắt',LOCKOUT_RESET:'Đặt lại khóa an toàn',TIMER_EXPIRED:'Hết thời gian hẹn',CONNECTION_LOST:'Mất kết nối',DEVICE_FAULT:'Lỗi thiết bị',WATER_LOW:'Bồn cạn nước hoặc đứt dây phao'};
+export const reasonLabels:Record<string,string>={BOOT:'Khởi động, relay OFF',COMMAND_ON:'Nhận lệnh bật',COMMAND_OFF:'Nhận lệnh tắt',LOCKOUT_RESET:'Đặt lại khóa an toàn',TIMER_EXPIRED:'Hết thời gian hẹn',CONNECTION_LOST:'Mất kết nối',DEVICE_FAULT:'Lỗi thiết bị',WATER_LOW:'Bồn cạn nước hoặc đứt dây phao',FLOW_LOW:'Thiếu lưu lượng tại bộ điều khiển (thiết bị báo)',FLOW_SENSOR_FAULT:'Tín hiệu lưu lượng tại bộ điều khiển lỗi (thiết bị báo)'};
 export const ruleLabels:Record<string,string>={WAITING_SCHEDULE_SAMPLE:'Chờ mẫu mới trong khung giờ tưới',OUTSIDE_SCHEDULE:'Đang ngoài khung giờ tưới',DISABLED:'Đã tắt',RESTART_PAUSED:'Tạm dừng sau khởi động',WAITING_SAMPLES:'Chờ hai mẫu khô mới',STALE_SENSOR:'Dữ liệu cảm biến đã cũ',COMMAND_SENT:'Đã gửi ON, theo dõi ACK/trạng thái',COMMAND_UNCONFIRMED:'Lệnh chưa được xác nhận',STOP_REQUESTED:'Yêu cầu dừng',STOP_SENT:'Đã gửi OFF, chờ trạng thái',STOP_UNCONFIRMED:'Chưa xác nhận tắt',REPORTED_OFF:'Đã xác nhận OFF',MANUAL_HOLD:'Tạm dừng do điều khiển thủ công',DISPATCH_FAILED:'Chưa xác nhận gửi lệnh',COOLDOWN:'Đang nghỉ sau OFF xác nhận',SAFETY_LOCKOUT:'Bị chặn bởi khóa an toàn',DEVICE_NOT_READY:'Thiết bị chưa sẵn sàng',COMMAND_PENDING:'Còn lệnh chưa rõ kết quả',WAITING_NEW_SAMPLE:'Chờ mẫu mới',SOIL_NOT_LOW:'Đất chưa dưới ngưỡng tưới',EXECUTION_CONFIRMED:'Thiết bị đã ACK thực thi ON'};

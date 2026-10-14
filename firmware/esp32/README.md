@@ -85,3 +85,13 @@ or event replay, and no automatic ON recovery. Existing AWS telemetry/manual
 control have user-provided evidence; the new relay-contact/float-switch demo
 still needs the Windows/Wokwi tests in chapter 21. Cloud firmware compilation,
 native safety tests, SQL ingestion and browser fixtures do not prove live GPIO.
+
+
+## Local flow guard (opt-in)
+
+See [chapter26](../../docs/book/CHAPTER_26_LOCAL_FLOW_GUARD.md). Dedicated GPIO25
+clock/gate was added to this diagram, independently of WATER01 monitoring.
+Existing private configs default disabled if new macros are absent. Enable
+flow only alongside the reservoir interlock, rebuild and merge locally.
+No cloud status capability proves enablement/calibration; live acceptance is
+pending. This prototype forces GPIO OFF, not proof of physical pump/water state.

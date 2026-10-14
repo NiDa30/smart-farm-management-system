@@ -31,7 +31,10 @@ V16 thêm cảnh báo nước và xác nhận đã xem, [chương 24](../book/CH
 hai mẫu fresh liên tiếp, đợt riêng theo nguồn; không dispatch command, không
 coi flow 0 là lỗi bơm. Overview/Event Log/Safety chưa hợp nhất water alerts.
 Sau V16 có [history/CSV nước](../book/CHAPTER_25_WATER_HISTORY.md) theo channel,
-range/source/quality và cursor; chưa tính tổng lít/chi phí hoặc no-flow cutoff.
+range/source/quality và cursor; chưa tính tổng lít/chi phí.
+15/10/2026 có [flow guard local opt-in](../book/CHAPTER_26_LOCAL_FLOW_GUARD.md)
+trên ENV01 GPIO25, mã/build/native; chưa Wokwi live hoặc WATER binding. Status
+FLOW_LOW/FLOW_SENSOR_FAULT chỉ nhận OFF/locked, chưa chứng minh guard enabled.
 
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.

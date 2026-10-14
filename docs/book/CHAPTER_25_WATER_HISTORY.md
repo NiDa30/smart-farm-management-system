@@ -137,3 +137,8 @@ trước, chưa phải nghiệm thu AWS/Wokwi mới. Xem [báo cáo](../implemen
 
 Phần no-flow pump cutoff/grace, bảo vệ cục bộ, tổng lượng nước, nhiều van/zone
 và NVS vẫn là bước sau. Lịch sử/cảnh báo nước không cấp quyền khởi động bơm.
+
+
+Bổ sung sau mốc này: [chương 26](CHAPTER_26_LOCAL_FLOW_GUARD.md) có prototype
+flow guard cục bộ opt-in trên ENV01, chưa nghiệm thu live hoặc binding WATER01.
+Các đoạn cutoff chưa làm phía trên mô tả mốc history trước bổ sung này.

@@ -46,3 +46,5 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 24. [Cảnh báo trạm nước](CHAPTER_24_WATER_ALERTS.md): đợt LOW/fault, bằng chứng packet, source riêng và ghi chú idempotent.
 
 25. [Lịch sử kênh nước](CHAPTER_25_WATER_HISTORY.md): dữ liệu gốc, phân trang và CSV có nguồn/hiệu chuẩn từng mẫu.
+
+26. [Local flow guard](CHAPTER_26_LOCAL_FLOW_GUARD.md): ISR/xung, software timer độc lập loop, latch và kiểm thử prototype.
