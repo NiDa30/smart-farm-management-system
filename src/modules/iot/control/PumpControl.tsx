@@ -62,17 +62,17 @@ export const PumpControl: React.FC = () => {
     } catch (error) { setError(error instanceof Error ? error.message : 'Không gửi được lệnh.'); }
     finally { setSending(false); setRefresh(value => value + 1); }
   };
-  const reasons: Record<string,string> = { BOOT: 'Khởi động thiết bị', COMMAND_ON: 'Nhận lệnh bật', COMMAND_OFF: 'Tắt thủ công', LOCKOUT_RESET: 'Reset khóa', TIMER_EXPIRED: 'Hết thời gian hẹn', CONNECTION_LOST: 'Mất kết nối khi đang bật', DEVICE_FAULT: 'Lỗi thiết bị' };
+  const reasons: Record<string,string> = { BOOT: 'Khởi động thiết bị', COMMAND_ON: 'Nhận lệnh bật', COMMAND_OFF: 'Tắt thủ công', LOCKOUT_RESET: 'Reset khóa', TIMER_EXPIRED: 'Hết thời gian hẹn', CONNECTION_LOST: 'Mất kết nối khi đang bật', DEVICE_FAULT: 'Lỗi thiết bị', WATER_LOW: 'Bồn cạn nước hoặc đứt dây phao' };
   const labels: Record<string,string> = { PENDING: 'Đang gửi', SENT: 'Đã gửi, chờ ACK', EXECUTED: 'Thiết bị đã ACK', FAILED: 'Thiết bị từ chối', TIMED_OUT: 'Quá hạn ACK', PUBLISH_UNCERTAIN: 'Chưa xác nhận gửi' };
   return <div className="max-w-5xl mx-auto space-y-5">
     <header><h1 className="text-xl font-bold flex gap-2 items-center"><Power className="w-5 h-5 text-emerald-600" /> Điều khiển PUMP01</h1><p className="text-sm text-slate-500 mt-1">Demo GPIO26 trên Wokwi · FARM001 / ENV01</p></header>
-    <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 text-sm">Chỉ dùng mô phỏng Wokwi với LED. ACK xác nhận GPIO đã áp dụng, không chứng minh bơm vật lý đang chạy.</div>
+    <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 text-sm">Mô phỏng Wokwi với relay và LED tải. ACK xác nhận GPIO đã áp dụng, không chứng minh bơm vật lý đang chạy.</div>
     <section className="bg-white border rounded-xl p-5 space-y-4">
       <div className="flex justify-between items-center"><h2 className="font-semibold">Trạng thái thiết bị: <span role="status">{state === 'UNKNOWN' ? 'Chưa xác định' : state === 'ON' ? 'Đang bật' : 'Đang tắt'}</span></h2><button type="button" onClick={() => setRefresh(value => value + 1)} aria-label="Làm mới trạng thái"><RefreshCw className="w-4 h-4" /></button></div>
       <p className="text-sm text-slate-500">{status?.observedAt ? `Báo lúc: ${new Date(status.observedAt).toLocaleString('vi-VN')}` : 'Chưa nhận status từ thiết bị.'}</p>
       {!available && <p role="alert" className="text-rose-700 text-sm">Backend chưa khả dụng; không thể xác nhận trạng thái relay.</p>}
       {status && !status.controlEnabled && <p className="text-amber-800 text-sm">Chế độ điều khiển chưa bật trên backend.</p>}
-      {status?.safetyLockout && <p className="text-rose-700 text-sm">Khóa an toàn đang bật. Chỉ reset khi thiết bị báo OFF mới.</p>}
+      {status?.safetyLockout && <p className="text-rose-700 text-sm">Khóa an toàn đang bật. Kiểm tra lý do trong lịch sử; nếu bồn cạn, đưa phao về có nước trước khi reset. Chỉ reset khi thiết bị báo OFF mới.</p>}
       <div className="flex items-center gap-3">
         <button type="button" role="switch" aria-label="Công tắc từ xa" aria-checked={state === 'ON'}
           disabled={state === 'UNKNOWN' || (state === 'OFF' ? !canOn : !available || !status?.controlEnabled || sending)}

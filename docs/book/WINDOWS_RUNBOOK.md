@@ -1,5 +1,12 @@
 # Thực hành trên Windows: mở đúng terminal, chạy đúng thứ tự
 
+**Cập nhật simulator nông nghiệp 14/10/2026:** xem
+[chương21](CHAPTER_21_RESERVOIR_INTERLOCK.md). Có relay và phao mới, cần bổ
+sung flag trong config local, build firmware/buildfs rồi merge lại ảnh flash;
+không chỉ restart simulator. Mở firmware/esp32/diagram.json. Các đoạn V10 bên
+dưới là lịch sử, không thay hướng dẫn cập nhật thiết bị này.
+
+
 **Bản cloud mới có V11:** sau pull feature branch, restart backend để Flyway
 thêm cài đặt quy tắc tưới, giữ database hiện có. Xem [chương 17](CHAPTER_17_WATERING_SETTINGS.md)
 cho thao tác lưu/đối chiếu và giới hạn. Các đoạn V10 bên dưới là hướng dẫn của

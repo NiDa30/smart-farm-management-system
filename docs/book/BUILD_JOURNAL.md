@@ -1,5 +1,25 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — Thiết bị simulator nông nghiệp và phao cạn
+
+Người dùng chưa thấy thiết bị mới: lịch V13 trước đó chỉ đổi backend/web. Đợt
+này thêm relay/LED tải NO và slide-switch phao vào sơ đồ chuẩn firmware/esp32,
+phân biệt root wokwi legacy. Firmware opt-in GPIO27, cạn khóa OFF và chặn ON/
+RESET, có nước không resume; backend/web nhận lý do WATER_LOW. Legacy config
+được giữ nguyên, cần thêm flag và rebuild/merge ảnh flash để thử.
+
+Cloud: 104 backend, 10 browser safety, 4 unit safety, 7 Python contracts đạt;
+native RelaySafety và build ESP32 control=1/phao=1 + legacy thiếu flags mới,
+3 kiểm tra sơ đồ tĩnh và smoke UI/API/DB reservoir_smoke GET-only đạt, command0/
+run0/history1 giữ nguyên; lint/build đạt. Cache cả từ chối lúc cạn để duplicate
+RESET sau thêm nước không tự mở khóa. Python lần
+đầu thiếu format validator gây ca timestamp fail; cài pin requirements rồi
+chạy lại, không đổi test để né lỗi. Không AWS/GPIO live mới; tiếp điểm relay có
+mâu thuẫn trong tài liệu Wokwi, cần thử cực tính. NVS/flow/cảnh báo phao riêng
+chưa làm. Xem [chương21](CHAPTER_21_RESERVOIR_INTERLOCK.md) và
+[báo cáo](../implementation/RESERVOIR_INTERLOCK_REPORT.md).
+
+
 ## 14/10/2026 — Ưu tiên nông nghiệp: khung giờ tưới theo tuần
 
 Người dùng ưu tiên chức năng IoT trong canh tác trước. Từ df0c923 thêm V13:

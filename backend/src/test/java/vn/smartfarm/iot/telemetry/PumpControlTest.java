@@ -71,6 +71,31 @@ class PumpControlTest {
         String invalid=payload.replace("TIMER_EXPIRED","FAKE_REASON");
         assertThrows(IllegalArgumentException.class,()->pump.receive("smartfarm/FARM001/PUMP01/status",invalid.getBytes()));
     }
+    @Test void waterLowStatusIsRecordedAndBlocksOn() throws Exception {
+        String payload="""
+            {"schemaVersion":1,"deviceId":"PUMP01","bootId":"ab6cfc5e-18ff-4a01-852b-03604df6b52f",
+             "sequence":1,"timestamp":"%s","reportedState":"OFF","safetyLockout":true,
+             "connection":"ONLINE","stateReason":"WATER_LOW"}
+            """.formatted(Instant.now());
+        pump.receive("smartfarm/FARM001/PUMP01/status",payload.getBytes());
+        assertTrue(pump.status().fresh());
+        assertTrue(pump.status().safetyLockout());
+        assertEquals("WATER_LOW",pump.stateHistory().getFirst().stateReason());
+        assertEquals(409,assertThrows(ResponseStatusException.class,
+            ()->pump.create(new PumpService.Request("ON",20))).getStatusCode().value());
+        verify(transport,never()).publishCommand(any());
+        // OFF remains possible; RESET is only a request, the dry device rejects it.
+        assertEquals("SENT",pump.create(new PumpService.Request("OFF",null)).state());
+        var resetCommand=pump.create(new PumpService.Request("RESET_LOCKOUT",null));
+        var ack=mapper.createObjectNode();
+        ack.put("schemaVersion",1).put("deviceId","PUMP01").put("bootId","ab6cfc5e-18ff-4a01-852b-03604df6b52f")
+            .put("sequence",2).put("timestamp",Instant.now().toString()).put("commandId",resetCommand.commandId().toString())
+            .put("stage","EXECUTED").put("status","FAILED").put("reportedState","OFF")
+            .put("safetyLockout",true).put("errorCode","WATER_LOW");
+        pump.receive("smartfarm/FARM001/PUMP01/ack",mapper.writeValueAsBytes(ack));
+        assertEquals("FAILED",pump.commands().stream().filter(c->c.commandId().equals(resetCommand.commandId())).findFirst().orElseThrow().state());
+        assertTrue(pump.status().safetyLockout());
+    }
     @Test void acceptsOneHourTimerAndPersistsDuration() throws Exception {
         status("OFF",false);
         var command=pump.create(new PumpService.Request("ON",3600));

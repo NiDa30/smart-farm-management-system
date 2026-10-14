@@ -88,3 +88,15 @@ test('navigation opens related screens without control writes',async({page})=>{
  }
  expect(state.unexpected).toEqual([]);
 });
+
+test('dry reservoir shows device lockout and history without sending commands',async({page})=>{
+ const state=await fixtures(page),value=safetyFixture();
+ value.relay!.stateReason='WATER_LOW';value.relay!.safetyLockout=true;
+ value.stateHistory=[{id:5,observedAt:value.asOf,receivedAt:value.asOf,reportedState:'OFF',safetyLockout:true,changeType:'STATE_CHANGED',stateReason:'WATER_LOW'}];
+ state.value=value;await page.goto('/');
+ const relay=page.getByRole('region',{name:'Relay và khóa an toàn'});
+ await expect(relay).toContainText('Trạng thái hiện tại: OFF');
+ await expect(relay).toContainText('Bồn cạn nước hoặc đứt dây phao');
+ await expect(page.getByRole('region',{name:'Lịch sử relay'})).toContainText('Bồn cạn nước hoặc đứt dây phao');
+ expect(state.unexpected).toEqual([]);
+});

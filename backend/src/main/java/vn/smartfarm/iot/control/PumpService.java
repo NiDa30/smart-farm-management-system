@@ -120,7 +120,7 @@ public class PumpService {
             if (!Set.of("ON","OFF").contains(state) || !node.path("safetyLockout").isBoolean()) throw new IllegalArgumentException();
             String reason=null;
             if (node.has("stateReason")) {
-                if (!node.path("stateReason").isTextual() || !Set.of("BOOT","COMMAND_ON","COMMAND_OFF","LOCKOUT_RESET","TIMER_EXPIRED","CONNECTION_LOST","DEVICE_FAULT").contains(node.path("stateReason").asText())) throw new IllegalArgumentException();
+                if (!node.path("stateReason").isTextual() || !Set.of("BOOT","COMMAND_ON","COMMAND_OFF","LOCKOUT_RESET","TIMER_EXPIRED","CONNECTION_LOST","DEVICE_FAULT","WATER_LOW").contains(node.path("stateReason").asText())) throw new IllegalArgumentException();
                 reason=node.path("stateReason").asText();
             }
             if (topic.equals("smartfarm/FARM001/PUMP01/status")) {

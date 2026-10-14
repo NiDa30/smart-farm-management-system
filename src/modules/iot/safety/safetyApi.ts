@@ -17,7 +17,7 @@ const nullableText=(v:unknown)=>v===null||text(v);
 const nullableDate=(v:unknown)=>v===null||date(v);
 const count=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0;
 const states=['ON','OFF'];
-const reasons=['BOOT','COMMAND_ON','COMMAND_OFF','LOCKOUT_RESET','TIMER_EXPIRED','CONNECTION_LOST','DEVICE_FAULT'];
+const reasons=['BOOT','COMMAND_ON','COMMAND_OFF','LOCKOUT_RESET','TIMER_EXPIRED','CONNECTION_LOST','DEVICE_FAULT','WATER_LOW'];
 const reason=(v:unknown)=>v===null||text(v)&&reasons.includes(v);
 const uuid=(v:unknown)=>text(v)&&/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
 export function parseSafety(value:unknown):SafetySnapshot {
@@ -41,5 +41,5 @@ export function safetyFreshness(observation:{observedAt:string;receivedAt:string
   if(!Number.isFinite(source)||!Number.isFinite(receipt)||source>now+2000||receipt>now+2000)return 'CLOCK_SKEW';
   return now-source<15000&&now-receipt<15000?'FRESH':'STALE';
 }
-export const reasonLabels:Record<string,string>={BOOT:'Khởi động, relay OFF',COMMAND_ON:'Nhận lệnh bật',COMMAND_OFF:'Nhận lệnh tắt',LOCKOUT_RESET:'Đặt lại khóa an toàn',TIMER_EXPIRED:'Hết thời gian hẹn',CONNECTION_LOST:'Mất kết nối',DEVICE_FAULT:'Lỗi thiết bị'};
+export const reasonLabels:Record<string,string>={BOOT:'Khởi động, relay OFF',COMMAND_ON:'Nhận lệnh bật',COMMAND_OFF:'Nhận lệnh tắt',LOCKOUT_RESET:'Đặt lại khóa an toàn',TIMER_EXPIRED:'Hết thời gian hẹn',CONNECTION_LOST:'Mất kết nối',DEVICE_FAULT:'Lỗi thiết bị',WATER_LOW:'Bồn cạn nước hoặc đứt dây phao'};
 export const ruleLabels:Record<string,string>={WAITING_SCHEDULE_SAMPLE:'Chờ mẫu mới trong khung giờ tưới',OUTSIDE_SCHEDULE:'Đang ngoài khung giờ tưới',DISABLED:'Đã tắt',RESTART_PAUSED:'Tạm dừng sau khởi động',WAITING_SAMPLES:'Chờ hai mẫu khô mới',STALE_SENSOR:'Dữ liệu cảm biến đã cũ',COMMAND_SENT:'Đã gửi ON, theo dõi ACK/trạng thái',COMMAND_UNCONFIRMED:'Lệnh chưa được xác nhận',STOP_REQUESTED:'Yêu cầu dừng',STOP_SENT:'Đã gửi OFF, chờ trạng thái',STOP_UNCONFIRMED:'Chưa xác nhận tắt',REPORTED_OFF:'Đã xác nhận OFF',MANUAL_HOLD:'Tạm dừng do điều khiển thủ công',DISPATCH_FAILED:'Chưa xác nhận gửi lệnh',COOLDOWN:'Đang nghỉ sau OFF xác nhận',SAFETY_LOCKOUT:'Bị chặn bởi khóa an toàn',DEVICE_NOT_READY:'Thiết bị chưa sẵn sàng',COMMAND_PENDING:'Còn lệnh chưa rõ kết quả',WAITING_NEW_SAMPLE:'Chờ mẫu mới',SOIL_NOT_LOW:'Đất chưa dưới ngưỡng tưới',EXECUTION_CONFIRMED:'Thiết bị đã ACK thực thi ON'};

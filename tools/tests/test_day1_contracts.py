@@ -52,6 +52,14 @@ class ContractsTest(unittest.TestCase):
         value["errorCode"] = "EXPIRED"
         self.validate("ack", value)
 
+    def test_pump_state_reason_includes_water_interlock(self):
+        value = self.example("status")
+        value.update(deviceId="PUMP01", reportedState="OFF", safetyLockout=True,
+                     activeCommandId=None, stateReason="WATER_LOW")
+        self.validate("status", value)
+        value["stateReason"] = "UNKNOWN_REASON"
+        with self.assertRaises(ValidationError): self.validate("status", value)
+
     def test_device_policy_cannot_publish_command_or_cross_farm(self):
         spec = importlib.util.spec_from_file_location("provision", ROOT / "tools/aws/provision_day1.py")
         module = importlib.util.module_from_spec(spec)

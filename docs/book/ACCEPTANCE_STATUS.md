@@ -37,6 +37,13 @@ frontend, lint/build không skip. Smoke App/API/PostgreSQL lưu/đọc sau resta
 lịch tuần giờ VN, command0 và rule/MQTT/control tắt. Calendar gate/ACK dùng
 transport fixtures; chưa thử lịch trên AWS/Wokwi live Windows.
 
+Đợt relay/phao cạn nước đạt **104 backend tests**, 10 browser safety, 4 unit
+safety và 7 Python contract, native RelaySafety + build ESP32 control/phao bật,
+lint/build. Legacy thiếu flags mới build đạt, 3 ca sơ đồ tĩnh và smoke toàn
+app/API/PostgreSQL GET-only cũng đạt (command0/run0). Chỉ sơ đồ/firmware/SQL/API fixtures được kiểm tra cloud; tất cả ca
+relay-contact/phao/AWS/Wokwi mới ở chương21 vẫn **Chưa chạy**. Config local cũ
+cần opt-in và ghép lại flash.bin. Chưa có NVS/flow/mức nước phần trăm.
+
 Người dùng đã nói “đã hoạt động” sau bước đất khô bật tự động; ghi nhận là
 user-reported một phần, chưa có timestamp/commandId/ACK/sequence để nghiệm thu
 trọn sáu ca. OFF sớm, cooldown, timer và restart giữa run vẫn chờ xác nhận.

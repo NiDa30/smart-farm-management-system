@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSafety,safetyFreshness } from './safetyApi';
+import { parseSafety,safetyFreshness,reasonLabels } from './safetyApi';
 import { safetyFixture } from '../../../../tools/tests/safety.fixture';
 test('safety freshness requires source and receipt within 15 seconds, independent of browser wall clock',()=>{
  const now=Date.parse('2026-10-14T12:00:00Z'),time=(delta:number)=>new Date(now+delta).toISOString();
@@ -23,4 +23,15 @@ test('missing readings remain null and historical lockout does not turn into cur
  const now=Date.now(),old=new Date(now-60000).toISOString();
  value.relay={observedAt:old,receivedAt:old,reportedState:'ON',safetyLockout:true,stateReason:'CONNECTION_LOST'};
  const parsed=parseSafety(value);assert.equal(parsed.relay!.reportedState,'ON');assert.equal(safetyFreshness(parsed.relay,now),'STALE');
+});
+
+test('water-low device history remains a lockout with a Vietnamese reason',()=>{
+ const value=safetyFixture();
+ value.relay!.stateReason='WATER_LOW'; value.relay!.safetyLockout=true; value.relay!.reportedState='OFF';
+ value.stateHistory=[{id:1,observedAt:value.relay!.observedAt,receivedAt:value.relay!.receivedAt,
+  reportedState:'OFF',safetyLockout:true,stateReason:'WATER_LOW',changeType:'STATE_CHANGED'}];
+ const parsed=parseSafety(value);
+ assert.equal(parsed.relay!.stateReason,'WATER_LOW');
+ assert.equal(parsed.stateHistory[0].stateReason,'WATER_LOW');
+ assert.match(reasonLabels.WATER_LOW,/cạn nước/);
 });

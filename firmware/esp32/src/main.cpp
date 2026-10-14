@@ -20,6 +20,18 @@
 #define FARM_CONTROL_ENABLED 0
 #endif
 
+#ifndef FARM_WATER_INTERLOCK_ENABLED
+#define FARM_WATER_INTERLOCK_ENABLED 0
+#endif
+#ifndef FARM_WATER_LEVEL_PIN
+#define FARM_WATER_LEVEL_PIN 27
+#endif
+static_assert(FARM_WATER_INTERLOCK_ENABLED == 0 || FARM_WATER_INTERLOCK_ENABLED == 1,
+  "Water interlock must be 0 or 1");
+static_assert(!FARM_WATER_INTERLOCK_ENABLED ||
+  (FARM_WATER_LEVEL_PIN != FARM_RELAY_PIN && FARM_WATER_LEVEL_PIN != FARM_DHT_PIN && FARM_WATER_LEVEL_PIN != FARM_SOIL_PIN),
+  "Water switch must use a separate GPIO");
+
 #ifndef FARM_WOKWI_CLOCK_TOLERANCE_SECONDS
 #define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 2
 #endif
@@ -44,6 +56,29 @@ static volatile OffCause offCause = NO_CAUSE;
 static const char* stateReason = "BOOT";
 static volatile bool forcedOff = false, controlFault = false;
 
+static bool waterPresent() {
+  return !FARM_WATER_INTERLOCK_ENABLED || digitalRead(FARM_WATER_LEVEL_PIN) == LOW;
+}
+
+// Loop-owned state; runs before commands and network/sample work. An open wire
+// has the same safe effect as an empty reservoir. No automatic recovery to ON.
+static bool checkWaterSupply() {
+  if (!controlEnabled || !FARM_WATER_INTERLOCK_ENABLED) return false;
+  const bool present = waterPresent();
+  const bool changed = relay.setWaterAvailable(present);
+  if (!present) {
+    portENTER_CRITICAL(&relayMux);
+    forcedOff = true;
+    digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
+    portEXIT_CRITICAL(&relayMux);
+    stateReason = "WATER_LOW";
+    activeCommand = "";
+    esp_timer_stop(relayTimer);
+  }
+  if (changed) Serial.println(present ? "WATER_RESTORED; reset lockout required" : "WATER_LOW; relay OFF and locked");
+  return changed;
+}
+
 static void forceRelayOff(void*) {
   portENTER_CRITICAL(&relayMux);
   forcedOff = true;
@@ -53,7 +88,7 @@ static void forceRelayOff(void*) {
 }
 static void applyRelayOutput() {
   portENTER_CRITICAL(&relayMux);
-  digitalWrite(FARM_RELAY_PIN, controlEnabled && connected && !forcedOff && relay.isOn()
+  digitalWrite(FARM_RELAY_PIN, controlEnabled && connected && !forcedOff && waterPresent() && relay.isOn()
     ? !FARM_RELAY_OFF_LEVEL : FARM_RELAY_OFF_LEVEL);
   portEXIT_CRITICAL(&relayMux);
 }
@@ -127,6 +162,7 @@ static void handleCommand(const CommandPacket &packet) {
   const bool off = strcmp(action,"OFF")==0;
   const bool reset = strcmp(action,"RESET_LOCKOUT")==0;
   const char* error = nullptr;
+  checkWaterSupply();
   bool wasOn = relay.isOn();
   if (packet.retained) error = "RETAINED_COMMAND";
   else if (!doc.is<JsonObject>() || doc.size() != (on ? 7 : 6)
@@ -153,6 +189,9 @@ static void handleCommand(const CommandPacket &packet) {
   }
   if (!relay.isOn()) { esp_timer_stop(relayTimer); activeCommand = ""; }
   if (!connected) { relay.fail(id,"CONNECTION_LOST"); error = "CONNECTION_LOST"; }
+  // Recheck after parsing/arming so a switch change cannot energize the output.
+  checkWaterSupply();
+  if (!waterPresent() && (on || reset)) { relay.fail(id,"WATER_LOW"); error = "WATER_LOW"; }
   if (!relay.isOn()) activeCommand = "";
   if (!error) {
     if (on && relay.isOn() && !wasOn) stateReason = "COMMAND_ON";
@@ -160,6 +199,7 @@ static void handleCommand(const CommandPacket &packet) {
     else if (reset) stateReason = "LOCKOUT_RESET";
   } else if (strcmp(error,"DEVICE_FAULT")==0) stateReason = "DEVICE_FAULT";
   else if (strcmp(error,"CONNECTION_LOST")==0) stateReason = "CONNECTION_LOST";
+  if (!waterPresent()) stateReason = "WATER_LOW";
   applyRelayOutput();
   if (error && (strcmp(error,"EXPIRED")==0 || strcmp(error,"CLOCK_SKEW")==0 || strcmp(error,"INVALID_LIFETIME")==0 || strcmp(error,"CLOCK_NOT_READY")==0)) {
     int64_t epoch=time(nullptr), issued=parseUtc(doc["issuedAt"] | ""), expires=parseUtc(doc["expiresAt"] | "");
@@ -265,6 +305,10 @@ void setup() {
   ackTopic = String("smartfarm/") + FARM_ID + "/PUMP01/ack";
   pumpStatusTopic = String("smartfarm/") + FARM_ID + "/PUMP01/status";
   Serial.println(controlEnabled ? "Wokwi relay control enabled" : "Relay control disabled");
+  if (FARM_WATER_INTERLOCK_ENABLED) pinMode(FARM_WATER_LEVEL_PIN, INPUT_PULLUP);
+  if (FARM_WATER_INTERLOCK_ENABLED) Serial.printf("Water interlock enabled: GPIO%d closed=water, open=dry\n", FARM_WATER_LEVEL_PIN);
+  else Serial.println("Water interlock disabled: set FARM_WATER_INTERLOCK_ENABLED=1 and rebuild");
+  checkWaterSupply();
   uint8_t id[16];
   esp_fill_random(id, sizeof(id));
   id[6] = (id[6] & 0x0f) | 0x40;
@@ -303,8 +347,11 @@ void loop() {
   bool stopped = relay.tickSafety(now, link);
   if (stopped && wasRunning) stateReason="TIMER_EXPIRED";
   stopped = stopped || (wasRunning && !relay.isOn());
+  bool waterChanged = checkWaterSupply();
+  stopped = stopped || (wasRunning && !relay.isOn());
   applyRelayOutput();
   if (stopped) { activeCommand = ""; esp_timer_stop(relayTimer); publishPumpStatus(); Serial.printf("RELAY_OFF reason=%s\n",stateReason); }
+  else if (waterChanged) publishPumpStatus();
   static uint32_t lastPumpStatus = 0;
   if (controlEnabled && link && now-lastPumpStatus>=5000) { lastPumpStatus=now; publishPumpStatus(); }
   if (controlEnabled && link) {

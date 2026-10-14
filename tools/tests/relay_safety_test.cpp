@@ -51,4 +51,36 @@ int main() {
   }
   assert(!crowded.apply("emergency",RelaySafety::OFF,0,epoch,epoch+10,epoch,2));
   assert(!crowded.isOn());
+  // Reservoir interlock is local and remains latched after water returns.
+  RelaySafety dry;
+  assert(dry.setWaterAvailable(false));
+  assert(dry.lockout() && !dry.isOn());
+  assert(strcmp(dry.apply("dry-on",RelaySafety::ON,30,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(strcmp(dry.apply("dry-reset",RelaySafety::RESET,0,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(!dry.apply("dry-off",RelaySafety::OFF,0,epoch,epoch+10,epoch,0));
+  assert(dry.lockout() && !dry.isOn());
+  assert(dry.setWaterAvailable(true));
+  assert(dry.lockout() && !dry.isOn());
+  assert(strcmp(dry.apply("dry-reset",RelaySafety::RESET,0,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(dry.lockout()); // failed reset is deduplicated even after refilling
+  assert(strcmp(dry.apply("no-resume",RelaySafety::ON,30,epoch,epoch+10,epoch,0),"SAFETY_LOCKOUT")==0);
+  assert(!dry.apply("wet-reset",RelaySafety::RESET,0,epoch,epoch+10,epoch,0));
+  assert(!dry.lockout() && !dry.isOn());
+  assert(strcmp(dry.apply("dry-on",RelaySafety::ON,30,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(!dry.isOn()); // previously rejected ON cannot become a new run
+  assert(!dry.apply("wet-on",RelaySafety::ON,30,epoch,epoch+10,epoch,0));
+  assert(dry.isOn());
+  dry.setWaterAvailable(false);
+  assert(!dry.isOn() && dry.lockout());
+  // Duplicate successful ON or RESET cannot override a subsequently dry tank.
+  assert(strcmp(dry.apply("wet-on",RelaySafety::ON,30,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  assert(strcmp(dry.apply("wet-reset",RelaySafety::RESET,0,epoch,epoch+10,epoch,0),"WATER_LOW")==0);
+  dry.setWaterAvailable(true);
+  assert(!dry.tickSafety(1000,true));
+  assert(!dry.isOn() && dry.lockout());
+  assert(!dry.apply("recover",RelaySafety::RESET,0,epoch,epoch+10,epoch,1000));
+  assert(!dry.apply("new-run",RelaySafety::ON,2,epoch,epoch+10,epoch,1000));
+  assert(dry.tickSafety(3000,true));
+  assert(!dry.isOn() && !dry.lockout());
+  puts("RelaySafety: timer, dedup, network, clock, reservoir interlock PASS");
 }
