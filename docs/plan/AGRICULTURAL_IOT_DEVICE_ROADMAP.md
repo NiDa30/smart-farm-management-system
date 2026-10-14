@@ -635,3 +635,17 @@ Xem [chương28](../book/CHAPTER_28_SOIL_ALERTS.md) và
 A3 hiện có giám sát và cảnh báo đất; chưa coi controller/valve/coordinator đã
 xong. Rule hiện tại vẫn ENV01, SOIL không phát lệnh bơm. Ngưỡng cảnh báo cố định
 cho demo, calibration thực/từng cây/zone và hợp nhất các read model còn sau.
+
+## Cập nhật 15/10/2026 — vùng tưới V19, nền gán dữ liệu A3
+
+Có create/edit zone, đúng ba kênh SOIL cùng node/khu vực, source và ngưỡng,
+revision và unique node/channel. Khảo sát2/3 chỉ khi cả ba mới/hợp lệ/đúng nguồn/
+cùng packet; partial/fault/stale không tạo đa số. UI Node & trạm nước → Vùng tưới.
+176 backend/29browser node-history-zone/17unit và full-app PostgreSQL fixture
+create/edit/restart đạt; command0/run0, MQTT/control tắt. Năm ca live mới Chưa chạy,
+xem [chương29](../book/CHAPTER_29_IRRIGATION_ZONES.md) và
+[báo cáo](../implementation/LOCAL_IRRIGATION_ZONES_REPORT.md).
+
+Đây là gán dữ liệu độc quyền, chưa lease bơm hoặc điều khiển van. A3 vẫn cần
+controller một dãy, actuator binding/coordinator/timeout/safety trước4dãy.
+Ngưỡng vùng chỉ khảo sát, không đổi alert30/35 hoặc rule ENV01 độc lập.

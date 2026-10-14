@@ -68,3 +68,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Node đất ba điểm](CHAPTER_27_SOIL_MULTIPOINT.md): SOIL/v2, UI/history và firmware Wokwi riêng; chưa điều khiển van hoặc nghiệm thu live.
 
 - [Cảnh báo đất nhiều điểm](CHAPTER_28_SOIL_ALERTS.md): đất khô/lỗi theo kênh và nguồn, hai mẫu mới, ACK/ghi chú; chưa điều khiển tưới từ SOIL.
+
+- [Vùng tưới và ba điểm đất](CHAPTER_29_IRRIGATION_ZONES.md): gán kênh độc quyền, khảo sát đa số/cùng packet, phiên bản cấu hình; controller nhiều vùng còn sau.

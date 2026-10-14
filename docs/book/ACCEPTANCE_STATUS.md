@@ -1,5 +1,15 @@
 # Trạng thái bằng chứng và nghiệm thu — 15/10/2026 (giờ Việt Nam)
 
+## Vùng tưới V19 — mới nhất 15/10/2026
+
+176 backend,29 browser node/history/zone,17 unit frontend,lint/build cuối đạt,
+không skip. V18→V19 giữ dữ liệu alert cũ, không tự tạo vùng. Full-app test tạo/
+sửa hai vùng từ hai SOIL node, khảo sát DRY/WET cùng packet, revision/binding
+nguyên qua restart;command0/run0,MQTT/control tắt. [Chương29](CHAPTER_29_IRRIGATION_ZONES.md)
+có năm ca Windows/AWS/Wokwi Chưa chạy. Không firmware/actuator/coordinator mới;
+rule ENV01 hoạt động riêng, ngưỡng vùng không đổi alert30/35.
+
+
 ## Soil alerts V18 — mới nhất 15/10/2026
 
 167 backend,24 browser alerts, 11 unit parser, lint/build đạt, không skip. V17→V18

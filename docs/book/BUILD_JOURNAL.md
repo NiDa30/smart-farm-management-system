@@ -867,3 +867,23 @@ Sau điều chỉnh IAM, lệnh CLI attach-policy không lỗi. Lần chạy scr
 - Không gặp test/build failure trong đợt này; các ca lỗi API là test chủ động,
   không ghi thành sự cố live. [Chương28](CHAPTER_28_SOIL_ALERTS.md) và
   [báo cáo](../implementation/LOCAL_SOIL_ALERTS_REPORT.md) có sáu ca Wokwi Chưa chạy.
+
+## 15/10/2026 — Registry vùng tưới và khảo sát ba điểm
+
+- V19 thêm irrigation_zone/channel: ba kênh SOIL/v2 cùng node/area, source và
+  ngưỡng riêng, revision; unique node/channel không gán hai vùng. Rebind atomic,
+  conflict rollback giữ binding/revision cũ, hai người sửa chỉ một người thắng.
+- Cả ba VALID/mới/đúng source và cùng packet mới tính2/3 DRY/WET; mixed/partial/
+  fault/missing/stale/clock/source mismatch không biến thành đủ điều kiện tưới.
+  Khảo sát một packet khác với alert hai packet; không phát command.
+- UI Node & trạm nước → Vùng tưới có create/edit/readback/conflict, monotonic
+  expiry khi form mở dừng poll. 176 backend,29 browser node/history/zone,17 unit,
+  lint/build cuối đạt, không skip. Firmware không đổi.
+- Lint đầu nullable validUntil trong callback: giữ guard date và sửa kiểu.
+  Browser đầu28 pass/1 timeout label select; thêm aria-label rõ ràng, rerun29 pass.
+  Không tăng timeout hoặc bỏ assertion. Ghi chi tiết ở
+  [chương29](CHAPTER_29_IRRIGATION_ZONES.md).
+- V18→V19 giữ4packet/12readings,2soilalert/1ACK,command0/run0 và không tự tạo vùng.
+  Full app test hai node → POST hai vùng → PUT ngưỡng40/45 → restart → config/
+  revision/binding giống trước. Cuối2zone/6binding/2packet/6readings,command0/run0,
+  MQTT/control tắt; không AWS/Wokwi live mới. Năm ca live còn Chưa chạy.

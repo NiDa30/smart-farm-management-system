@@ -224,3 +224,13 @@ chỉ khai báo registry chưa có dữ liệu thì chưa có alert. Hai mẫu d
 mở, hai mẫu từ35% mới đóng; fault/null khác đất0, mất dữ liệu không tự hết.
 ACK/ghi chú không điều khiển relay. Xem [chương28](CHAPTER_28_SOIL_ALERTS.md)
 để đọc ngữ nghĩa, timeout/readback và sáu ca AWS/Wokwi còn Chưa chạy.
+
+## Vùng tưới V19 — 15/10/2026
+
+Pull/restart backend để Flyway V19 thêm hai bảng, không xóa PostgreSQL volume.
+Frontend terminal riêng npm run dev. Mở **Sensor Realtime → Node & trạm nước
+→ Vùng tưới** để gán ba kênh SOIL cùng node/khu vực, chọn source và ngưỡng.
+Khai báo vùng chưa provision hoặc điều khiển; rule ENV01/PUMP01 vẫn độc lập.
+Khi chỉ thử registry, tắt rule cũ và dùng backend control=false như
+[chương29](CHAPTER_29_IRRIGATION_ZONES.md). Không cần flash/provision lại chỉ
+để lưu vùng. Mẫu đúng source/cùng packet mới tính đa số; chờ năm ca live.

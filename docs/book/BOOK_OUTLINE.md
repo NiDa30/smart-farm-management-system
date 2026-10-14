@@ -54,3 +54,6 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 
 28. [Cảnh báo đất nhiều điểm](CHAPTER_28_SOIL_ALERTS.md) — hysteresis, chất lượng,
     packet mới/nguồn, V18 và xác nhận đã xem; tách cảnh báo khỏi lệnh tưới.
+
+29. [Vùng tưới và ba điểm đất](CHAPTER_29_IRRIGATION_ZONES.md) — registry V19,
+    source/freshness/coherence và khảo sát hiện tại, nền cho controller A3.

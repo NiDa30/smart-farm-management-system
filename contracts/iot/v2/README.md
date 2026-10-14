@@ -95,3 +95,17 @@ fault mở Value null, clear0–100. List ưu tiên active/unseen; GET ID độc
 ACK đầu được giữ, cùng note idempotent, khác note hoặc đã đóng chưa xem409.
 JSON key trùng/field thừa/kiểu note sai bị400. ACK không sửa điều kiện hoặc bơm.
 Nguồn là khai báo; xem [chương28](../../../docs/book/CHAPTER_28_SOIL_ALERTS.md).
+
+## V19: gán ba kênh SOIL cho vùng tưới
+
+API `/api/v1/irrigation-zones` GET/list/detail, POST/create và PUT/update quản
+lý mapping, không đổi telemetry v2. Mỗi vùng cùng area/node SOIL và đúng ba
+kênh %; node/channel không thuộc hai vùng. Config có zoneId/name/areaId/
+soilNodeId/channelIds/expectedSource/dryThreshold/wetThreshold/revision.
+POST không nhận revision; PUT nhận phiên bản đang đọc và tăng1 hoặc409.
+
+View có asOf/points/assessment. Chỉ ba VALID fresh source+receipt≤30s, đúng
+nguồn và cùng boot/sequence/observedAt/receivedAt mới có đa số2/3 DRY/WET hoặc
+MIXED, count và validUntil. Ngược lại UNAVAILABLE/INCOHERENT không có count/
+expiry. Đây là khảo sát một packet, không alert hai packet hoặc command gate.
+Xem [chương29](../../../docs/book/CHAPTER_29_IRRIGATION_ZONES.md).

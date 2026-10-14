@@ -232,3 +232,18 @@ hành vi và kịch bản đã kiểm thử bằng fixture, chưa phải sự c�
 - Không thấy tab mới: pull và restart frontend/backend đúng repo; V18 chỉ thêm
   bảng, không cần xóa PostgreSQL volume/nạp lại SOIL firmware. Xem
   [chương28](CHAPTER_28_SOIL_ALERTS.md).
+
+## Vùng tưới V19 — lỗi dev và cách đối chiếu
+
+- Lint TS nullable validUntil trong callback: guard date ở biểu thức trước
+  không được TypeScript giữ trong callback. Đã giữ guard runtime, xác nhận kiểu
+  sau guard; lint/build cuối đạt. Không bỏ kiểm tra ngày để ép compiler qua.
+- Browser tạo vùng timeout ở select nhưng snapshot đã có SOIL01: nhãn select
+  chứa option gây locator getByLabel exact không khớp. Thêm aria-label cụ thể
+  cho area/node/source; chạy lại29 browser tests đạt. Không phải mất node/AWS.
+- Các điểm đều mới mà chưa có đa số: đối chiếu boot/sequence/observedAt/receivedAt
+  và nguồn. Packet một phần không làm ba điểm thành cùng mẫu. Xem
+  [chương29](CHAPTER_29_IRRIGATION_ZONES.md); đây là ca fixture đã test, live còn chờ.
+- Lưu vùng409: mã/kênh đã dùng hoặc revision thay đổi. Đọc cấu hình mới nhất,
+  không ghi đè bản người khác hoặc tự PUT lại. Đổi binding thất bại giữ ba
+  binding cũ nhờ rollback; nguồn/node phải đúng khu vực.

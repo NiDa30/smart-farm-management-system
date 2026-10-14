@@ -49,6 +49,12 @@ hồi tố, không đóng vì thiếu dữ liệu, không dispatch. Tab Trung t�
 → Đất nhiều điểm; Overview/EventLog/Safety chưa hợp nhất soil alerts. Wokwi
 live mới còn chờ; firmware và rule ENV01 giữ nguyên.
 
+V19 thêm [vùng tưới ba điểm](../book/CHAPTER_29_IRRIGATION_ZONES.md): mapping
+độc quyền node/channel, source/ngưỡng/revision và khảo sát2/3 khi cả ba điểm
+mới/cùng packet. UI trong Sensor Realtime → Node & trạm nước → Vùng tưới.
+Chưa actuator/controller/coordinator hoặc rule từ SOIL; rule ENV01 vẫn độc lập.
+Cloud API/PostgreSQL/browser đạt, năm ca live mới chưa nghiệm thu.
+
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.
 Đối chiếu [hợp đồng đang dùng](../../contracts/iot/v1/README.md),

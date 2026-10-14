@@ -161,3 +161,61 @@ test('soil history supports scoped filters and CSV with soil filename and no act
  await page.getByLabel('Chất lượng lịch sử').selectOption('SENSOR_FAULT');await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeDisabled();await page.getByRole('button',{name:'Áp dụng lịch sử'}).click();await expect(page.getByRole('button',{name:'Xuất CSV trang này'})).toBeEnabled();
  expect(api.calls.at(-1)?.searchParams.get('quality')).toBe('SENSOR_FAULT');expect(api.inventory.posts).toEqual([]);expect(api.inventory.unexpected).toEqual([]);
 });
+
+import type {ZoneConfig,ZoneView,ZoneSnapshot} from '../../src/modules/iot/zones/zoneApi';
+function zoneConfig():ZoneConfig{return {zoneId:'ZONE01',name:'Dãy rau 1',areaId:'AREA001',soilNodeId:'SOIL01',channelIds:['SOIL1','SOIL2','SOIL3'],expectedSource:'SIMULATOR',dryThreshold:30,wetThreshold:35,revision:1};}
+function zoneView(config=zoneConfig()):ZoneView{
+ const at=new Date().toISOString();return {config,asOf:at,points:[0,20,80].map((value,i)=>({channelId:config.channelIds[i],state:'FRESH',latest:{value,quality:'VALID',observedAt:at,receivedAt:at,bootId:'44000000-0000-4000-8000-000000000001',sequence:1,calibrationVersion:'SIM_LINEAR_V1',dataSource:config.expectedSource}})),assessment:{state:'DRY',dryCount:2,wetCount:1,validUntil:new Date(Date.parse(at)+30000).toISOString()}};
+}
+async function zoneFixture(page:Page){
+ const inventory=await fixture(page);inventory.snapshot.nodes=[soil()];
+ const initial=zoneView(),state={inventory,snapshot:{farmId:'FARM001',asOf:initial.asOf,zones:[initial]} as ZoneSnapshot,fail:false,corrupt:false,lost:false,conflict:false,detail:initial,posts:[] as any[],puts:[] as any[],calls:0};
+ await page.route('**/api/v1/irrigation-zones**',async route=>{const r=route.request();
+  if(r.method()==='GET'){
+   state.calls++;const body=r.url().endsWith('/irrigation-zones')?structuredClone(state.snapshot):structuredClone(state.detail);
+   if(state.corrupt&&'zones' in body&&body.zones.length)body.zones[0].assessment.dryCount=3;
+   await route.fulfill({status:state.fail?503:200,json:body});return;
+  }
+  if(r.method()==='POST'||r.method()==='PUT'){
+   const body=r.postDataJSON();(r.method()==='POST'?state.posts:state.puts).push(body);
+   if(state.conflict){await route.fulfill({status:409,json:{}});return;}
+   const saved=zoneView({...body,revision:r.method()==='POST'?1:body.revision+1});state.detail=saved;state.snapshot={farmId:'FARM001',asOf:saved.asOf,zones:[saved]};
+   if(state.lost){await route.abort('failed');return;}await route.fulfill({status:r.method()==='POST'?201:200,json:saved});return;
+  }state.inventory.unexpected.push(r.method()+' '+r.url());await route.abort();
+ });return state;
+}
+async function openZones(page:Page){await page.goto('/');await page.getByRole('button',{name:'Vùng tưới',exact:true}).click();await expect(page.getByRole('region',{name:'Quản lý vùng tưới',exact:true})).toBeVisible();}
+test('zones show majority from three independent points and no actuator writes',async({page})=>{
+ const api=await zoneFixture(page);await openZones(page);await expect(page.getByLabel('Khảo sát ZONE01',{exact:true})).toContainText('2/3 khô');await expect(page.getByLabel('ZONE01 SOIL1',{exact:true})).toContainText('0%');
+ expect(api.posts).toEqual([]);expect(api.puts).toEqual([]);expect(api.inventory.unexpected).toEqual([]);
+});
+test('zone create binds exactly three points and sends no revision in POST',async({page})=>{
+ const api=await zoneFixture(page);api.snapshot.zones=[];await openZones(page);await page.getByRole('button',{name:'Thêm vùng tưới',exact:true}).click();
+ await page.getByLabel('Mã vùng',{exact:true}).fill('ZONE02');await page.getByLabel('Tên vùng',{exact:true}).fill('Dãy2');await page.getByLabel('Node đất của vùng',{exact:true}).selectOption('SOIL01');
+ for(const id of ['SOIL1','SOIL2','SOIL3'])await page.getByRole('checkbox',{name:id,exact:true}).check();
+ await page.getByRole('button',{name:'Lưu vùng',exact:true}).click();await expect(page.getByRole('status')).toContainText('Đã lưu vùng ZONE02');
+ expect(api.posts).toHaveLength(1);expect(api.posts[0].revision).toBeUndefined();expect(api.posts[0].channelIds).toEqual(['SOIL1','SOIL2','SOIL3']);expect(api.inventory.unexpected).toEqual([]);
+});
+test('zone save with lost response requires GET readback without another PUT',async({page})=>{
+ const api=await zoneFixture(page);api.lost=true;await openZones(page);await page.getByRole('button',{name:'Sửa vùng ZONE01',exact:true}).click();await page.getByLabel('Tên vùng',{exact:true}).fill('Tên mới');
+ await page.getByRole('button',{name:'Lưu vùng',exact:true}).click();await expect(page.getByRole('button',{name:'Lưu vùng',exact:true})).toBeDisabled();await page.getByRole('button',{name:'Đối chiếu vùng',exact:true}).click();
+ await expect(page.getByRole('status')).toContainText('Đã đối chiếu vùng ZONE01');expect(api.puts).toHaveLength(1);expect(api.puts[0].revision).toBe(1);
+});
+test('zone version conflict preserves draft until explicit load of current config',async({page})=>{
+ const api=await zoneFixture(page);api.conflict=true;await openZones(page);await page.getByRole('button',{name:'Sửa vùng ZONE01',exact:true}).click();await page.getByLabel('Tên vùng',{exact:true}).fill('Draft name');
+ await page.getByRole('button',{name:'Lưu vùng',exact:true}).click();await expect(page.getByLabel('Tên vùng',{exact:true})).toHaveValue('Draft name');await expect(page.getByRole('button',{name:'Lưu vùng',exact:true})).toBeDisabled();
+ api.detail=zoneView({...zoneConfig(),name:'Other editor',revision:2});await page.getByRole('button',{name:'Đọc cấu hình mới nhất',exact:true}).click();await expect(page.getByLabel('Tên vùng',{exact:true})).toHaveValue('Other editor');expect(api.puts).toHaveLength(1);
+});
+test('zone consensus expires while config form pauses polling',async({page})=>{
+ await page.clock.install();const api=await zoneFixture(page);await openZones(page);await expect(page.getByLabel('Khảo sát ZONE01',{exact:true})).toContainText('2/3 khô');await page.getByRole('button',{name:'Sửa vùng ZONE01',exact:true}).click();
+ const calls=api.calls;await page.clock.fastForward(31000);await expect(page.getByLabel('Khảo sát ZONE01',{exact:true})).toContainText('Dữ liệu khảo sát đã cũ');expect(api.calls).toBe(calls);expect(api.puts).toEqual([]);
+});
+test('zone API outage and false counts cannot keep a fresh survey claim',async({page})=>{
+ const api=await zoneFixture(page);await openZones(page);
+ for(const field of ['fail','corrupt'] as const){api[field]=true;await page.getByRole('button',{name:'Làm mới vùng',exact:true}).click();await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByLabel('Khảo sát ZONE01',{exact:true})).toContainText('Chưa đủ dữ liệu');await expect(page.getByRole('button',{name:'Sửa vùng ZONE01',exact:true})).toBeDisabled();api[field]=false;await page.getByRole('button',{name:'Làm mới vùng',exact:true}).click();await expect(page.getByRole('alert')).toHaveCount(0);}
+ expect(api.posts).toEqual([]);expect(api.puts).toEqual([]);
+});
+test('zone mixed packet and wrong source remain unavailable for majority counts',async({page})=>{
+ const api=await zoneFixture(page);const v=api.snapshot.zones[0];v.points[1].latest!.sequence=2;v.assessment={state:'INCOHERENT',dryCount:null,wetCount:null,validUntil:null};await openZones(page);await expect(page.getByLabel('Khảo sát ZONE01',{exact:true})).toContainText('chưa thuộc cùng một mẫu');
+ v.points[1].latest!.sequence=1;v.points[2].state='SOURCE_MISMATCH';v.points[2].latest!.dataSource='PHYSICAL';v.assessment={state:'UNAVAILABLE',dryCount:null,wetCount:null,validUntil:null};await page.getByRole('button',{name:'Làm mới vùng',exact:true}).click();await expect(page.getByLabel('ZONE01 SOIL3',{exact:true})).toContainText('Nguồn khác cấu hình vùng');await expect(page.getByLabel('Khảo sát ZONE01',{exact:true})).not.toContainText('/3');
+});
