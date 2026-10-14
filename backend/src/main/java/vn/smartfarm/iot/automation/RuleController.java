@@ -6,8 +6,11 @@ import org.springframework.web.bind.annotation.*;
 public class RuleController {
     public record Settings(Boolean enabled) {}
     private final WateringRule rule;
-    public RuleController(WateringRule rule) { this.rule=rule; }
+    private final IrrigationCalendar calendar;
+    public RuleController(WateringRule rule,IrrigationCalendar calendar) { this.rule=rule;this.calendar=calendar; }
     @GetMapping public WateringRule.State state() { return rule.state(); }
+    @GetMapping("/calendar") public IrrigationCalendar.View calendar() { return calendar.view(); }
+    @PutMapping("/calendar") public IrrigationCalendar.View saveCalendar(@RequestBody IrrigationCalendar.Settings input) { return rule.saveCalendar(input); }
     @GetMapping("/settings") public WateringRule.Settings settings() { return rule.settings(); }
     @PutMapping("/settings") public WateringRule.Settings saveSettings(@RequestBody WateringRule.Settings settings) { return rule.saveSettings(settings); }
     @GetMapping("/runs") public List<WateringRule.Run> runs() { return rule.runs(); }

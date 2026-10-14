@@ -15,6 +15,7 @@ import static org.mockito.Mockito.*;
 @SpringBootTest(properties={"spring.datasource.url=${SMARTFARM_TEST_DB_URL}","spring.flyway.schemas=telemetry_test","spring.flyway.default-schema=telemetry_test","smartfarm.mqtt.enabled=false","smartfarm.control.enabled=true"})
 @EnabledIfEnvironmentVariable(named="SMARTFARM_TEST_DB_URL",matches=".+")
 class WateringRuleTest {
+ @Autowired vn.smartfarm.iot.automation.IrrigationCalendar calendar;
  @Autowired WateringRule rule; @Autowired TelemetryRepository repository; @Autowired JdbcTemplate jdbc;
  @Autowired PumpService pump; @Autowired ObjectMapper mapper;
  @Autowired PumpController controller;
@@ -23,6 +24,7 @@ class WateringRuleTest {
  @BeforeEach void setup() throws Exception {
   jdbc.execute("TRUNCATE watering_run,watering_rule,pump_command,pump_status,pump_state_history,telemetry");
   jdbc.update("INSERT INTO watering_rule(singleton) VALUES(1)");
+  jdbc.update("UPDATE watering_calendar SET mode='ANY_TIME',windows='[]'::jsonb,revision=1");
   reset(transport);when(transport.controlConnected()).thenReturn(true);
   status("OFF"); sample(45,Instant.now().minusSeconds(10));
  }
@@ -221,7 +223,7 @@ class WateringRuleTest {
   }
  }
  @Test void settingsApiPersistsVersionAndLeavesCurrentCooldownUnchanged() throws Exception {
-  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
   mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/automation/watering/settings"))
    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.durationSeconds").value(20));
@@ -235,7 +237,7 @@ class WateringRuleTest {
   verify(transport,never()).publishCommand(any());
  }
  @Test void settingsRejectInvalidRangesAndNonIntegerJsonWithoutChanges() throws Exception {
-  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
   var initial=rule.settings();
   for (String body:java.util.List.of(
    "{}","null",
@@ -250,7 +252,7 @@ class WateringRuleTest {
   }
  }
  @Test void staleSettingsRevisionCannotOverwriteAnotherTab() throws Exception {
-  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
   var one=new WateringRule.Settings(25,40,12,120,1);
   mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/automation/watering/settings")
    .contentType("application/json").content(mapper.writeValueAsString(one)))
@@ -325,6 +327,106 @@ class WateringRuleTest {
    assertNull(jdbc.queryForObject("SELECT settings_revision FROM "+schema+".watering_run",Long.class));
    assertNull(jdbc.queryForObject("SELECT duration_seconds FROM "+schema+".watering_run",Integer.class));
   } finally { jdbc.execute("DROP SCHEMA IF EXISTS "+schema+" CASCADE"); }
+ }
+
+ vn.smartfarm.iot.automation.IrrigationCalendar.Settings activeCalendar(boolean inside) {
+  var time=java.time.ZonedDateTime.now(java.time.ZoneId.of(vn.smartfarm.iot.automation.IrrigationCalendar.ZONE));
+  var from=time.minusMinutes(inside?5:120).toLocalTime().withSecond(0).withNano(0);
+  var to=time.plusMinutes(inside?5:-60).toLocalTime().withSecond(0).withNano(0);
+  return new vn.smartfarm.iot.automation.IrrigationCalendar.Settings("TIME_WINDOWS",vn.smartfarm.iot.automation.IrrigationCalendar.ZONE,calendar.settings().revision(),
+   java.util.List.of(new vn.smartfarm.iot.automation.IrrigationCalendar.Window(java.util.List.of(1,2,3,4,5,6,7),from.toString(),to.toString())));
+ }
+ @Test void calendarOutsideWindowBlocksAutomaticOnAndResetsStreak() throws Exception {
+  rule.saveCalendar(activeCalendar(false));rule.configure(true);
+  sample(28,Instant.now().minusSeconds(5));sample(28,Instant.now());rule.tick();rule.tick();
+  assertEquals("OUTSIDE_SCHEDULE",rule.state().lastResult());assertEquals(0,rule.state().lowCount());
+  verify(transport,never()).publishCommand(any());
+ }
+ @Test void calendarInsideUsesExistingAckTrackingAndStoresWindowSnapshot() throws Exception {
+  var saved=rule.saveCalendar(activeCalendar(true));start();
+  var run=rule.runs().getFirst();assertEquals(saved.settings().revision(),run.calendarRevision());
+  assertEquals("TIME_WINDOWS",run.calendarMode());assertNotNull(run.windowStart());assertTrue(run.windowEnd().isAfter(Instant.now()));
+  ack(rule.state().activeCommand(),"ON");rule.tick();assertEquals("EXECUTION_CONFIRMED",rule.state().lastResult());
+ }
+ @Test void windowCloseSendsOneOffAndStillWaitsForCausalOffStatus() throws Exception {
+  rule.saveCalendar(activeCalendar(true));start();
+  var outside=activeCalendar(false);
+  // Test-only SQL simulates the clock moving outside the current window; API edits while active stay forbidden.
+  jdbc.update("UPDATE watering_calendar SET windows=CAST(? AS jsonb)",mapper.writeValueAsString(outside.windows()));
+  rule.tick();rule.tick();
+  assertEquals(1,pump.commands().stream().filter(c->c.action().equals("OFF")).count());
+  assertNotNull(rule.state().activeCommand());assertNull(rule.state().cooldownUntil());
+  UUID off=jdbc.queryForObject("SELECT stop_command FROM watering_rule",UUID.class);ack(off,"OFF");status("OFF");rule.tick();
+  assertNull(rule.state().activeCommand());assertTrue(rule.state().cooldownUntil().isAfter(Instant.now()));
+ }
+ @Test void calendarEditRejectsActiveOrEnabledRuleAndStaleRevision() throws Exception {
+  var input=activeCalendar(true);rule.configure(true);
+  assertThrows(org.springframework.web.server.ResponseStatusException.class,()->rule.saveCalendar(input));
+  rule.configure(false);var saved=rule.saveCalendar(input);assertEquals(2,saved.settings().revision());
+  assertThrows(org.springframework.web.server.ResponseStatusException.class,()->rule.saveCalendar(input));
+  start();rule.safeStartup();assertFalse(rule.state().enabled());
+  assertThrows(org.springframework.web.server.ResponseStatusException.class,()->rule.saveCalendar(activeCalendar(false)));
+  assertEquals("TIME_WINDOWS",calendar.settings().mode());
+ }
+ @Test void outsideSamplesCannotTriggerImmediateOnAtStartAndManualHoldRemainsIndependent() throws Exception {
+  rule.saveCalendar(activeCalendar(false));
+  rule.configure(true);sample(28,Instant.now().minusSeconds(5));rule.tick();
+  var inside=activeCalendar(true);
+  jdbc.update("UPDATE watering_calendar SET windows=CAST(? AS jsonb)",mapper.writeValueAsString(inside.windows()));
+  // The old outside streak was reset; a single newly consumed sample must not replay an earlier trigger.
+  jdbc.update("UPDATE watering_rule SET last_sample_at=?,last_sample_boot=?,last_sample_sequence=?",java.sql.Timestamp.from(Instant.now().minusSeconds(3)),sensorBoot,seq-1);
+  sample(28,Instant.now());rule.tick();assertEquals(1,rule.state().lowCount());
+  verify(transport,never()).publishCommand(any());
+  rule.manualCommand(new PumpService.Request("OFF",null));assertFalse(rule.state().enabled());
+  rule.tick();assertEquals(0,pump.commands().stream().filter(c->c.action().equals("ON")).count());
+ }
+ @Test void calendarApiSupportsPreviewAndRejectsInvalidPayloadWithoutPublishing() throws Exception {
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/automation/watering/calendar"))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.settings.mode").value("ANY_TIME"));
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/automation/watering/calendar").contentType("application/json").content(mapper.writeValueAsString(activeCalendar(true))))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.withinWindow").value(true));
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/automation/watering/calendar").contentType("application/json").content("{}"))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+  assertEquals(2,calendar.settings().revision());verify(transport,never()).publishCommand(any());
+ }
+ @Test void v13UpgradeDefaultsToExistingAnyTimeAndDoesNotInventOldRunCalendar() {
+  String schema="calendar_upgrade_"+UUID.randomUUID().toString().replace("-", "");
+  try {
+   org.flywaydb.core.Flyway.configure().dataSource(jdbc.getDataSource()).schemas(schema).defaultSchema(schema).target("12").load().migrate();
+   jdbc.update("INSERT INTO "+schema+".watering_run(result,duration_seconds,settings_revision) VALUES('REPORTED_OFF',20,1)");
+   org.flywaydb.core.Flyway.configure().dataSource(jdbc.getDataSource()).schemas(schema).defaultSchema(schema).load().migrate();
+   assertEquals("ANY_TIME",jdbc.queryForObject("SELECT mode FROM "+schema+".watering_calendar",String.class));
+   assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM "+schema+".watering_run",Integer.class));
+   assertNull(jdbc.queryForObject("SELECT calendar_revision FROM "+schema+".watering_run",Long.class));
+   assertEquals(20,jdbc.queryForObject("SELECT duration_seconds FROM "+schema+".watering_run",Integer.class));
+  } finally {jdbc.execute("DROP SCHEMA IF EXISTS "+schema+" CASCADE");}
+ }
+
+ @Test void sourceSamplesOutsideCalendarAreExcludedEvenIfCurrentTimeIsPermitted() throws Exception {
+  rule.saveCalendar(activeCalendar(true));rule.configure(true);Instant boundary=Instant.now().minusSeconds(3);
+  // Arithmetic is covered by IrrigationCalendarTest; this controlled boundary verifies rule/sample integration.
+  try(var gates=mockStatic(vn.smartfarm.iot.automation.IrrigationCalendar.class,call->{
+   if(call.getMethod().getName().equals("evaluate")) {
+    Instant at=call.getArgument(1);return new vn.smartfarm.iot.automation.IrrigationCalendar.Evaluation(!at.isBefore(boundary),boundary,boundary.plusSeconds(60));
+   }
+   return call.callRealMethod();
+  })) {
+   sample(28,boundary.minusSeconds(2));sample(28,boundary.minusSeconds(1));rule.tick();
+   assertEquals(0,rule.state().lowCount());assertEquals("WAITING_SCHEDULE_SAMPLE",rule.state().lastResult());
+   sample(28,boundary.plusSeconds(1));rule.tick();
+   assertEquals(1,rule.state().lowCount());verify(transport,never()).publishCommand(any());
+   sample(28,Instant.now());rule.tick();assertNotNull(rule.state().activeCommand());
+  }
+ }
+ @Test void manualOnOutsideCalendarPausesRuleRatherThanBecomingScheduledAutoOn() throws Exception {
+  rule.saveCalendar(activeCalendar(false));rule.configure(true);rule.tick();
+  assertEquals("OUTSIDE_SCHEDULE",rule.state().lastResult());
+  var command=rule.manualCommand(new PumpService.Request("ON",5));
+  assertEquals("ON",command.action());assertFalse(rule.state().enabled());assertEquals("MANUAL_HOLD",rule.state().lastResult());
+  rule.tick();verify(transport,times(1)).publishCommand(any());
  }
 
 }

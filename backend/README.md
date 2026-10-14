@@ -100,3 +100,15 @@ It does not clear conditions, change automation/control or send MQTT/email.
 Event Log records ALERT_ACKNOWLEDGED at backend time with no device correlation.
 No authenticated actor is claimed. See [chapter19](../docs/book/CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md)
 and the [handoff](../docs/implementation/ALERT_ACKNOWLEDGEMENT_REPORT.md).
+
+
+## Agricultural irrigation calendar (V13)
+
+GET/PUT `/api/v1/automation/watering/calendar` returns settings and current/next
+window view. ANY_TIME keeps existing moisture-rule behavior; TIME_WINDOWS uses
+up to8 weekly non-overlapping windows in Asia/Ho_Chi_Minh, including overnight.
+Save requires current revision, disabled rule and no active run; never enables
+or publishes. WateringRule checks both current/source time and requests OFF
+outside windows. Runs snapshot calendar metadata before dispatch; legacy null.
+Backend must run and restart still pauses the rule. See [chapter20](../docs/book/CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md)
+and the [handoff](../docs/implementation/IRRIGATION_CALENDAR_REPORT.md).

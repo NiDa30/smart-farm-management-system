@@ -1,5 +1,9 @@
 # Chương 17 — Cài đặt quy tắc tưới có phiên bản
 
+**Cập nhật V13:** quy tắc còn có khung giờ theo tuần, mặc định Cả ngày để giữ
+hành vi cũ. Lịch kết hợp với điều kiện đất khô; xem [chương 20](CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md).
+
+
 Bản ngày 14/10/2026 tiếp nối quy tắc ENV01 → PUMP01. Thay vì sửa code để
 đổi ngưỡng, người vận hành chỉnh tại IoT & Tự động hóa → Quy tắc Tự động hóa.
 Bản này vẫn chỉ có một quy tắc cho FARM001; chưa thêm quy tắc theo khu vực.

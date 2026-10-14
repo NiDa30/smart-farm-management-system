@@ -1,5 +1,9 @@
 # Quy tắc tưới tự động đầu tiên
 
+**Cập nhật V13:** quy tắc còn có khung giờ theo tuần, mặc định Cả ngày để giữ
+hành vi cũ. Lịch kết hợp với điều kiện đất khô; xem [chương 20](CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md).
+
+
 **Cập nhật V11:** bốn giá trị 30/35/20/60 trong chương này là mặc định của
 bản V10. Nay có thể sửa trên giao diện theo [chương 17](CHAPTER_17_WATERING_SETTINGS.md).
 Thời hạn bảo thủ khi thiếu ACK là `expiresAt + durationSeconds`, không luôn

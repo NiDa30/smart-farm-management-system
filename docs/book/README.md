@@ -47,3 +47,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Quan sát an toàn từ dữ liệu thật](CHAPTER_18_SAFETY_OVERVIEW.md)
 
 - [Xác nhận đã xem cảnh báo và ghi chú](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md)
+
+- [Lịch tưới nông nghiệp theo tuần](CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md)

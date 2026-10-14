@@ -1,5 +1,29 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — Ưu tiên nông nghiệp: khung giờ tưới theo tuần
+
+Người dùng ưu tiên chức năng IoT trong canh tác trước. Từ df0c923 thêm V13:
+calendar ANY_TIME/TIME_WINDOWS, timezone VN, tối đa8 khung theo ngày ISO.
+Không tạo dispatcher riêng tranh relay: rule đất khô dùng cùng mutex/gate,
+source sample phải trong khung, kiểm tra lại trước publish. Hết khung yêu cầu
+OFF, vẫn đợi ACK/status, không bỏ timer/cooldown/manual hold. Run ghi revision/
+bounds lịch trước publish; legacy null. Mặc định giữ cả ngày, rule startup vẫn tắt.
+
+UI chọn thứ/giờ, preview giờ VN, overnight và validation chồng sang ngày/tuần,
+giữ draft và CAS revision. Sửa chỉ khi rule tắt/no active run; unknown response
+không retry, không tự bật rule khi lưu. Có thể tưới nhiều đợt trong khung nếu
+đất khô; không coi độ dài khung là runtime liên tục. Backend phải chạy.
+
+103 backend tests cuối đạt không skip;33 browser automation và20 unit client,
+lint/build đạt. Một fixture static mock lúc đầu làm helper validation trả
+mặc định; sửa chỉ mock evaluate, giữ validation thật. Rà soát thêm nhãn chờ
+mẫu trong khung và snapshot tại thời điểm kiểm tra ngay trước dispatch.
+Smoke App/API/PostgreSQL lưu thứ2/4/6 05:30–05:45; browser NewYork vẫn hiển thị
+VN. Mode/revision/windows giữ nguyên sau restart; rule/MQTT/control tắt và
+command0. Không AWS/Wokwi/GPIO live mới. Chương20 và IRRIGATION_CALENDAR_REPORT
+hướng dẫn thử trên Windows; không sửa IAM/firmware hoặc mở rộng đa thiết bị.
+
+
 ## 14/10/2026 — Xác nhận đã xem và ghi chú cảnh báo
 
 Từ1138a75 thêm V12, GET alert theo ID và PUT acknowledgement. Transaction row

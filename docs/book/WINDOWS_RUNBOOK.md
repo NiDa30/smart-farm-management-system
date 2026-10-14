@@ -146,3 +146,12 @@ Sau pull/restart backend, Flyway thêm metadata V12, giữ incident/state cũ.
 Không cần đổi IAM/build firmware hoặc tạo lại database. Trung tâm Cảnh báo
 → Chi tiết → ghi chú tùy chọn → Xác nhận đã xem. ACK không clear, không gửi
 lệnh. Nếu kết quả chưa rõ, dùng Đối chiếu trạng thái. Xem [chương 19](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md).
+
+
+## Lịch tưới theo tuần V13
+
+Pull và restart backend như trên để Flyway thêm calendar V13. Không đổi IAM/
+firmware. Quy tắc Tự động hóa → Lịch tưới theo tuần, sửa khi rule tắt và không
+còn run. Lưu không bật rule; muốn thử phải bật rule có chủ đích. Giờ VN cố định,
+hai mẫu đất khô mới trong khung mới được tính; backend phải chạy. Sau restart
+rule lại tạm dừng. Xem [chương20](CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md).

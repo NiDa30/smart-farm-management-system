@@ -30,3 +30,5 @@ Chương thực hành bổ sung: [17 — Cài đặt tưới có phiên bản](C
 Chương thực hành bổ sung: [18 — Quan sát an toàn](CHAPTER_18_SAFETY_OVERVIEW.md), phân biệt bản tin cũ, lệnh chưa rõ kết quả và khả năng kiểm chứng firmware.
 
 Chương thực hành bổ sung: [19 — Đã xem cảnh báo](CHAPTER_19_ALERT_ACKNOWLEDGEMENT.md), metadata độc lập với ngưỡng, xử lý hai tab và kết quả chưa xác định.
+
+Chương thực hành bổ sung: [20 — Lịch tưới kết hợp độ ẩm](CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md), ưu tiên canh tác, khung giờ Việt Nam, overnight và dữ liệu từng đợt.

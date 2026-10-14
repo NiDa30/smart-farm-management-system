@@ -32,6 +32,11 @@ Log và 8 Dashboard, 17 unit frontend và lint/build. Smoke lưu/đọc sau rest
 trên App/API/PostgreSQL giữ timestamp/note/điều kiện active đạt; MQTT/control
 tắt. Không có phép thử AWS/Wokwi live mới trong đợt metadata này.
 
+Đợt lịch tưới V13 đạt **103 backend tests**, 33 browser automation và 20 unit
+frontend, lint/build không skip. Smoke App/API/PostgreSQL lưu/đọc sau restart
+lịch tuần giờ VN, command0 và rule/MQTT/control tắt. Calendar gate/ACK dùng
+transport fixtures; chưa thử lịch trên AWS/Wokwi live Windows.
+
 Người dùng đã nói “đã hoạt động” sau bước đất khô bật tự động; ghi nhận là
 user-reported một phần, chưa có timestamp/commandId/ACK/sequence để nghiệm thu
 trọn sáu ca. OFF sớm, cooldown, timer và restart giữa run vẫn chờ xác nhận.
@@ -51,6 +56,7 @@ Lượt helper cũ 4 đạt/37 skip là lịch sử, không thay kết quả ki�
 | Cài đặt tưới V11 | API phiên bản, giới hạn, khóa sửa khi active, snapshot run; backend/browser và smoke lưu/đọc sau restart đạt | Một rule, một backend process; không cấu hình ngưỡng alert; chưa nghiệm thu ngưỡng mới trên AWS/Wokwi |
 | An toàn Fail-Safe & Edge | API/UI chỉ đọc, bản cũ/current tách biệt, queue toàn bộ và reason/history thật; cloud integration/browser/smoke đạt | Không xác minh firmware thực nạp, GPIO, dry-run, OTA, NVS; chưa thử live Windows/AWS |
 | Xác nhận đã xem cảnh báo V12 | ACK/note idempotent riêng condition, Event Log người xem, row-lock/concurrency/migration/browser và restart smoke đạt | Chưa actor/auth, edit/unack/email; list100, GET theo ID; Windows/Wokwi mới chưa thử |
+| Lịch tưới nông nghiệp V13 | Window VN/overnight/overlap, gate source/tick, OFF/chờ xác nhận, snapshot run, API/UI và restart persistence đạt | Một rule; backend phải chạy; default Cả ngày; chưa lịch độc lập ESP32/multi-area hoặc nghiệm thu lịch AWS/Wokwi |
 | NVS và phục hồi mạng | Restart simulation từng cần thiết khi gateway restart không phục hồi phiên | **NVS chưa làm**; restart mất RAM, không phải bằng chứng reconnect thành công |
 
 Tests với MQTT mock, API fixture, dữ liệu SQL thử hoặc native safety assertions

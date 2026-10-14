@@ -1,4 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
+import type {CalendarView,CalendarSettings} from '../../src/modules/iot/automation/calendarApi';
+const calendarDefaults=():CalendarView=>({settings:{mode:'ANY_TIME',zone:'Asia/Ho_Chi_Minh',revision:1,windows:[]},asOf:new Date().toISOString(),withinWindow:true,windowStart:null,windowEnd:null});
+const calendarView=(settings:CalendarSettings):CalendarView=>({settings,asOf:new Date().toISOString(),withinWindow:settings.mode==='ANY_TIME',windowStart:settings.mode==='ANY_TIME'?null:new Date(Date.now()+86400000).toISOString(),windowEnd:settings.mode==='ANY_TIME'?null:new Date(Date.now()+87000000).toISOString()});
 
 type Rule = {
   enabled: boolean; lowCount: number; activeCommand: string | null;
@@ -13,6 +16,12 @@ function deferred() {
 }
 async function fixtures(page: Page) {
   const state = {
+    calendar: calendarDefaults(),
+    calendarRequests: [] as CalendarSettings[],
+    calendarGate: null as Promise<void>|null,
+    calendarStatus: 200,
+    calendarLoseResponse: false,
+    calendarInvalidResponse: false,
     rule: disabled(),
     settings: defaults(),
     settingsRequests: [] as ReturnType<typeof defaults>[],
@@ -41,6 +50,15 @@ async function fixtures(page: Page) {
   });
   await page.route('**/api/**', async route => {
     const { pathname } = new URL(route.request().url());
+    if (pathname === '/api/v1/automation/watering/calendar') {
+      if(route.request().method()==='GET'){await route.fulfill({json:state.calendar});return;}
+      const input=route.request().postDataJSON() as CalendarSettings;state.calendarRequests.push(input);
+      if(state.calendarGate)await state.calendarGate;
+      if(state.calendarStatus!==200){await route.fulfill({status:state.calendarStatus,json:{}});return;}
+      state.calendar=calendarView({...input,revision:input.revision+1});
+      if(state.calendarLoseResponse){await route.abort('connectionfailed');return;}
+      await route.fulfill({json:state.calendarInvalidResponse?{}:state.calendar});return;
+    }
     if (pathname === '/api/v1/automation/watering/settings') {
       if (route.request().method() === 'GET') { await route.fulfill({ json: state.settings }); return; }
       const input = route.request().postDataJSON();
@@ -317,4 +335,75 @@ for (const response of ['invalid-body','broken-json','server-error']) test(`khô
   await expect(page.getByRole('button',{name:'Lưu cài đặt',exact:true})).toBeDisabled();
   await expect(page.getByRole('button',{name:'Bật quy tắc'})).toBeDisabled();
   expect(api.settingsRequests).toHaveLength(1);
+});
+
+
+test('lịch tưới chọn thứ/giờ, lưu chờ xác nhận và không tự bật quy tắc',async({page})=>{
+ const api=await fixtures(page);await page.goto('/');
+ await page.getByLabel('Chế độ lịch tưới',{exact:true}).selectOption('TIME_WINDOWS');
+ for(const day of ['Thứ 3','Thứ 5','Thứ 7','Chủ nhật'])await page.getByLabel(`${day}, khung 1`,{exact:true}).uncheck();
+ await page.getByLabel('Giờ bắt đầu khung 1',{exact:true}).fill('05:30');
+ await page.getByLabel('Giờ kết thúc khung 1',{exact:true}).fill('05:45');
+ await expect(page.getByRole('button',{name:'Bật quy tắc',exact:true})).toBeDisabled();
+ const count=api.getCount;await expect.poll(()=>api.getCount).toBeGreaterThan(count);
+ await expect(page.getByLabel('Giờ bắt đầu khung 1',{exact:true})).toHaveValue('05:30');
+ const gate=deferred();api.calendarGate=gate.promise;
+ await page.getByRole('button',{name:'Lưu lịch tưới',exact:true}).click();
+ await expect.poll(()=>api.calendarRequests.length).toBe(1);await expect(page.getByText('Đã lưu lịch tưới.',{exact:true})).toHaveCount(0);
+ gate.resolve();await expect(page.getByText('Đã lưu lịch tưới.',{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Bật quy tắc',exact:true})).toBeEnabled();
+ expect(api.calendarRequests[0]).toEqual({mode:'TIME_WINDOWS',zone:'Asia/Ho_Chi_Minh',revision:1,windows:[{days:[1,3,5],startTime:'05:30',endTime:'05:45'}]});
+ expect(api.requests).toEqual([]);expect(api.unexpected).toEqual([]);
+});
+
+test('khung qua nửa đêm được ghi rõ, lịch chồng sang ngày sau không gửi PUT',async({page})=>{
+ const api=await fixtures(page);await page.goto('/');
+ await page.getByRole('button',{name:'Thêm khung giờ',exact:true}).click();
+ await page.getByLabel('Giờ bắt đầu khung 1',{exact:true}).fill('23:00');
+ await page.getByLabel('Giờ kết thúc khung 1',{exact:true}).fill('01:00');
+ await expect(page.getByText('Qua nửa đêm; ngày được chọn là ngày bắt đầu khung.',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Thêm khung giờ',exact:true}).click();
+ await page.getByLabel('Giờ bắt đầu khung 2',{exact:true}).fill('00:30');
+ await page.getByLabel('Giờ kết thúc khung 2',{exact:true}).fill('02:00');
+ await expect(page.getByRole('button',{name:'Lưu lịch tưới',exact:true})).toBeDisabled();
+ await page.getByLabel('Giờ bắt đầu khung 2',{exact:true}).fill('01:00');
+ await expect(page.getByRole('button',{name:'Lưu lịch tưới',exact:true})).toBeEnabled();expect(api.calendarRequests).toEqual([]);
+});
+
+for(const active of [false,true])test(`lịch không sửa khi ${active?'run chưa kết thúc':'quy tắc đang bật'}`,async({page})=>{
+ const api=await fixtures(page);api.rule={...disabled(),enabled:!active,activeCommand:active?'active-command':null,lastResult:'OUTSIDE_SCHEDULE'};
+ await page.goto('/');await expect(page.getByLabel('Chế độ lịch tưới',{exact:true})).toBeDisabled();
+ await expect(page.getByRole('button',{name:'Lưu lịch tưới',exact:true})).toBeDisabled();
+ await expect(page.getByText('Đang ngoài khung giờ tưới',{exact:false})).toBeVisible();expect(api.calendarRequests).toEqual([]);
+});
+
+test('lịch hai tab xung đột giữ bản nháp, tải lại mới nhận lịch server',async({page})=>{
+ const api=await fixtures(page);await page.goto('/');await page.getByRole('button',{name:'Thêm khung giờ',exact:true}).click();
+ await page.getByLabel('Giờ bắt đầu khung 1',{exact:true}).fill('05:30');
+ api.calendar=calendarView({mode:'TIME_WINDOWS',zone:'Asia/Ho_Chi_Minh',revision:2,windows:[{days:[1,2,3],startTime:'07:00',endTime:'07:30'}]});
+ await expect(page.getByRole('alert')).toContainText('Lịch đã thay đổi ở phiên khác');
+ await expect(page.getByLabel('Giờ bắt đầu khung 1',{exact:true})).toHaveValue('05:30');
+ await expect(page.getByRole('button',{name:'Lưu lịch tưới',exact:true})).toBeDisabled();
+ await page.getByRole('button',{name:'Tải lại lịch (bỏ thay đổi)',exact:true}).click();
+ await expect(page.getByLabel('Giờ bắt đầu khung 1',{exact:true})).toHaveValue('07:00');await expect(page.getByRole('alert')).toHaveCount(0);
+ expect(api.calendarRequests).toEqual([]);
+});
+
+for(const failure of ['lost','invalid','server'])test(`lưu lịch chưa rõ kết quả ${failure}: không tự gửi lại`,async({page})=>{
+ const api=await fixtures(page);api.calendarLoseResponse=failure==='lost';api.calendarInvalidResponse=failure==='invalid';api.calendarStatus=failure==='server'?503:200;
+ await page.goto('/');await page.getByRole('button',{name:'Thêm khung giờ',exact:true}).click();
+ await page.getByRole('button',{name:'Lưu lịch tưới',exact:true}).click();
+ await expect(page.getByRole('alert').filter({hasText:/lịch|Phản hồi/})).not.toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Lưu lịch tưới',exact:true})).toBeDisabled();
+ await expect(page.getByRole('button',{name:'Bật quy tắc',exact:true})).toBeDisabled();
+ await page.getByRole('button',{name:'Tải lại lịch (bỏ thay đổi)',exact:true}).click();
+ await expect(page.getByRole('alert')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Bật quy tắc',exact:true})).toBeEnabled();expect(api.calendarRequests).toHaveLength(1);
+});
+
+test('cả ngày được ghi rõ và run cũ không bị gán lịch mặc định',async({page})=>{
+ const api=await fixtures(page);api.runs=[{id:1,startedAt:'2026-10-14T00:00:00Z',commandId:'old-run',result:'REPORTED_OFF'}];
+ await page.goto('/');await expect(page.getByText('Cả ngày: quy tắc đã bật có thể tưới bất kỳ giờ nào nếu đất khô và đủ điều kiện.',{exact:true})).toBeVisible();
+ await expect(page.getByText('Lịch chưa được ghi cho lần chạy cũ.',{exact:true})).toBeVisible();
+ expect(api.calendarRequests).toEqual([]);
 });
