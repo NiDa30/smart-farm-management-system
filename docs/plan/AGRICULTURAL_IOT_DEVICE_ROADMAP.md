@@ -649,3 +649,13 @@ xem [chương29](../book/CHAPTER_29_IRRIGATION_ZONES.md) và
 Đây là gán dữ liệu độc quyền, chưa lease bơm hoặc điều khiển van. A3 vẫn cần
 controller một dãy, actuator binding/coordinator/timeout/safety trước4dãy.
 Ngưỡng vùng chỉ khảo sát, không đổi alert30/35 hoặc rule ENV01 độc lập.
+
+## Cập nhật 15/10/2026 — tổng quan nông nghiệp
+
+Tổng quan IoT đã tổng hợp node đất/nước, khảo sát vùng và count cảnh báo ba
+nhóm (ENV/WATER/SOIL). Snapshot đọc RR, source/freshness theo kênh, survey tự
+hết hạn; ACK/mẫu cũ không giảm số episode mở.179 backend/15browser/6unit và
+full-app local fresh/stale đạt, MQTT/control tắt;5 ca live mới Chưa chạy.
+Xem [chương30](../book/CHAPTER_30_AGRICULTURE_OVERVIEW.md). Không đổi firmware
+hoặc V19; A3 controller/van/coordinator còn chờ. Các màn EventLog/Safety/
+DeviceMonitoring/header chưa hợp nhất soil/water alerts trong lượt này.

@@ -1,7 +1,7 @@
 import { test,expect,type Page } from '@playwright/test';
 import type { Overview } from '../../src/modules/iot/dashboard/overviewApi';
 const at=new Date().toISOString(),old=new Date(Date.now()-60000).toISOString();
-const initial=():Overview=>({monitoring:{asOf:at,mqtt:{state:'CONNECTED',changedAt:at,lastProcessedAt:at},devices:[
+const initial=():Overview=>({agriculture:{inventory:{farmId:'FARM001',asOf:at,nodes:[]},zones:{farmId:'FARM001',asOf:at,zones:[]},waterActiveCount:0,soilActiveCount:0,recentChannelAlerts:[]},monitoring:{asOf:at,mqtt:{state:'CONNECTED',changedAt:at,lastProcessedAt:at},devices:[
  {deviceId:'ENV01',name:'Sensor A',kind:'SENSOR',areaId:'AREA001',areaName:'Khu A',observedAt:at,receivedAt:at,lastMessageAt:at,dataState:'FRESH',activity:'RECENT',temperature:25,humidity:50,soilMoisture:28,reportedState:null,safetyLockout:null,activeAlerts:1},
  {deviceId:'ENV02',name:'Sensor B',kind:'SENSOR',areaId:'AREA001',areaName:'Khu A',observedAt:old,receivedAt:old,lastMessageAt:old,dataState:'STALE',activity:'SILENT',temperature:79,humidity:99,soilMoisture:90,reportedState:null,safetyLockout:null,activeAlerts:0},
  {deviceId:'PUMP01',name:'Relay',kind:'ACTUATOR',areaId:null,areaName:null,observedAt:old,receivedAt:old,lastMessageAt:old,dataState:'STALE',activity:'SILENT',temperature:null,humidity:null,soilMoisture:null,reportedState:'ON',safetyLockout:true,activeAlerts:0}]},
@@ -58,4 +58,42 @@ test('acknowledged alert remains in active total and acknowledgement event has h
  await expect(page.getByRole('article',{name:'Cảnh báo đang mở',exact:true})).toContainText('6');
  await expect(page.getByText(/ENV01 · Xác nhận đã xem cảnh báo · Đã xem cảnh báo/)).toBeVisible();
  await expect(page.getByText('Đã xem cảnh báo',{exact:false})).toBeVisible();
+});
+function agricultural(){
+ const v=initial(),bootId='47000000-0000-4000-8000-000000000001';
+ const reading=(value:number|boolean|null,quality:'VALID'|'SENSOR_FAULT'='VALID')=>({value,quality,observedAt:at,receivedAt:at,bootId,sequence:1,calibrationVersion:null,dataSource:'SIMULATOR' as const});
+ const soil={nodeId:'SOIL01',name:'Đất dãy A',areaId:'AREA001',nodeType:'SOIL' as const,telemetryVersion:2 as const,actuators:[],channels:[0,20,80].map((value,i)=>({channelId:`SOIL${i+1}`,metric:'SOIL_MOISTURE' as const,unit:'%',calibrationVersion:null,latest:reading(value)}))};
+ const water={nodeId:'WATER01',name:'Bồn A',areaId:'AREA001',nodeType:'WATER' as const,telemetryVersion:2 as const,actuators:[],channels:[{channelId:'LOW',metric:'WATER_PRESENT' as const,unit:'boolean',calibrationVersion:null,latest:reading(false)},{channelId:'HIGH',metric:'WATER_PRESENT' as const,unit:'boolean',calibrationVersion:null,latest:reading(false)},{channelId:'FLOW',metric:'FLOW_RATE' as const,unit:'L/min',calibrationVersion:null,latest:reading(null,'SENSOR_FAULT')}]};
+ v.agriculture.inventory.nodes=[soil,water];v.agriculture.soilActiveCount=105;v.agriculture.waterActiveCount=7;
+ v.agriculture.recentChannelAlerts=[{id:1,family:'SOIL',nodeId:'SOIL01',channelId:'SOIL1',type:'DRY_SOIL',dataSource:'SIMULATOR',openedAt:at,acknowledgedAt:at},{id:1,family:'WATER',nodeId:'WATER01',channelId:null,type:'LOW_WATER',dataSource:'PHYSICAL',openedAt:at,acknowledgedAt:null}];
+ v.agriculture.zones.zones=[{config:{zoneId:'ZONE01',name:'Vùng A',areaId:'AREA001',soilNodeId:'SOIL01',channelIds:['SOIL1','SOIL2','SOIL3'],expectedSource:'SIMULATOR',dryThreshold:30,wetThreshold:35,revision:1},asOf:at,points:soil.channels.map(c=>({channelId:c.channelId,state:'FRESH',latest:c.latest})),assessment:{state:'DRY',dryCount:2,wetCount:1,validUntil:new Date(Date.parse(at)+30000).toISOString()}}];
+ return v;
+}
+test('agricultural totals include all families beyond the preview and retain source and acknowledgement',async({page})=>{
+ const state=await fixtures(page);state.value=agricultural();await page.goto('/');
+ await expect(page.getByRole('article',{name:'Cảnh báo đang mở',exact:true})).toContainText('118');
+ const alerts=page.getByRole('region',{name:'Cảnh báo đất và nước',exact:true});await expect(alerts).toContainText('Hiển thị 2/112');await expect(alerts).toContainText('Đã xem, vẫn đang mở');await expect(alerts).toContainText('Phần cứng (thiết bị khai báo)');
+ await expect(page.getByRole('article',{name:'Node SOIL01',exact:true})).toContainText('SOIL1 · Độ ẩm đất: 0 %');
+ await expect(page.getByRole('article',{name:'Node WATER01',exact:true})).toContainText('2/3 kênh có dữ liệu mới');
+ await expect(page.getByRole('region',{name:'Khảo sát vùng tưới',exact:true})).toContainText('2/3 điểm khô');
+});
+test('zone majority and channel freshness expire locally before the next poll',async({page})=>{
+ await page.clock.install({time:new Date(at)});const state=await fixtures(page),v=agricultural();
+ for(const c of v.agriculture.inventory.nodes[0].channels){c.latest!.observedAt=new Date(Date.parse(at)-28000).toISOString();c.latest!.receivedAt=c.latest!.observedAt;}
+ const z=v.agriculture.zones.zones[0];z.assessment.validUntil=new Date(Date.parse(at)+2000).toISOString();state.value=v;
+ await page.goto('/');const zone=page.getByRole('region',{name:'Khảo sát vùng tưới',exact:true});await expect(zone).toContainText('2/3 điểm khô');await page.clock.runFor(3100);
+ await expect(zone).toContainText('Dữ liệu khảo sát đã cũ');await expect(zone).not.toContainText('2/3 điểm khô');await expect(page.getByRole('article',{name:'Node SOIL01',exact:true})).toContainText('0/3 kênh có dữ liệu mới');await expect(page.getByRole('alert')).toHaveCount(0);
+});
+test('API failure hides agricultural current counts and surveys but retains labelled old evidence',async({page})=>{
+ const state=await fixtures(page);state.value=agricultural();await page.goto('/');await expect(page.getByText('Đa số điểm đất đang khô',{exact:false})).toBeVisible();state.fail=true;await page.getByRole('button',{name:'Làm mới',exact:true}).click();
+ await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByRole('article',{name:'Cảnh báo đang mở',exact:true})).toContainText('—');await expect(page.getByRole('region',{name:'Khảo sát vùng tưới',exact:true})).not.toContainText('2/3 điểm khô');await expect(page.getByRole('article',{name:'Node SOIL01',exact:true})).toContainText('Bản chụp cũ, chưa xác nhận hiện tại');
+ state.fail=false;await page.getByRole('button',{name:'Làm mới',exact:true}).click();await expect(page.getByRole('alert')).toHaveCount(0);await expect(page.getByRole('article',{name:'Cảnh báo đang mở',exact:true})).toContainText('118');
+});
+for(const mutation of ['missing','negative','duplicate','unknownNode'] as const)test(`reject malformed agriculture ${mutation}`,async({page})=>{
+ const state=await fixtures(page),v=agricultural();
+ if(mutation==='missing')delete (v as Partial<Overview>).agriculture;
+ if(mutation==='negative')v.agriculture.soilActiveCount=-1;
+ if(mutation==='duplicate')v.agriculture.recentChannelAlerts.push(v.agriculture.recentChannelAlerts[0]);
+ if(mutation==='unknownNode')v.agriculture.recentChannelAlerts[0].nodeId='UNKNOWN';
+ state.value=v;await page.goto('/');await expect(page.getByRole('alert')).toBeVisible();await expect(page.getByRole('article',{name:'Cảnh báo đang mở',exact:true})).toHaveCount(0);
 });

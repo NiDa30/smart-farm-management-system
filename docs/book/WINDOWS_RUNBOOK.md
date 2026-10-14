@@ -234,3 +234,12 @@ Khai báo vùng chưa provision hoặc điều khiển; rule ENV01/PUMP01 vẫn 
 Khi chỉ thử registry, tắt rule cũ và dùng backend control=false như
 [chương29](CHAPTER_29_IRRIGATION_ZONES.md). Không cần flash/provision lại chỉ
 để lưu vùng. Mẫu đúng source/cùng packet mới tính đa số; chờ năm ca live.
+
+## Tổng quan nông nghiệp — 15/10/2026
+
+Pull/restart backend và frontend đúng branch, giữ DB/cert/config. Mở
+**IoT & Tự động hóa → Tổng quan IoT**: node đất, trạm nước, vùng tưới và tổng
+cảnh báo ba nhóm. Không cần flash/provision lại cho thay đổi read model này.
+Các card môi trường vẫn ENV/v1; source từng kênh do thiết bị khai báo.
+Nếu UI mới thiếu agriculture, restart backend cũ; không xóa PostgreSQL volume.
+Chi tiết và5 ca live Chưa chạy ở [chương30](CHAPTER_30_AGRICULTURE_OVERVIEW.md).

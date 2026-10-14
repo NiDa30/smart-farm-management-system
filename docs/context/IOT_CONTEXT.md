@@ -55,6 +55,13 @@ mới/cùng packet. UI trong Sensor Realtime → Node & trạm nước → Vùng
 Chưa actuator/controller/coordinator hoặc rule từ SOIL; rule ENV01 vẫn độc lập.
 Cloud API/PostgreSQL/browser đạt, năm ca live mới chưa nghiệm thu.
 
+15/10/2026 tổng quan nông nghiệp thêm snapshot inventory/zone, count cảnh báo
+ENV+WATER+SOIL và nguồn/độ mới theo kênh; survey và inventory cùng mốc.
+activeAlertCount cũ chỉ ENV, UI cộng ba nhóm. EventLog/Safety/DeviceMonitoring/
+header chưa hợp nhất; rule ENV01 không dùng zone.179 backend/15browser/6unit
+và full-app local fresh/stale đạt, không AWS/Wokwi mới. Đọc
+[chương30](../book/CHAPTER_30_AGRICULTURE_OVERVIEW.md).
+
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.
 Đối chiếu [hợp đồng đang dùng](../../contracts/iot/v1/README.md),

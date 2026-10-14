@@ -887,3 +887,18 @@ Sau điều chỉnh IAM, lệnh CLI attach-policy không lỗi. Lần chạy scr
   Full app test hai node → POST hai vùng → PUT ngưỡng40/45 → restart → config/
   revision/binding giống trước. Cuối2zone/6binding/2packet/6readings,command0/run0,
   MQTT/control tắt; không AWS/Wokwi live mới. Năm ca live còn Chưa chạy.
+
+## 15/10/2026 — tổng quan nông nghiệp (giờ Việt Nam)
+
+- Sửa khoảng trống dashboard chỉ đếm sensor_alert: agriculture đọc inventory,
+  zone survey cùng inventory/asOf, count đất/nước và preview5. Card cộng ba
+  nhóm, ACK/mẫu cũ không giảm episode mở; source/freshness tách theo kênh.
+- Read-only RR, GET không dispatch/expire/pause. No migration/firmware/IAM mới.
+  Rule ENV01 độc lập; EventLog/Safety/header/DeviceMonitoring vẫn phạm vi cũ.
+- 179 backend/15 browser dashboard/6unit/lint/build đạt, skip0. Full app receive
+  fixture local fresh/stale + menu navigation đạt,4packet/12readings/1zone,
+  soil2/water1 mở/ACK1/command0/run0; MQTT/control tắt.
+- Setup thêm Vite tự chuyển3001 vì3000 đã có; dừng đúng tiến trình mới, giữ
+  Vite3000. Không lỗi test trong lượt này; không biến setup thành lỗi AWS.
+- [Chương30](CHAPTER_30_AGRICULTURE_OVERVIEW.md) và [bàn giao](../implementation/LOCAL_AGRICULTURE_OVERVIEW_REPORT.md).
+  Năm ca Windows/AWS/Wokwi mới Chưa chạy; controller/van/coordinator còn sau.

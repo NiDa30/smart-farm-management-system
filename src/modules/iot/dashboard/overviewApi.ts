@@ -1,7 +1,8 @@
+import {parseAgriculture,type Agriculture} from './agricultureApi';
 import { currentDataState, parseMonitoring, type Monitoring, type MonitoredDevice } from '../devices/monitoringApi';
 import { type IoTEvent, parseEventPage } from '../events/eventApi';
 export interface Overview {
-  monitoring:Monitoring;areas:{id:string;name:string}[];activeAlertCount:number;
+  agriculture:Agriculture;monitoring:Monitoring;areas:{id:string;name:string}[];activeAlertCount:number;
   recentActiveAlerts:{id:number;deviceId:string;type:'LOW_SOIL'|'HIGH_TEMPERATURE';openedAt:string;openedValue:number;clearedAt:null;clearedValue:null}[];
   rule:{enabled:boolean;lowCount:number;activeCommand:string|null;cooldownUntil:string|null;lastResult:string};recentEvents:IoTEvent[];
 }
@@ -16,6 +17,8 @@ export function parseOverview(value:unknown):Overview {
     ||!(v.rule.activeCommand===null||typeof v.rule.activeCommand==='string')||!(v.rule.cooldownUntil===null||typeof v.rule.cooldownUntil==='string'&&Number.isFinite(Date.parse(v.rule.cooldownUntil))))throw new Error('Invalid overview');
   parseEventPage({items:v.recentEvents,nextCursor:null,from:new Date(Date.parse(monitoring.asOf)-86400000).toISOString(),to:monitoring.asOf});
   if(v.recentEvents.length>8)throw new Error('Invalid events');
+  parseAgriculture(v.agriculture);
+  if(!Number.isSafeInteger(v.activeAlertCount+v.agriculture.waterActiveCount+v.agriculture.soilActiveCount))throw new Error('Invalid total');
   return v;
 }
 export function freshAverages(devices:MonitoredDevice[],now:number) {

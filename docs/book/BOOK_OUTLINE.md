@@ -57,3 +57,6 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 
 29. [Vùng tưới và ba điểm đất](CHAPTER_29_IRRIGATION_ZONES.md) — registry V19,
     source/freshness/coherence và khảo sát hiện tại, nền cho controller A3.
+
+30. [Tổng quan nông nghiệp](CHAPTER_30_AGRICULTURE_OVERVIEW.md) — snapshot nguồn/kênh/vùng và tổng
+    cảnh báo môi trường/nước/đất, expiry và giới hạn read model.

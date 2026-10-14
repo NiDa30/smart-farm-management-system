@@ -61,3 +61,10 @@ Windows: pull bản cloud mới, restart backend/frontend, mở IoT → Tổng q
 Giữ Wokwi chạy để số đo mới xuất hiện, đối chiếu với Sensor Realtime. Khi dừng
 simulation, các số đo hết hạn phải rời khỏi trung bình khu vực. Mở các màn từ
 nút điều hướng để xem chi tiết. Không cần build firmware hoặc đổi IAM.
+
+## Cập nhật 15/10/2026
+
+[Chương30](CHAPTER_30_AGRICULTURE_OVERVIEW.md) bổ sung agriculture và phép cộng cảnh báo đất/nước.
+Các con số kiểm tra phía trên là lịch sử; lượt mới179 backend/15 browser/6unit.
+activeAlertCount API cũ vẫn chỉ môi trường; card UI cộng ba nhóm. EventLog
+vẫn cảm biến môi trường/PUMP01, các read model khác chưa được hợp nhất theo lượt này.

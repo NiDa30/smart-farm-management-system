@@ -23,7 +23,10 @@ public class IrrigationZones {
  public IrrigationZones(JdbcTemplate jdbc,NodeInventory nodes,SensorRegistry sensors){this.jdbc=jdbc;this.nodes=nodes;this.sensors=sensors;}
  @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
  public Snapshot snapshot(){
-  var inventory=nodes.snapshot();Instant now=Instant.now();
+  var inventory=nodes.snapshot();return survey(inventory,inventory.asOf());
+ }
+ /** Compose against the same inventory and clock as another read-only snapshot. */
+ public Snapshot survey(NodeInventory.Snapshot inventory,Instant now){
   var configs=jdbc.query("SELECT * FROM irrigation_zone ORDER BY area_id,zone_id",(rs,n)->new Config(rs.getString("zone_id"),rs.getString("name"),rs.getString("area_id"),rs.getString("soil_node_id"),
    jdbc.query("SELECT channel_id FROM irrigation_zone_channel WHERE zone_id=? ORDER BY position",(r,i)->r.getString(1),rs.getString("zone_id")),rs.getString("expected_source"),rs.getInt("dry_threshold"),rs.getInt("wet_threshold"),rs.getInt("revision")));
   return new Snapshot("FARM001",now,configs.stream().map(c->view(c,inventory,now)).toList());

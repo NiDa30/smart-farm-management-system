@@ -247,3 +247,16 @@ hành vi và kịch bản đã kiểm thử bằng fixture, chưa phải sự c�
 - Lưu vùng409: mã/kênh đã dùng hoặc revision thay đổi. Đọc cấu hình mới nhất,
   không ghi đè bản người khác hoặc tự PUT lại. Đổi binding thất bại giữ ba
   binding cũ nhờ rollback; nguồn/node phải đúng khu vực.
+
+## Tổng quan chưa tính cảnh báo đất/nước hoặc không có agriculture — 15/10/2026
+
+Bản cũ chỉ đếm sensor_alert dù Trung tâm có WATER/SOIL. [Chương30](CHAPTER_30_AGRICULTURE_OVERVIEW.md)
+thêm count đầy đủ; preview5/list100 không phải tổng. ACK không đóng episode,
+mẫu cũ không xóa nó. Nếu frontend mới báo body sai, kiểm tra GET overview có
+agriculture và restart backend đúng branch; không tắt parser hoặc tạo mock.
+
+Nếu npm run dev mở3001, kiểm tra Vite3000 đang chạy trước khi mở thêm. Lượt
+cloud này đã gặp và dừng đúng Vite vừa tạo, dùng lại3000, không đổi proxy8080.
+Nếu khảo sát vùng mất kết luận sau30 giây nhưng alert còn mở, đó là semantics
+freshness/episode khác nhau; kiểm tra timestamp/source, không seed lại dữ liệu
+để giả live. Lượt kiểm tra cuối backend179/browser15/unit6/lintbuild đều đạt.

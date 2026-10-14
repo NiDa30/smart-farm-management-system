@@ -109,3 +109,14 @@ nguồn và cùng boot/sequence/observedAt/receivedAt mới có đa số2/3 DRY/
 MIXED, count và validUntil. Ngược lại UNAVAILABLE/INCOHERENT không có count/
 expiry. Đây là khảo sát một packet, không alert hai packet hoặc command gate.
 Xem [chương29](../../../docs/book/CHAPTER_29_IRRIGATION_ZONES.md).
+
+## Agricultural overview, additive API (schema vẫn V19)
+
+GET /api/v1/dashboard/overview thêm agriculture: inventory(NodesSnapshot),
+zones(ZoneSnapshot cùng inventory/asOf), waterActiveCount, soilActiveCount,
+recentChannelAlerts(max5 active đất/nước). Preview record id/family/nodeId/
+type/channelId/dataSource/openedAt/acknowledgedAt; family phân biệt ID ở hai
+bảng, phao cặp có channelId=null. Counts độc lập list/preview, ACK vẫn mở,
+cleared_sample_id khác null mới bị loại. activeAlertCount cũ chỉ môi trường;
+UI tổng cộng ba nhóm. Read-only RR, không thay telemetry/policy hoặc dispatch.
+Xem [chương30](../../../docs/book/CHAPTER_30_AGRICULTURE_OVERVIEW.md).
