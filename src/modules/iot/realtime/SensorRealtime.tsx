@@ -1,3 +1,4 @@
+import { WaterNodesPanel } from '../nodes/WaterNodesPanel';
 import React, { useEffect, useRef, useState } from 'react';
 import { Activity, Clock, Database, Droplets, History, RefreshCw, Thermometer, WifiOff, Plus, MapPin, X } from 'lucide-react';
 import { fetchHistory, fetchLatest, telemetryState, type NetworkState, type TelemetryReading, fetchRegistry, registerItem, type SensorSummary, type SensorArea } from './telemetryApi';
@@ -157,6 +158,7 @@ const SensorDetail: React.FC<{ sensor: SensorSummary; areaName: string }> = ({ s
 };
 
 export const SensorRealtime: React.FC = () => {
+  const [nodeView,setNodeView]=useState(false);
   const [areas, setAreas] = useState<SensorArea[]>([]);
   const [sensors, setSensors] = useState<SensorSummary[]>([]);
   const [filter, setFilter] = useState('all');
@@ -226,11 +228,13 @@ export const SensorRealtime: React.FC = () => {
   };
   const labels = { loading: 'Đang tải', live: 'Dữ liệu mới', stale: 'Dữ liệu cũ', empty: 'Chưa có dữ liệu', error: 'Backend chưa khả dụng' };
 
+  if(nodeView)return <div className="max-w-6xl mx-auto space-y-5 pb-12"><button type="button" onClick={()=>setNodeView(false)} className="underline">Về sensor môi trường</button><WaterNodesPanel /></div>;
   return <div className="max-w-6xl mx-auto space-y-5 pb-12">
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div><h1 className="text-xl font-bold text-slate-900 flex items-center gap-2"><Activity className="w-5 h-5 text-emerald-600" /> Sensor Realtime</h1>
         <p className="text-sm text-slate-500 mt-1">Giám sát cảm biến theo khu vực · FARM001</p></div>
       <div className="flex gap-2">
+        <button type="button" onClick={()=>setNodeView(true)} className="border rounded-lg px-3 py-2 text-sm font-semibold">Node & trạm nước</button>
         <button type="button" onClick={() => openForm('areas')} className="border border-slate-200 bg-white rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-2"><MapPin className="w-4 h-4" /> Thêm khu vực</button>
         <button type="button" disabled={failed || loading || !areas.length} onClick={() => openForm('sensors')} className="bg-emerald-600 text-white rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-2 disabled:opacity-50"><Plus className="w-4 h-4" /> Thêm sensor</button>
       </div>

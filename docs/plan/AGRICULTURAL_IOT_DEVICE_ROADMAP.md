@@ -1,8 +1,8 @@
 # Ý tưởng và lộ trình thiết bị IoT nông nghiệp
 
 Cập nhật: 14/10/2026. Nguồn: bản ý tưởng người dùng gửi trong cuộc trò chuyện,
-bao gồm cây trồng, tưới, chăn nuôi và camera. Mốc code đối chiếu: `9730558`.
-**Đây là thiết kế và backlog định hướng; chưa triển khai các node mới.**
+bao gồm cây trồng, tưới, chăn nuôi và camera. Mốc code ban đầu: `9730558`; nền A1 cập nhật tại [báo cáo node/kênh](../implementation/NODE_CHANNELS_REPORT.md).
+**Danh mục là thiết kế đích. A1 registry/contract có code; chưa có các node vật lý mới chạy live.**
 Trạng thái kiểm chứng đọc tại [bảng nghiệm thu](../book/ACCEPTANCE_STATUS.md).
 
 ## 1. Mục tiêu sử dụng
@@ -222,9 +222,11 @@ một framework rule tổng quát hoặc thay toàn bộ UI để thử một d�
 thử flow trên board demo trước khi tách hardware WATER01, nhưng vẫn ghi rõ ID
 và nguồn dữ liệu, không báo đã có một Thing độc lập khi chưa provision.
 
-Bước code kế tiếp dự kiến: chuẩn hóa model/channel và contract phục vụ trạm
-nước, sau khi đối chiếu nghiệm thu A0. Chỉ mục A0 đã có code; A1–A6 chưa được
-triển khai trong đợt cập nhật tài liệu này. Không tự tạo Jira tasks hay AWS
+Nền A1 đã có model node/channel, mapping legacy, water contract/router/storage
+và UI khai báo, xem [chương22](../book/CHAPTER_22_NODES_AND_WATER_CHANNELS.md).
+Chưa có tự động AWS provisioning hoặc firmware WATER riêng. Bước kế tiếp A2
+là dữ liệu/logic trạm nước với nghiệm thu A0 vẫn phải được đối chiếu. A2–A6
+còn trong kế hoạch. Không tự tạo Jira tasks hay AWS
 resources từ bảng backlog này.
 
 ## 11. Simulator, chi phí và sổ bằng chứng

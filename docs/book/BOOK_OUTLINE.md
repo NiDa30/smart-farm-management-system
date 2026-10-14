@@ -38,3 +38,5 @@ Chương thực hành bổ sung: [20 — Lịch tưới kết hợp độ ẩm](
 Chương dự kiến tiếp theo: từ ESP32 demo đến các node nông nghiệp độc lập;
 tham chiếu [lộ trình 18 nhóm thiết bị](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md).
 Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trúc mục tiêu riêng.
+
+22. [Node vật lý và kênh nước](CHAPTER_22_NODES_AND_WATER_CHANNELS.md): A1 có code/tests; tiếp tục A2 firmware và nghiệm thu trạm nước.

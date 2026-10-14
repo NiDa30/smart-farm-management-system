@@ -54,3 +54,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 
 - [Định hướng mở rộng thiết bị nông nghiệp](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md):
   ý tưởng người dùng và backlog sau demo; chưa phải chương nghiệm thu phần cứng.
+
+- [Node vật lý và kênh nước v2](CHAPTER_22_NODES_AND_WATER_CHANNELS.md): nền A1, registry/UI và ngữ nghĩa dữ liệu, chưa có WATER firmware live.

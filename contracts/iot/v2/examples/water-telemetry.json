@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 2,
+  "deviceId": "WATER01",
+  "bootId": "31000000-0000-4000-8000-000000000001",
+  "sequence": 1,
+  "timestamp": "2026-10-14T12:00:00Z",
+  "uptimeMs": 1000,
+  "readings": [
+    {
+      "channelId": "LOW",
+      "metric": "WATER_PRESENT",
+      "unit": "boolean",
+      "quality": "VALID",
+      "value": true,
+      "calibrationVersion": null
+    },
+    {
+      "channelId": "HIGH",
+      "metric": "WATER_PRESENT",
+      "unit": "boolean",
+      "quality": "VALID",
+      "value": false,
+      "calibrationVersion": null
+    },
+    {
+      "channelId": "FLOW",
+      "metric": "FLOW_RATE",
+      "unit": "L/min",
+      "quality": "VALID",
+      "value": 0,
+      "calibrationVersion": "FLOW-V1"
+    }
+  ]
+}

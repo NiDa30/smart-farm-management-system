@@ -22,7 +22,7 @@ import software.amazon.awssdk.iot.AwsIotMqttConnectionBuilder;
 public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn.smartfarm.iot.control.CommandTransport {
     private static final Logger LOG = LoggerFactory.getLogger(TelemetryIngestion.class);
     private static final String TOPIC = "smartfarm/FARM001/+/telemetry";
-    private final TelemetryStorage storage;
+    private final vn.smartfarm.iot.nodes.TelemetryRouter router;
     private final vn.smartfarm.iot.monitoring.MqttHealth health;
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(128), runnable -> new Thread(runnable, "telemetry-storage"));
@@ -39,10 +39,10 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
             QualityOfService.AT_LEAST_ONCE,false)).get(10,TimeUnit.SECONDS);
     }
 
-    public TelemetryIngestion(TelemetryStorage storage, vn.smartfarm.iot.control.PumpService pump,
+    public TelemetryIngestion(vn.smartfarm.iot.nodes.TelemetryRouter router, vn.smartfarm.iot.control.PumpService pump,
         vn.smartfarm.iot.monitoring.MqttHealth health,
         @org.springframework.beans.factory.annotation.Value("${smartfarm.control.enabled:false}") boolean controlsEnabled) {
-        this.health=health; this.storage = storage; this.pump=pump; this.controlsEnabled=controlsEnabled;
+        this.health=health; this.router = router; this.pump=pump; this.controlsEnabled=controlsEnabled;
     }
 
     @Override
@@ -116,23 +116,12 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     }
 
     private void store(String topic, byte[] payload) {
-        final Telemetry value;
         try {
-            value = storage.decodeRegistered(topic, payload);
-        } catch (IllegalArgumentException error) {
-            LOG.warn("Telemetry rejected: invalid v1 payload");
-            return;
-        } catch (RuntimeException error) {
-            LOG.error("Telemetry registry lookup failed ({}): message not persisted", error.getClass().getSimpleName());
-            return;
-        }
-        try {
-            boolean inserted = storage.save(value);
-            if (inserted) { health.messageProcessed(); LOG.info("TELEMETRY_SAVED device={} sequence={}", value.deviceId(), value.sequence()); }
+            boolean inserted=router.store(topic,payload);
+            if(inserted){health.messageProcessed();LOG.info("TELEMETRY_SAVED registered topic={}",topic);}
             else LOG.debug("Telemetry duplicate ignored");
-        } catch (RuntimeException error) {
-            LOG.error("Telemetry persistence failed ({}): message not persisted", error.getClass().getSimpleName());
-        }
+        }catch(IllegalArgumentException error){LOG.warn("Telemetry rejected: invalid contract or undeclared channel");}
+        catch(RuntimeException error){LOG.error("Telemetry persistence failed ({}): message not persisted",error.getClass().getSimpleName());}
     }
 
     private static String required(String name) {

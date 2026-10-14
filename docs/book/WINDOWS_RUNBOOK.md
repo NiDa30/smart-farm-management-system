@@ -1,5 +1,10 @@
 # Thực hành trên Windows: mở đúng terminal, chạy đúng thứ tự
 
+**A1/V14 node/kênh:** sau pull restart backend để migrate. Trong Sensor
+Realtime chọn Node & trạm nước để khai báo; không phải thiết bị tự provision.
+Đợt này không đổi firmware/diagram; hướng dẫn [chương22](CHAPTER_22_NODES_AND_WATER_CHANNELS.md).
+
+
 **Cập nhật simulator nông nghiệp 14/10/2026:** xem
 [chương21](CHAPTER_21_RESERVOIR_INTERLOCK.md). Có relay và phao mới, cần bổ
 sung flag trong config local, build firmware/buildfs rồi merge lại ảnh flash;

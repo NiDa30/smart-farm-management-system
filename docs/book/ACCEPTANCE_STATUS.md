@@ -1,5 +1,12 @@
 # Trạng thái bằng chứng và nghiệm thu — 14/10/2026
 
+Đợt nền A1/V14: **116 backend tests** không skip,7browser node,4unit node và
+3Python water contract đạt; lint/build đạt. Full app/API/PostgreSQL registry
+save→restart→read đạt, v2 measurement là SQL fixture sau restart, không AWS;
+command0/run0. Chưa có WATER firmware/node mới hoặc flow safety. Xem
+[chương22](CHAPTER_22_NODES_AND_WATER_CHANNELS.md).
+
+
 Trang này phân biệt xác nhận của người dùng, kiểm tra giả lập và phần còn chờ.
 Nguồn là [nhật ký](BUILD_JOURNAL.md), [sổ lỗi](TROUBLESHOOTING.md) và xác nhận
 trực tiếp của người dùng trong nhiệm vụ rà soát tài liệu. Không kiểm tra AWS,

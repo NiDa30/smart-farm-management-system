@@ -1,5 +1,22 @@
 # Nhật ký xây dựng Smart Farm
 
+## 14/10/2026 — A1 node/kênh và telemetry nước riêng
+
+Theo lộ trình18nhóm, V14 thêm physical node/channel/actuator mapping, giữ
+ENV01/PUMP01v1. Sensor registration cũ tạo mapping cùng transaction. Router
+v1/v2, water parser strict, declared channel/unit/calibration, atomic packet
+và dedupe; không giả số môi trường để nhận nước. UI Sensor Realtime có Node
+& trạm nước, null/fault/false/0/freshness30s, save uncertain có readback.
+
+116backend,7browser node,4unit frontend,3Python contract v2, lint/build đạt.
+Full app registry lưu rồi restart đọc lại đạt; SQL fixture sau restart thử
+LOW=false/HIGH=fault/FLOW=0 nguồn cũ. Command0/run0 giữ nguyên, MQTT/control
+tắt. Lỗi seed UNION NULL/type đã sửa bằng cast, không liên quan payload AWS.
+Không firmware/diagram/AWS mới; A2 flow safety và nước live còn chờ. Xem
+[chương22](CHAPTER_22_NODES_AND_WATER_CHANNELS.md) và
+[báo cáo](../implementation/NODE_CHANNELS_REPORT.md).
+
+
 ## 14/10/2026 — Cập nhật ý tưởng các node nông nghiệp
 
 Nguồn là bản ý tưởng người dùng gửi: 18 nhóm thiết bị, ví dụ 100 cây dừa / 4 dãy,
