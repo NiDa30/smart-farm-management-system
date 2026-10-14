@@ -1,5 +1,23 @@
 # Nhật ký xây dựng Smart Farm
 
+## Giám sát registry, dữ liệu và kết nối backend
+
+Tiếp tục từ070e37d: thay DeviceMonitor mock bằng GET /api/v1/monitoring.
+Không tự thêm IAM hoặc subscription heartbeat. Màn phân biệt MQTT backend,
+độ mới sensor30s/relay15s, hoạt động bản tin đã lưu trong30s và cảnh báo mở.
+Không suy luận mất Wi-Fi/nguồn từ thiếu số đo. Bản tin cũ đến muộn cập nhật
+lastMessageAt nhưng không thay số đo nguồn mới hơn. UI dùng server time cộng
+monotonic elapsed, API lỗi không được giữ nhãn connected hiện tại; relay cũ
+chỉ hiển thị ON/OFF lần trước và trạng thái hiện tại Chưa xác định.
+
+MqttHealth version tránh subscription cũ ghi đè disconnect; queue đã nhận
+trước disconnect không được tự coi là reconnect. Không thay rule gate15s,
+cutoff hoặc publish control. Không migration/dependency mới. Cloud61 Java
+với DB test riêng đạt,7 browser fixtures giám sát và6 unit client đạt;
+full-app smoke qua API/DB thật với MQTT/control=false đạt. Không có AWS/GPIO.
+Selector fixture exact text ban đầu không khớp cell chứa timestamp; sửa và
+chạy lại7/7. Chương15 ghi rõ giám sát bản tin khác chứng minh online/offline.
+
 ## Cloud tiếp quản commit 3d8bcd9 và triển khai nhật ký sự kiện
 
 Người dùng push toàn bộ bàn giao local lên feature branch. Cloud fast-forward

@@ -10,7 +10,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test:automation": "playwright test --config playwright.automation.config.ts",
-    "test:events": "playwright test --config playwright.events.config.ts"
+    "test:events": "playwright test --config playwright.events.config.ts",
+    "test:monitoring": "playwright test --config playwright.monitoring.config.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

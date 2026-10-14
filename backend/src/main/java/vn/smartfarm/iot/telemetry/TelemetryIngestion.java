@@ -23,6 +23,7 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     private static final Logger LOG = LoggerFactory.getLogger(TelemetryIngestion.class);
     private static final String TOPIC = "smartfarm/FARM001/+/telemetry";
     private final TelemetryStorage storage;
+    private final vn.smartfarm.iot.monitoring.MqttHealth health;
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(128), runnable -> new Thread(runnable, "telemetry-storage"));
     private final vn.smartfarm.iot.control.PumpService pump;
@@ -39,8 +40,9 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     }
 
     public TelemetryIngestion(TelemetryStorage storage, vn.smartfarm.iot.control.PumpService pump,
+        vn.smartfarm.iot.monitoring.MqttHealth health,
         @org.springframework.beans.factory.annotation.Value("${smartfarm.control.enabled:false}") boolean controlsEnabled) {
-        this.storage = storage; this.pump=pump; this.controlsEnabled=controlsEnabled;
+        this.health=health; this.storage = storage; this.pump=pump; this.controlsEnabled=controlsEnabled;
     }
 
     @Override
@@ -54,10 +56,11 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                 .withCleanSession(true).withWebsockets(true).withWebsocketSigningRegion(region)
                 .withProtocolOperationTimeoutMs(10000)
                 .withConnectionEventCallbacks(new software.amazon.awssdk.crt.mqtt.MqttClientConnectionEvents() {
-                    public void onConnectionInterrupted(int error) { controlReady=false; LOG.warn("MQTT interrupted; command dispatch disabled"); }
+                    public void onConnectionInterrupted(int error) { health.disconnected(); controlReady=false; LOG.warn("MQTT interrupted; command dispatch disabled"); }
                     public void onConnectionResumed(boolean present) {
                         if (!initialized || stopping) return;
-                        if (present) { controlReady=controlsEnabled; return; }
+                        if (present) { health.connected(); controlReady=controlsEnabled; return; }
+                        health.reconnecting();
                         try { controlWorker.execute(() -> {
                             try { subscribeStreams(); }
                             catch (Exception error) { controlReady=false; LOG.error("MQTT resubscribe failed; commands disabled until recovery/restart"); }
@@ -83,6 +86,7 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     }
 
     private void subscribeStreams() throws Exception {
+        long healthVersion=health.connectionVersion();
         connection.subscribe(TOPIC, QualityOfService.AT_LEAST_ONCE, message -> {
             byte[] payload = message.getPayload();
             if (payload.length > 4096) {
@@ -101,11 +105,12 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                 if (message.getRetain() || message.getPayload().length>4096) return;
                 byte[] copy=Arrays.copyOf(message.getPayload(),message.getPayload().length);
                 try { controlWorker.execute(() -> {
-                    try { pump.receive(message.getTopic(),copy); }
+                    try { pump.receive(message.getTopic(),copy); health.messageProcessed(); }
                     catch (RuntimeException error) { LOG.warn("Pump message rejected or not persisted"); }
                 }); } catch (RejectedExecutionException error) { LOG.error("Pump queue full; status/ACK not persisted"); }
             }).get(10,TimeUnit.SECONDS);
         }
+        health.subscriptionsReady(healthVersion);
         controlReady=controlsEnabled;
         LOG.info("MQTT_TELEMETRY_SUBSCRIBED {}; Wokwi control enabled={}", TOPIC, controlsEnabled);
     }
@@ -123,7 +128,7 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
         }
         try {
             boolean inserted = storage.save(value);
-            if (inserted) LOG.info("TELEMETRY_SAVED device={} sequence={}", value.deviceId(), value.sequence());
+            if (inserted) { health.messageProcessed(); LOG.info("TELEMETRY_SAVED device={} sequence={}", value.deviceId(), value.sequence()); }
             else LOG.debug("Telemetry duplicate ignored");
         } catch (RuntimeException error) {
             LOG.error("Telemetry persistence failed ({}): message not persisted", error.getClass().getSimpleName());
@@ -137,7 +142,7 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     }
     @Override
     public void destroy() throws Exception {
-        stopping=true; controlReady=false;
+        stopping=true; controlReady=false; health.stopped();
         try {
             if (connection != null) {
                 try { connection.disconnect().get(5, TimeUnit.SECONDS); }

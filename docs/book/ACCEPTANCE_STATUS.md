@@ -7,8 +7,12 @@ Wokwi hoặc code đang được agent khác sửa trong phiên biên tập này
 
 Bản local chốt tại commit `3d8bcd9` ghi 47 kiểm tra backend và 13 browser
 fixtures automation đạt, không skip. Cloud tiếp quản đã chạy lại nền đó cùng
-5 kiểm tra Event Log mới: **52 backend tests đạt**, 13 browser fixtures
+5 kiểm tra Event Log mới: 52 backend tests đạt trong đợt trước, 13 browser fixtures
 quy tắc và 7 browser fixtures nhật ký đạt, 3 test telemetry đạt.
+
+Đợt giám sát tiếp theo đạt **61 backend tests**, 7 browser fixtures giám sát
+và 6 frontend unit tests, không skip; lint/build đạt. Smoke toàn app giám sát
+qua API/DB thật với MQTT tắt đạt.
 
 Cloud còn chạy smoke trên ứng dụng thật: menu → Vite proxy → Spring Boot →
 PostgreSQL trong schema test riêng; MQTT/control tắt. Đây là bằng chứng tích
@@ -28,6 +32,7 @@ Lượt helper cũ 4 đạt/37 skip là lịch sử, không thay kết quả ki�
 | Cảnh báo đất thấp / nhiệt độ cao | Người dùng xác nhận mở và đóng đúng ngưỡng: đất `<30%` / `>=35%`; nhiệt độ `>35°C` / `<=33°C` | Xác nhận này không nghiệm thu quy tắc tưới hoặc mọi tình huống restart/mất dữ liệu |
 | Quy tắc tưới tự động | Tests transport giả lập/PostgreSQL và 13 browser fixtures đạt; người dùng xác nhận bước bật tự động hoạt động | **Chưa nghiệm thu đầy đủ AWS/Wokwi** cho OFF sớm, cooldown, timer và restart giữa run |
 | Nhật ký sự kiện | API/UI, 5 backend tests, 7 browser fixtures và smoke toàn ứng dụng với PostgreSQL test đạt | Chưa kiểm tra Event Log trên dữ liệu Windows/AWS của người dùng; không phải immutable audit log |
+| Giám sát thiết bị | API/UI đọc registry, số đo, status, cảnh báo và lifecycle MQTT backend; cloud unit/integration/browser/smoke đạt | Chưa subscribe heartbeat mọi sensor; không chứng minh online/offline vật lý. Windows/AWS live còn chờ |
 | NVS và phục hồi mạng | Restart simulation từng cần thiết khi gateway restart không phục hồi phiên | **NVS chưa làm**; restart mất RAM, không phải bằng chứng reconnect thành công |
 
 Tests với MQTT mock, API fixture, dữ liệu SQL thử hoặc native safety assertions
