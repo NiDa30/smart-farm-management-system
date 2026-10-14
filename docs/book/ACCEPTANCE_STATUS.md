@@ -1,5 +1,15 @@
 # Trạng thái bằng chứng và nghiệm thu — 15/10/2026 (giờ Việt Nam)
 
+## Soil alerts V18 — mới nhất 15/10/2026
+
+167 backend,24 browser alerts, 11 unit parser, lint/build đạt, không skip. V17→V18
+bảo toàn3 packet/7 readings,không hồi tố. Full-app/API/PostgreSQL fixture mở đất
+khô SOIL1/lỗi SOIL3,ACK→restart→đọc→phục hồi đóng giữ note;command0/run0,
+MQTT/control tắt. Firmware không đổi, không AWS/Wokwi thật mới. Sáu ca trong
+[chương28](CHAPTER_28_SOIL_ALERTS.md) còn Chưa chạy; rule vẫn ENV01, chưa van/
+coordinator/soil-rule. Ngưỡng30/35 cố định demo, chưa calibration vật lý.
+
+
 ## SOIL nhiều điểm — 15/10/2026
 
 V17 có SOIL/v2, UI/form/history/CSV, firmware Wokwi ba ADC và fault injection;

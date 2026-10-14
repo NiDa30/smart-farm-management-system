@@ -214,3 +214,13 @@ Không copy config.local.h hoặc PEM ENV01/WATER01 vào SOIL01. Source public k
 có endpoint/key, chỉ firmware build thành công không làm xuất hiện node live.
 Giữ sáu ca Wokwi trong chương27 là Chưa chạy đến khi có dữ liệu. Quy tắc tưới
 cũ vẫn ENV01; SOIL01 không có đầu ra bơm/van hoặc soil alerts trong lượt này.
+
+## SOIL alerts V18 — 15/10/2026
+
+Pull/restart backend để Flyway V18 nâng cấp, giữ database/config hiện có.
+Frontend ở terminal riêng: `npm run dev`. Mở Trung tâm Cảnh báo → **Đất nhiều
+điểm**. Không cần build/provision lại SOIL01 nếu packet v2 đang phát đúng;
+chỉ khai báo registry chưa có dữ liệu thì chưa có alert. Hai mẫu dưới30% mới
+mở, hai mẫu từ35% mới đóng; fault/null khác đất0, mất dữ liệu không tự hết.
+ACK/ghi chú không điều khiển relay. Xem [chương28](CHAPTER_28_SOIL_ALERTS.md)
+để đọc ngữ nghĩa, timeout/readback và sáu ca AWS/Wokwi còn Chưa chạy.

@@ -43,6 +43,12 @@ mẫu riêng, SIM_LINEAR_V1 chưa phải calibration vật lý; partial không r
 Windows/AWS/Wokwi mới chưa nghiệm thu; rule vẫn ENV01. Xem
 [bàn giao](../implementation/LOCAL_SOIL_NODE_REPORT.md).
 
+Sau nền SOIL V17, V18 thêm [cảnh báo từng kênh đất](../book/CHAPTER_28_SOIL_ALERTS.md):
+hai mẫu mới, ngưỡng demo30/35, lỗi/null riêng, episode/source/ACK/note. Không
+hồi tố, không đóng vì thiếu dữ liệu, không dispatch. Tab Trung tâm Cảnh báo
+→ Đất nhiều điểm; Overview/EventLog/Safety chưa hợp nhất soil alerts. Wokwi
+live mới còn chờ; firmware và rule ENV01 giữ nguyên.
+
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.
 Đối chiếu [hợp đồng đang dùng](../../contracts/iot/v1/README.md),

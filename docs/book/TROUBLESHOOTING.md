@@ -214,3 +214,21 @@ Không ghi đè note đầu hoặc coi đã xem là đã bình thường. Chi ti
   .local/soil-nodes/SOIL01. Khai báo registry, chuẩn bị project đúng loại, build/
   buildfs/merge và mở diagram ở đó. Không thay certificate ENV01 bằng cert SOIL.
   Xem [chương27](CHAPTER_27_SOIL_MULTIPOINT.md); live còn Chưa chạy.
+
+## Cảnh báo đất nhiều điểm V18 — hướng dẫn chẩn đoán
+
+Đợt cloud 15/10/2026 không gặp test/build failure. Các tình huống dưới đây là
+hành vi và kịch bản đã kiểm thử bằng fixture, chưa phải sự cố AWS/Wokwi live.
+
+- Đã chỉnh núm ENV01 nhưng không thấy SOIL alert: hai loại node dùng collection
+  riêng. Tab Đất nhiều điểm đánh giá SOIL/v2; ENV/v1 ở Cảm biến môi trường.
+- Một mẫu khô rồi chưa có cảnh báo: cần hai packet mới liền seq/cùng boot/nguồn,
+  gap≤15s. Hai lần reload trang không phải hai mẫu. Packet một phần thiếu kênh,
+  reboot hoặc mẫu giữa band30–<35 làm lại pending streak.
+- Alert vẫn mở khi dữ liệu stale/fault: cố ý giữ điều kiện chưa chứng minh hồi
+  phục. Không ép null thành0 hoặc bấm ACK để đóng. Đối chiếu Realtime/history.
+- ACK timeout/409: đọc Đối chiếu trạng thái, không tự gửi lại để đổi note đầu.
+  Note/condition ở người khác hoặc điều kiện đã đóng được giữ nguyên.
+- Không thấy tab mới: pull và restart frontend/backend đúng repo; V18 chỉ thêm
+  bảng, không cần xóa PostgreSQL volume/nạp lại SOIL firmware. Xem
+  [chương28](CHAPTER_28_SOIL_ALERTS.md).

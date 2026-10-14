@@ -1,5 +1,10 @@
 # Chương 27 — Node đất ba điểm cho một dãy cây
 
+> Cập nhật sau chương này: V18 thêm [cảnh báo từng điểm](CHAPTER_28_SOIL_ALERTS.md).
+> Các mục “chưa có soil alerts” và số test trong chương27 mô tả lượt V17;
+> rule/valve/coordinator từ SOIL vẫn chưa triển khai.
+
+
 Ngày **15/10/2026, giờ Việt Nam**. Đây là bước đầu A3 trong
 [lộ trình nông nghiệp](../plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md): có SOIL01
 độc lập để quan sát ba điểm đất. Chưa triển khai controller van IRRIGATION01,

@@ -185,3 +185,65 @@ test('water acknowledgment with same ID but another node is not accepted as succ
  await expect(detail(page).getByRole('alert')).toContainText('không khớp');await expect(page.getByText('Đã lưu xác nhận đã xem.',{exact:true})).toHaveCount(0);
  expect(api.puts).toHaveLength(1);
 });
+
+const soilInitial=()=>({id:1,nodeId:'SOIL01',channelId:'SOIL1',type:'DRY_SOIL',dataSource:'SIMULATOR',openedSampleId:30,
+ openedAt:new Date().toISOString(),openedReceivedAt:new Date().toISOString(),openedValue:0,clearedSampleId:null as number|null,clearedAt:null as string|null,
+ clearedReceivedAt:null as string|null,clearedValue:null as number|null,acknowledgedAt:null as string|null,acknowledgementNote:null as string|null});
+async function soilFixtures(page:Page){
+ const state={alert:soilInitial(),failList:false,invalidList:false,listVisible:true,loseResponse:false,wrongChannel:false,putStatus:200,putGate:null as Promise<void>|null,
+  listGate:null as Promise<void>|null,calls:0,puts:[] as any[],unexpected:[] as string[],detailCalls:0};
+ await page.route('**/*',async route=>{if(new URL(route.request().url()).origin!=='http://127.0.0.1:4182'){state.unexpected.push(route.request().url());await route.abort();return;}await route.continue();});
+ await page.route('**/api/**',async route=>{const r=route.request(),path=new URL(r.url()).pathname;
+  if(r.method()==='GET'&&path==='/api/v1/alerts'){await route.fulfill({json:[]});return;}
+  if(r.method()==='GET'&&path==='/api/v1/soil-alerts'){
+   state.calls++;const response=state.listVisible?[{...structuredClone(state.alert),...(state.invalidList?{openedValue:100}:{})}]:[],fail=state.failList,gate=state.listGate;state.listGate=null;
+   if(gate)await gate;await route.fulfill({status:fail?503:200,json:response});return;
+  }
+  if(r.method()==='GET'&&path==='/api/v1/soil-alerts/1'){state.detailCalls++;await route.fulfill({json:state.alert});return;}
+  if(r.method()==='PUT'&&path==='/api/v1/soil-alerts/1/acknowledgement'){
+   const input=r.postDataJSON();state.puts.push(input);if(state.putGate)await state.putGate;
+   if(state.putStatus!==200){await route.fulfill({status:state.putStatus,json:{}});return;}
+   Object.assign(state.alert,{acknowledgedAt:new Date().toISOString(),acknowledgementNote:input.note||null});
+   if(state.loseResponse){await route.abort('connectionfailed');return;}
+   await route.fulfill({json:state.wrongChannel?{...state.alert,channelId:'SOIL2'}:state.alert});return;
+  }
+  state.unexpected.push(r.method()+' '+path);await route.abort();
+ });return state;
+}
+async function soilOpen(page:Page){await page.goto('/');await page.getByRole('button',{name:'Đất nhiều điểm',exact:true}).click();await page.getByRole('button',{name:'Chi tiết cảnh báo đất #1',exact:true}).click();}
+test('soil alerts show independent point, zero evidence, source and safely saved note',async({page})=>{
+ const api=await soilFixtures(page);await soilOpen(page);await expect(page.getByRole('article')).toContainText('SOIL01 · SOIL1 · Đất khô');await expect(page.getByRole('article')).toContainText('Giá trị lúc phát sinh: 0%');
+ await page.getByLabel('Nguồn cảnh báo đất').selectOption('PHYSICAL');await expect(page.getByRole('article')).toHaveCount(0);await page.getByLabel('Nguồn cảnh báo đất').selectOption('SIMULATOR');
+ const note='<img src=x onerror="bad()">';await page.getByLabel('Ghi chú khi xác nhận',{exact:true}).fill(note);await detail(page).getByRole('button',{name:'Xác nhận đã xem',exact:true}).click();
+ await expect(detail(page)).toContainText('Ghi chú đã lưu: '+note);await expect(detail(page).locator('img')).toHaveCount(0);await expect(detail(page)).toContainText('Điều kiện cảm biến: Đang cảnh báo');expect(api.puts).toEqual([{note}]);expect(api.unexpected).toEqual([]);
+});
+test('soil lost acknowledgment response reads the exact episode without automatic retry',async({page})=>{
+ const api=await soilFixtures(page);api.loseResponse=true;await soilOpen(page);await page.getByLabel('Ghi chú khi xác nhận',{exact:true}).fill('Checked point1');
+ await detail(page).getByRole('button',{name:'Xác nhận đã xem',exact:true}).click();await expect(detail(page).getByRole('alert')).toContainText('Đối chiếu');
+ await detail(page).getByRole('button',{name:'Đối chiếu trạng thái',exact:true}).click();await expect(detail(page)).toContainText('Ghi chú đã lưu: Checked point1');expect(api.puts).toHaveLength(1);expect(api.detailCalls).toBe(1);
+});
+test('soil API outage or bad threshold evidence blocks ACK and preserves draft on recovery',async({page})=>{
+ const api=await soilFixtures(page);await soilOpen(page);await page.getByLabel('Ghi chú khi xác nhận',{exact:true}).fill('Draft soil');
+ for(const key of ['failList','invalidList'] as const){api[key]=true;await page.getByRole('button',{name:'Làm mới',exact:true}).click();await expect(detail(page).getByRole('button',{name:'Xác nhận đã xem',exact:true})).toBeDisabled();api[key]=false;await page.getByRole('button',{name:'Làm mới',exact:true}).click();await expect(detail(page).getByRole('button',{name:'Xác nhận đã xem',exact:true})).toBeEnabled();}
+ await expect(page.getByLabel('Ghi chú khi xác nhận',{exact:true})).toHaveValue('Draft soil');expect(api.puts).toEqual([]);
+});
+test('soil readback with another point and same alert ID is refused',async({page})=>{
+ const api=await soilFixtures(page);api.wrongChannel=true;await soilOpen(page);await detail(page).getByRole('button',{name:'Xác nhận đã xem',exact:true}).click();
+ await expect(detail(page).getByRole('alert')).toContainText('không khớp');await expect(page.getByText('Đã lưu xác nhận đã xem.',{exact:true})).toHaveCount(0);expect(api.puts).toHaveLength(1);
+});
+test('soil clear during confirmation remains unseen after readback',async({page})=>{
+ const api=await soilFixtures(page);api.putStatus=409;await soilOpen(page);Object.assign(api.alert,{clearedSampleId:31,clearedAt:new Date().toISOString(),clearedReceivedAt:new Date().toISOString(),clearedValue:35});
+ await detail(page).getByRole('button',{name:'Xác nhận đã xem',exact:true}).click();await expect(detail(page).getByRole('alert')).toBeVisible();await detail(page).getByRole('button',{name:'Đối chiếu trạng thái',exact:true}).click();
+ await expect(detail(page)).toContainText('Điều kiện cảm biến: Đã trở về bình thường');await expect(detail(page)).toContainText('Xác nhận đã xem: Chưa xem');expect(api.puts).toHaveLength(1);
+});
+test('soil delayed old list cannot overwrite ACK and tabs cannot interrupt pending save',async({page})=>{
+ const api=await soilFixtures(page);await soilOpen(page);const old=deferred();api.listGate=old.promise;const calls=api.calls;await page.getByRole('button',{name:'Làm mới',exact:true}).click();await expect.poll(()=>api.calls).toBeGreaterThan(calls);
+ const save=deferred();api.putGate=save.promise;await page.getByLabel('Ghi chú khi xác nhận',{exact:true}).fill('Latest soil');await detail(page).getByRole('button',{name:'Xác nhận đã xem',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Trạm nước',exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'Cảm biến môi trường',exact:true})).toBeDisabled();
+ save.resolve();await expect(detail(page)).toContainText('Ghi chú đã lưu: Latest soil');old.resolve();await expect(detail(page)).toContainText('Ghi chú đã lưu: Latest soil');expect(api.puts).toHaveLength(1);
+});
+test('soil fault displays null as an error and clears with numeric zero without becoming a dry episode',async({page})=>{
+ const api=await soilFixtures(page);Object.assign(api.alert,{type:'SENSOR_FAULT',channelId:'SOIL3',openedValue:null,clearedSampleId:31,clearedAt:new Date().toISOString(),clearedReceivedAt:new Date().toISOString(),clearedValue:0});await soilOpen(page);
+ await expect(page.getByRole('article')).toContainText('SOIL3 · Lỗi cảm biến đất');await expect(page.getByRole('article')).toContainText('Giá trị lúc phát sinh: Lỗi cảm biến');await expect(page.getByRole('article')).toContainText('Lúc hết điều kiện: 0%');
+ await expect(detail(page).getByRole('button',{name:'Xác nhận đã xem',exact:true})).toHaveCount(0);expect(api.puts).toEqual([]);
+});

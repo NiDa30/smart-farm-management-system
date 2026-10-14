@@ -19,7 +19,10 @@ public class NodeInventory {
     private final JdbcTemplate jdbc;
     private final SensorRegistry sensors;
     private final vn.smartfarm.iot.alerts.WaterAlerts waterAlerts;
-    public NodeInventory(JdbcTemplate jdbc,SensorRegistry sensors,vn.smartfarm.iot.alerts.WaterAlerts waterAlerts) {this.jdbc=jdbc;this.sensors=sensors;this.waterAlerts=waterAlerts;}
+    private final vn.smartfarm.iot.alerts.SoilAlerts soilAlerts;
+    public NodeInventory(JdbcTemplate jdbc,SensorRegistry sensors,vn.smartfarm.iot.alerts.WaterAlerts waterAlerts,vn.smartfarm.iot.alerts.SoilAlerts soilAlerts) {
+        this.jdbc=jdbc;this.sensors=sensors;this.waterAlerts=waterAlerts;this.soilAlerts=soilAlerts;
+    }
 
     @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
     public Snapshot snapshot() {
@@ -123,6 +126,7 @@ public class NodeInventory {
             """,rows.getFirst(),packet.deviceId(),reading.channelId(),reading.quality(),reading.value() instanceof Number?reading.value():null,
                 reading.value() instanceof Boolean?reading.value():null,reading.calibrationVersion());
         if(type.equals("WATER"))waterAlerts.observe(packet,rows.getFirst());
+        else if(type.equals("SOIL"))soilAlerts.observe(packet,rows.getFirst());
         return true;
     }
 }

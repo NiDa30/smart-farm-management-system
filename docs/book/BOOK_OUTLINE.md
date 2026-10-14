@@ -51,3 +51,6 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 
 27. [Node đất ba điểm](CHAPTER_27_SOIL_MULTIPOINT.md) — nền A3: kênh độc lập,
     V17, firmware mô phỏng và project/certificate riêng; coordinator tưới còn sau.
+
+28. [Cảnh báo đất nhiều điểm](CHAPTER_28_SOIL_ALERTS.md) — hysteresis, chất lượng,
+    packet mới/nguồn, V18 và xác nhận đã xem; tách cảnh báo khỏi lệnh tưới.

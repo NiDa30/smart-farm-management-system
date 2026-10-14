@@ -622,3 +622,16 @@ SOIL AWS/Wokwi thật vẫn **Chưa chạy**, xem
 [báo cáo](../implementation/LOCAL_SOIL_NODE_REPORT.md). Phần A3 tiếp theo là
 controller một dãy và quyền bơm trước khi mở rộng bốn dãy; không suy ra đủ
 bảo vệ vật lý chỉ từ ACK hoặc telemetry mô phỏng.
+
+## Cập nhật 15/10/2026 — cảnh báo từng điểm SOIL
+
+V18 thêm DRY_SOIL/SENSOR_FAULT theo kênh và nguồn; hai mẫu mới liên tiếp,
+hysteresis30/35, không tự đóng khi mất dữ liệu. Trung tâm Cảnh báo có tab đất,
+ACK/note/evidence riêng. 167 backend/24 browser alerts/11 unit và full-app
+PostgreSQL fixture ACK/restart/clear đạt; AWS/Wokwi thật mới chưa chạy.
+Xem [chương28](../book/CHAPTER_28_SOIL_ALERTS.md) và
+[báo cáo](../implementation/LOCAL_SOIL_ALERTS_REPORT.md).
+
+A3 hiện có giám sát và cảnh báo đất; chưa coi controller/valve/coordinator đã
+xong. Rule hiện tại vẫn ENV01, SOIL không phát lệnh bơm. Ngưỡng cảnh báo cố định
+cho demo, calibration thực/từng cây/zone và hợp nhất các read model còn sau.

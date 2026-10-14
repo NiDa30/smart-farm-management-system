@@ -848,3 +848,22 @@ Sau điều chỉnh IAM, lệnh CLI attach-policy không lỗi. Lần chạy scr
   cập nhật đồng bộ với smoke cũ.
 - [Chương27](CHAPTER_27_SOIL_MULTIPOINT.md) và [báo cáo](../implementation/LOCAL_SOIL_NODE_REPORT.md)
   có Windows runbook/sáu ca còn Chưa chạy. Chưa nghiệm thu SOIL AWS/Wokwi thật.
+
+## 15/10/2026 — Cảnh báo SOIL theo từng điểm và nguồn
+
+- V18 thêm soil_alert_cursor/state/episodes. Dưới30% mở DRY_SOIL, từ35% phục
+  hồi; SENSOR_FAULT/null khác0. Hai packet fresh/liền seq/boot/source, gap≤15s.
+  Band30–<35/fault/missing giữ active và reset pending, không đóng vì im lặng.
+- Tab Đất nhiều điểm có lọc nguồn/điều kiện/đã xem, packet/giá trị bằng chứng và
+  ACK note. Tách ChannelAlertCenter dùng chung với WATER, giữ parser từng nhóm;
+  ACK phản hồi không rõ dùng GET đối chiếu, không tự PUT lại.
+- 167 backend (15 SoilAlertsTest), 24 browser alerts, 11 unit parser, lint/build đạt,
+  không skip. Bao gồm rollback/concurrency, stale/duplicate/order/source,
+  zero/null, strict note body và polling trả chậm. Không sửa firmware.
+- soil_node_smoke V17→V18 giữ3 packet/7 readings và không sinh alert hồi tố.
+  soil_alert_smoke thật qua router/API/PostgreSQL:2 packet mở SOIL1 khô/SOIL3 lỗi,
+  UI ACK→restart backend→đọc lại→2 packet phục hồi→hai đợt đóng giữ note. Sau cùng
+  4 packet/12 readings,command0/run0; MQTT/control tắt, không AWS/Wokwi mới.
+- Không gặp test/build failure trong đợt này; các ca lỗi API là test chủ động,
+  không ghi thành sự cố live. [Chương28](CHAPTER_28_SOIL_ALERTS.md) và
+  [báo cáo](../implementation/LOCAL_SOIL_ALERTS_REPORT.md) có sáu ca Wokwi Chưa chạy.

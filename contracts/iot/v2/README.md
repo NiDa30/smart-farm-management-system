@@ -79,3 +79,19 @@ packet một phần không làm mới điểm thiếu. Xem
 [chương 27](../../../docs/book/CHAPTER_27_SOIL_MULTIPOINT.md). Firmware demo
 có ba kênh và chỉ SIMULATOR; nguồn PHYSICAL trong contract là thông tin khai
 báo, không chứng minh phần cứng/hiệu chuẩn đã nghiệm thu.
+
+## Soil alert API / V18
+
+SOIL_MOISTURE/% mới được đánh giá theo từng channel và source: hai mẫu fresh
+liền packet/boot/seq, gap≤15s; DRY_SOIL <30%, clear≥35%; SENSOR_FAULT/null clear
+bằng hai mẫu VALID. Không đổi packet hoặc quyền MQTT. Missing/fault/hysteresis
+band giữ điều kiện và reset pending; stale không tự đóng, không có dispatch.
+
+GET `/api/v1/soil-alerts` (list100)/`/{id}` và PUT `/{id}/acknowledgement`
+`{"note":null}` hoặc text≤500. Alert có id/nodeId/type/channelId/dataSource,
+openedSampleId/At/ReceivedAt/Value, clearedSampleId/At/ReceivedAt/Value nullable,
+acknowledgedAt/acknowledgementNote nullable. DRY mở Value0–<30, clear35–100;
+fault mở Value null, clear0–100. List ưu tiên active/unseen; GET ID độc lập list.
+ACK đầu được giữ, cùng note idempotent, khác note hoặc đã đóng chưa xem409.
+JSON key trùng/field thừa/kiểu note sai bị400. ACK không sửa điều kiện hoặc bơm.
+Nguồn là khai báo; xem [chương28](../../../docs/book/CHAPTER_28_SOIL_ALERTS.md).

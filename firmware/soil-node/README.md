@@ -14,3 +14,8 @@ kiểm tra registry và tạo `.local/soil-nodes/SOIL01`, giữ config/cert loca
 quyền, build/buildfs/merge, sơ đồ và sáu ca nghiệm thu còn **Chưa chạy**.
 Source public build được khi endpoint rỗng; MQTT cần config/cert local. Không
 commit `.local`, config.local.h, data PEM hoặc flash.bin đã merge.
+
+Backend V18 thêm tab Trung tâm Cảnh báo → Đất nhiều điểm. Packet hiện có được
+đánh giá theo kênh; không cần đổi certificate/nạp lại firmware chỉ để có alert.
+Xem [chương28](../../docs/book/CHAPTER_28_SOIL_ALERTS.md). Không có lệnh bật bơm
+hoặc soil-rule mới trong firmware này.
