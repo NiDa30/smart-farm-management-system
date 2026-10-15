@@ -35,3 +35,7 @@
 #define FARM_FLOW_GRACE_MS 5000
 // PHYSICAL mode (SIMULATOR=0) requires a declared calibration version and field validation.
 #define FARM_FLOW_CALIBRATION_VERSION ""
+
+// Enable together with backend SMARTFARM_PUMP_FENCING_ENABLED=true after rebuilding this firmware.
+// Default remains legacy. Legacy emergency OFF in fenced mode latches until device reboot.
+#define FARM_PUMP_FENCING_ENABLED 0

@@ -1,0 +1,1 @@
+import React from 'react';import {createRoot} from 'react-dom/client';import {PumpControl} from '../../../../src/modules/iot/control/PumpControl';createRoot(document.getElementById('root')!).render(<PumpControl/>);

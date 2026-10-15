@@ -957,3 +957,14 @@ qua proxy/PostgreSQL giữ lịch sử sau restart process; command/run0. Nâng
 V20→V21 giữ dữ liệu fixture van. Lỗi singleton rỗng và FK fixture sót đã xử
 lý, ghi tại [chương33](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md). Windows5ca
 Chưa chạy; coordinator phần cứng/lease PUMP01 vẫn chưa làm.
+
+## 15/10/2026 — MQTT PUMP01 chống boot/lệnh cũ, opt-in
+
+V22+firmware ENV thêm ordinal/target boot, reservation DB trước publish,
+ACK/status validation, toàn lịch sử và legacy OFF latch đến reboot. Hai cờ
+mặc định tắt; UI hiển thị profile và khóa ON/reset khi lệch mode.247backend/
+6pump browser/12queue browser/17contracts/native/public Pio hai chế độ/FS/
+merge/lintbuild/full-app native status và restart thật đạt. Queue fixture
+V21→22 bảo toàn4lượt. Không AWS/Wokwi/GPIO,6ca Windows Chưa chạy. Lỗi và cách
+sửa được ghi tại [chương34](CHAPTER_34_PUMP_COMMAND_FENCING.md). Chưa HTTP
+intent fence/lease/dispatch queue hoặc coordinator thật.

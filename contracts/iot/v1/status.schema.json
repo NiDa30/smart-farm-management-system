@@ -65,6 +65,28 @@
         "FLOW_LOW",
         "FLOW_SENSOR_FAULT"
       ]
+    },
+    "commandFence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "lastOrdinal": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "restartRequired": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "version",
+        "lastOrdinal",
+        "restartRequired"
+      ]
     }
   },
   "required": [
@@ -128,6 +150,89 @@
         "required": [
           "reportedState",
           "safetyLockout"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "commandFence"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deviceId": {
+            "const": "PUMP01"
+          },
+          "connection": {
+            "const": "ONLINE"
+          }
+        },
+        "required": [
+          "reportedState",
+          "safetyLockout"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "commandFence"
+        ],
+        "properties": {
+          "commandFence": {
+            "properties": {
+              "restartRequired": {
+                "const": true
+              }
+            },
+            "required": [
+              "restartRequired"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "reportedState": {
+            "const": "OFF"
+          },
+          "safetyLockout": {
+            "const": true
+          }
+        },
+        "required": [
+          "reportedState",
+          "safetyLockout"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "commandFence"
+        ],
+        "properties": {
+          "commandFence": {
+            "properties": {
+              "lastOrdinal": {
+                "const": 0
+              }
+            },
+            "required": [
+              "lastOrdinal"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "reportedState": {
+            "const": "OFF"
+          }
+        },
+        "required": [
+          "reportedState"
         ]
       }
     }

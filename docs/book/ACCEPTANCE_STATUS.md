@@ -163,3 +163,12 @@ CANCELLED, không tự resume; pump/valve commands và watering_run0. Migration
 V20→V21 giữ fixture van. Đây là PREVIEW_ONLY, chưa lease hoặc điều phối bơm
 van thật. Windows5ca Chưa chạy, không có AWS/Wokwi/GPIO mới.
 [Chương33](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md).
+
+## MQTT command fence V22 — 15/10/2026
+
+247backend skip0,6pump browser,12queue browser hồi quy,17contracts, native
+và firmware public default/opt-in/FS/merge/lintbuild đạt. Full-app GET-only
+nhận native status quaJava/Postgres, giữ metadata qua restart thật; physical
+control/MQTT tắt, command/run/queue0. V21→22 giữ4queue records/revision.
+Chưa AWS/Wokwi/GPIO thật,6ca Windows Chưa chạy. MQTT fence chưa phải HTTP
+intent fence/lease hay coordinator. [Chương34](CHAPTER_34_PUMP_COMMAND_FENCING.md).

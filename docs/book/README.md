@@ -78,3 +78,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Controller riêng cho một van mô phỏng](CHAPTER_32_IRRIGATION_VALVE_DEMO.md)
 
 - [Hàng chờ tưới nhiều vùng ở chế độ diễn tập](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md)
+
+- [Chặn lệnh MQTT cũ tại PUMP01 bằng boot và ordinal](CHAPTER_34_PUMP_COMMAND_FENCING.md)

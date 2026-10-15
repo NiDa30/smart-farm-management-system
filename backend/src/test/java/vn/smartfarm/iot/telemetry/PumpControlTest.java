@@ -204,4 +204,16 @@ class PumpControlTest {
         }
     }
 
+    @Test void legacyBackendRefusesFencedDeviceOnButCanRequestEmergencyOff() throws Exception {
+        try(var in=getClass().getResourceAsStream("/pump-fence-status.json")) {
+            var p=(com.fasterxml.jackson.databind.node.ObjectNode)mapper.readTree(in);p.put("timestamp",Instant.now().toString());
+            pump.receive("smartfarm/FARM001/PUMP01/status",mapper.writeValueAsBytes(p));
+            assertFalse(pump.status().commandFence().compatible());
+            assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("ON",5)));
+            assertThrows(ResponseStatusException.class,()->pump.create(new PumpService.Request("RESET_LOCKOUT",null)));
+            doAnswer(call->{assertFalse(mapper.readTree((byte[])call.getArgument(0)).has("commandFence"));return null;}).when(transport).publishCommand(any());
+            assertEquals("SENT",pump.create(new PumpService.Request("OFF",null)).state());
+        }
+    }
+
 }

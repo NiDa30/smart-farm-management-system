@@ -610,3 +610,12 @@ MQTT/lease PUMP01 hoặc điều khiển van thật.229backend/12browser/5unit m
 9valve browser/lintbuild và full-app PostgreSQL restart đạt; Windows5ca Chưa
 chạy. [Chương33](../book/CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md) là bằng chứng
 hiện hành; chưa coi group coordinator A3 hoàn tất.
+
+## Bằng chứng 15/10/2026 — PUMP01 MQTT fence V22
+
+Opt-in hai phía mặc định tắt: ordinal/targetBootId, reserve trước publish,
+ACK/status validation và legacy OFF latch đến reboot.247backend/6pump browser/
+12queue browser/17contracts/native/Pio/lintbuild/full-app native status và
+restart đạt; physicalcontrol/MQTT tắt.6ca live Chưa chạy. Queue vẫn PREVIEW_ONLY;
+HTTP đến muộn/idempotency và lease/van-bơm chưa làm.
+[Chương34](../book/CHAPTER_34_PUMP_COMMAND_FENCING.md).

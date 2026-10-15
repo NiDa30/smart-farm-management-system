@@ -54,6 +54,24 @@
     },
     "safetyLockout": {
       "type": "boolean"
+    },
+    "commandFence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "version",
+        "ordinal"
+      ]
     }
   },
   "required": [

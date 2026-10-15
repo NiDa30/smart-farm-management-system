@@ -271,3 +271,13 @@ khiển Actuator → Mở hàng chờ tưới diễn tập. Cần vùng SIMULATO
 không cần gateway/AWS/firmware mới. Thêm lượt1–30giây, bấm diễn tập đầu hàng;
 không tự chạy lượt sau và không bật LED/bơm/van. Restart ngắt lượt đang diễn
 tập. Xem [chương33](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md);5ca Windows chưa chạy.
+
+## PUMP01 chống MQTT cũ V22 — 15/10/2026
+
+Mặc định giữ chế độ cũ. Muốn thử mới: tắt rule/OFF có xác nhận, pull/restart
+backend để V22 migrate; private firmware FARM_PUMP_FENCING_ENABLED1/control1,
+rebuild app/FS/merge và reboot. Backend export SMARTFARM_PUMP_FENCING_ENABLED=true
+và SMARTFARM_CONTROL_ENABLED=true trước helper. Không đổi IAM/cert/Thing.
+Lệch profile chặn ON/reset; legacy OFF ở firmware mới khóa đến reboot.
+[Chương34](CHAPTER_34_PUMP_COMMAND_FENCING.md) có lệnh và6ca Chưa chạy. Queue
+vẫn chỉ diễn tập; HTTP đến server muộn chưa có intent fence.

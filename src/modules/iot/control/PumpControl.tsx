@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Power, ShieldCheck, RefreshCw } from 'lucide-react';
 
-interface PumpStatus { deviceId: 'PUMP01'; reportedState: 'ON' | 'OFF' | 'UNKNOWN'; safetyLockout: boolean; fresh: boolean; controlEnabled: boolean; observedAt: string | null }
+interface PumpStatus { deviceId: 'PUMP01'; reportedState: 'ON' | 'OFF' | 'UNKNOWN'; safetyLockout: boolean; fresh: boolean; controlEnabled: boolean; observedAt: string | null; commandFence?: {required:boolean;deviceEnabled:boolean;compatible:boolean;restartRequired:boolean;lastOrdinal:number|null} }
 interface Command { commandId: string; action: string; durationSeconds: number | null; issuedAt: string; state: string; reportedState: string | null; errorCode: string | null }
 interface StateChange { id: number; observedAt: string; reportedState: string; safetyLockout: boolean; changeType: string; stateReason?: string | null }
 const API = '/api/v1/actuators/PUMP01';
@@ -31,6 +31,7 @@ export const PumpControl: React.FC<{onValveDemo?:()=>void;onQueue?:()=>void}> = 
         if (responses.some(response => !response.ok)) throw new Error();
         const [value, history] = await Promise.all(responses.map(response => response.json()));
         if (!value || value.deviceId !== 'PUMP01' || !['ON','OFF','UNKNOWN'].includes(value.reportedState)
+          || (value.commandFence!==undefined&&(!value.commandFence||typeof value.commandFence.required!=='boolean'||typeof value.commandFence.deviceEnabled!=='boolean'||typeof value.commandFence.compatible!=='boolean'||typeof value.commandFence.restartRequired!=='boolean'||(value.commandFence.deviceEnabled?(value.commandFence.lastOrdinal===null):value.commandFence.lastOrdinal!==null||value.commandFence.restartRequired)||value.commandFence.compatible!==(value.commandFence.required===value.commandFence.deviceEnabled)||(value.commandFence.lastOrdinal!==null&&(!Number.isSafeInteger(value.commandFence.lastOrdinal)||value.commandFence.lastOrdinal<0))))
           || typeof value.fresh !== 'boolean' || typeof value.safetyLockout !== 'boolean' || typeof value.controlEnabled !== 'boolean'
           || (value.observedAt !== null && (typeof value.observedAt !== 'string' || !Number.isFinite(Date.parse(value.observedAt)))) || !Array.isArray(history) || !history.every(command => command && typeof command.commandId === 'string'
             && ['ON','OFF','RESET_LOCKOUT'].includes(command.action) && typeof command.state === 'string'
@@ -50,7 +51,8 @@ export const PumpControl: React.FC<{onValveDemo?:()=>void;onQueue?:()=>void}> = 
   const fresh = available && status?.fresh && age >= -2000 && age <= 15000;
   const state = fresh ? status?.reportedState : 'UNKNOWN';
   const pending = commands.some(command => ['PENDING','SENT','PUBLISH_UNCERTAIN'].includes(command.state));
-  const canOn = !!fresh && status?.controlEnabled && state === 'OFF' && !status.safetyLockout && !pending && !sending && Number.isInteger(durationSeconds) && durationSeconds >= 1 && durationSeconds <= 3600;
+  const protocolReady = !status?.commandFence || status.commandFence.compatible&&!status.commandFence.restartRequired;
+  const canOn = protocolReady && !!fresh && status?.controlEnabled && state === 'OFF' && !status.safetyLockout && !pending && !sending && Number.isInteger(durationSeconds) && durationSeconds >= 1 && durationSeconds <= 3600;
   const send = async (action: 'ON' | 'OFF' | 'RESET_LOCKOUT') => {
     setSending(true); setError('');
     try {
@@ -69,6 +71,7 @@ export const PumpControl: React.FC<{onValveDemo?:()=>void;onQueue?:()=>void}> = 
     {onQueue&&<button className="underline ml-4" onClick={onQueue}>Mở hàng chờ tưới diễn tập</button>}
     <header><h1 className="text-xl font-bold flex gap-2 items-center"><Power className="w-5 h-5 text-emerald-600" /> Điều khiển PUMP01</h1><p className="text-sm text-slate-500 mt-1">Demo GPIO26 trên Wokwi · FARM001 / ENV01</p></header>
     <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 text-sm">Mô phỏng Wokwi với relay và LED tải. ACK xác nhận GPIO đã áp dụng, không chứng minh bơm vật lý đang chạy.</div>
+    {status?.commandFence&&<div className="bg-slate-50 border rounded-xl p-3 text-sm"><p>Bảo vệ lệnh đến muộn qua MQTT: {status.commandFence.required?'Backend đã bật':'Backend chưa bật'} · Thiết bị: {status.commandFence.deviceEnabled?'Đã bật':'Chưa nhận xác nhận bảo vệ'}.</p>{!status.commandFence.compatible&&<p role="alert">Chế độ backend và thiết bị chưa khớp. Chưa cho phép bật hoặc reset khóa; lệnh tắt vẫn có thể yêu cầu.</p>}{status.commandFence.restartRequired&&<p role="alert">Thiết bị đã khóa sau lệnh tắt từ chế độ cũ. Cần khởi động lại thiết bị trước khi bật/reset; không tự chạy lại.</p>}</div>}
     <section className="bg-white border rounded-xl p-5 space-y-4">
       <div className="flex justify-between items-center"><h2 className="font-semibold">Trạng thái thiết bị: <span role="status">{state === 'UNKNOWN' ? 'Chưa xác định' : state === 'ON' ? 'Đang bật' : 'Đang tắt'}</span></h2><button type="button" onClick={() => setRefresh(value => value + 1)} aria-label="Làm mới trạng thái"><RefreshCw className="w-4 h-4" /></button></div>
       <p className="text-sm text-slate-500">{status?.observedAt ? `Báo lúc: ${new Date(status.observedAt).toLocaleString('vi-VN')}` : 'Chưa nhận status từ thiết bị.'}</p>
@@ -95,7 +98,7 @@ export const PumpControl: React.FC<{onValveDemo?:()=>void;onQueue?:()=>void}> = 
       <div className="flex flex-wrap gap-3">
         <button type="button" disabled={!canOn} onClick={() => void send('ON')} className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold disabled:opacity-40">Bật đèn</button>
         <button type="button" disabled={!available || !status?.controlEnabled || sending} onClick={() => void send('OFF')} className="bg-rose-600 text-white px-4 py-2 rounded-lg font-semibold disabled:opacity-40">Gửi lệnh tắt</button>
-        <button type="button" disabled={!fresh || state !== 'OFF' || !status?.safetyLockout || !status?.controlEnabled || sending} onClick={() => void send('RESET_LOCKOUT')} className="border px-4 py-2 rounded-lg disabled:opacity-40">Reset khóa</button>
+        <button type="button" disabled={!protocolReady || !fresh || state !== 'OFF' || !status?.safetyLockout || !status?.controlEnabled || sending} onClick={() => void send('RESET_LOCKOUT')} className="border px-4 py-2 rounded-lg disabled:opacity-40">Reset khóa</button>
       </div>
       <p className="text-xs text-slate-500 flex gap-2"><ShieldCheck className="w-4 h-4" /> Bật tối đa 60 phút; chưa có status mới hoặc ACK thì không tự coi lệnh đã thực thi.</p>
       {error && <p role="alert" className="text-rose-700 text-sm">{error}</p>}

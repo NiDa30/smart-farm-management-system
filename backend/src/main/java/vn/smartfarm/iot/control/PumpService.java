@@ -26,16 +26,19 @@ public class PumpService {
     public record Command(UUID commandId, String action, Integer durationSeconds, Instant issuedAt,
         Instant expiresAt, String state, String reportedState, String errorCode) {}
     public record Status(String deviceId, String reportedState, boolean safetyLockout, boolean fresh,
-        boolean controlEnabled, Instant observedAt) {}
+        boolean controlEnabled, Instant observedAt, PumpCommandFencing.View commandFence) {}
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final ObjectProvider<CommandTransport> transports;
     private final boolean enabled;
+    private final PumpCommandFencing fencing;
     public PumpService(JdbcTemplate jdbc, ObjectMapper mapper, ObjectProvider<CommandTransport> transports,
-                       @Value("${smartfarm.control.enabled:false}") boolean enabled) {
+                       @Value("${smartfarm.control.enabled:false}") boolean enabled, PumpCommandFencing fencing) {
+        this.fencing=fencing;
         this.jdbc=jdbc; this.mapper=mapper.copy().enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION).enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS); this.transports=transports; this.enabled=enabled;
     }
     public Status status() {
+        var fenceView=fencing.view();
         var rows=jdbc.query("SELECT * FROM pump_status WHERE singleton=1", (rs,n) -> {
             Instant observed=rs.getTimestamp("observed_at").toInstant();
             Instant received=rs.getTimestamp("received_at").toInstant();
@@ -43,9 +46,9 @@ public class PumpService {
             boolean fresh=observed.isAfter(now.minusSeconds(15)) && received.isAfter(now.minusSeconds(15))
                 && !observed.isAfter(now.plusSeconds(2));
             return new Status("PUMP01", fresh ? rs.getString("reported_state") : "UNKNOWN",
-                rs.getBoolean("safety_lockout"), fresh, enabled, observed);
+                rs.getBoolean("safety_lockout"), fresh, enabled, observed, fenceView);
         });
-        return rows.isEmpty() ? new Status("PUMP01","UNKNOWN",false,false,enabled,null) : rows.getFirst();
+        return rows.isEmpty() ? new Status("PUMP01","UNKNOWN",false,false,enabled,null,fenceView) : rows.getFirst();
     }
     public record StateChange(long id, Instant observedAt, Instant receivedAt, String reportedState,
         boolean safetyLockout, String changeType, String stateReason) {}
@@ -71,6 +74,8 @@ public class PumpService {
         if (request.action()==null || !Set.of("ON","OFF","RESET_LOCKOUT").contains(request.action())
             || (request.action().equals("ON") ? request.durationSeconds()==null || request.durationSeconds()<1 || request.durationSeconds()>3600 : request.durationSeconds()!=null))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Invalid command/duration");
+        if(fencing.required())return fencing.create(request,beforePublish);
+        if(fencing.view().deviceEnabled()&&!request.action().equals("OFF"))throw new ResponseStatusException(HttpStatus.CONFLICT,"Enable backend pump fencing to match device");
         var transport=transports.getIfAvailable();
         if (transport==null || !transport.controlConnected()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"MQTT control unavailable");
         Status status=status();
@@ -125,18 +130,24 @@ public class PumpService {
                 if(Set.of("FLOW_LOW","FLOW_SENSOR_FAULT").contains(reason)
                     &&(!state.equals("OFF")||!node.path("safetyLockout").booleanValue()))throw new IllegalArgumentException();
             }
-            if (topic.equals("smartfarm/FARM001/PUMP01/status")) {
+            boolean statusTopic=topic.equals("smartfarm/FARM001/PUMP01/status");
+            Long fenceOrdinal=fencing.validate(node,statusTopic,boot);
+            if (statusTopic) {
                 if (!node.path("connection").asText().equals("ONLINE") || timestamp.isBefore(Instant.now().minusSeconds(15))) throw new IllegalArgumentException();
                 jdbc.update("""
-                    INSERT INTO pump_status(singleton,boot_id,sequence,observed_at,reported_state,safety_lockout,state_reason) VALUES(1,?,?,?,?,?,?)
+                    INSERT INTO pump_status(singleton,boot_id,sequence,observed_at,reported_state,safety_lockout,state_reason,fence_version,last_fence_ordinal,fence_restart_required) VALUES(1,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(singleton) DO UPDATE SET boot_id=EXCLUDED.boot_id,sequence=EXCLUDED.sequence,
-                    observed_at=EXCLUDED.observed_at,received_at=CURRENT_TIMESTAMP,reported_state=EXCLUDED.reported_state,safety_lockout=EXCLUDED.safety_lockout,state_reason=EXCLUDED.state_reason
-                    WHERE (EXCLUDED.boot_id = pump_status.boot_id AND EXCLUDED.observed_at >= pump_status.observed_at AND EXCLUDED.sequence > pump_status.sequence)
+                    observed_at=EXCLUDED.observed_at,received_at=CURRENT_TIMESTAMP,reported_state=EXCLUDED.reported_state,safety_lockout=EXCLUDED.safety_lockout,state_reason=EXCLUDED.state_reason,
+                    fence_version=EXCLUDED.fence_version,last_fence_ordinal=EXCLUDED.last_fence_ordinal,fence_restart_required=EXCLUDED.fence_restart_required
+                    WHERE (EXCLUDED.boot_id = pump_status.boot_id AND EXCLUDED.observed_at >= pump_status.observed_at AND EXCLUDED.sequence > pump_status.sequence
+                        AND (pump_status.fence_version IS NULL OR (EXCLUDED.fence_version=1 AND EXCLUDED.last_fence_ordinal>=pump_status.last_fence_ordinal
+                          AND (NOT pump_status.fence_restart_required OR EXCLUDED.fence_restart_required))))
                        OR (EXCLUDED.boot_id <> pump_status.boot_id AND EXCLUDED.observed_at > pump_status.observed_at)
-                    """,boot,node.path("sequence").asLong(),Timestamp.from(timestamp),state,node.path("safetyLockout").asBoolean(),reason);
+                    """,boot,node.path("sequence").asLong(),Timestamp.from(timestamp),state,node.path("safetyLockout").asBoolean(),reason,fenceOrdinal==null?null:1,fenceOrdinal,node.path("commandFence").path("restartRequired").asBoolean(false));
             } else if (topic.equals("smartfarm/FARM001/PUMP01/ack")) {
                 if (!node.path("commandId").asText().matches("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")) throw new IllegalArgumentException();
                 UUID command=UUID.fromString(node.path("commandId").asText());
+                if(!fencing.ackMatches(node,command,boot,fenceOrdinal))return;
                 if (!node.path("stage").asText().equals("EXECUTED")) throw new IllegalArgumentException();
                 boolean success=node.path("status").asText().equals("SUCCESS");
                 if (!success && !node.path("status").asText().equals("FAILED")) throw new IllegalArgumentException();

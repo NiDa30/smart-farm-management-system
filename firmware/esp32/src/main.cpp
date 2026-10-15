@@ -11,6 +11,8 @@
 #include "RelaySafety.h"
 #include "FlowInterlock.h"
 #include "PumpStatusPacket.h"
+#include "PumpCommandFence.h"
+#include "FencedPumpPacket.h"
 
 #if __has_include("config.local.h")
 #include "config.local.h"
@@ -72,6 +74,12 @@ static_assert(!FARM_FLOW_INTERLOCK_ENABLED||(FARM_FLOW_PIN!=FARM_RELAY_PIN&&FARM
 static_assert(FARM_WOKWI_CLOCK_TOLERANCE_SECONDS >= 0 && FARM_WOKWI_CLOCK_TOLERANCE_SECONDS <= 10,
   "Wokwi clock tolerance must be between 0 and 10 seconds");
 
+
+#ifndef FARM_PUMP_FENCING_ENABLED
+#define FARM_PUMP_FENCING_ENABLED 0
+#endif
+static_assert(FARM_PUMP_FENCING_ENABLED==0||FARM_PUMP_FENCING_ENABLED==1,"Pump fence opt-in must be 0 or 1");
+
 // Only ENV01 may control PUMP01 in this Wokwi MVP. Default disabled.
 static DHTesp dht;
 static esp_mqtt_client_handle_t client = nullptr;
@@ -79,9 +87,10 @@ static volatile bool connected = false;
 static String ca, certificate, privateKey, uri, telemetryTopic, statusTopic;
 static char bootId[37];
 static RelaySafety relay;
+static PumpCommandFence pumpOrder;
 static bool controlEnabled = false;
 static String commandTopic, pumpStatusTopic, ackTopic, activeCommand;
-struct CommandPacket { char payload[769]; bool retained; };
+struct CommandPacket { char payload[769]; bool retained; size_t size; };
 static QueueHandle_t commandQueue;
 static esp_timer_handle_t relayTimer, flowTimer;
 static FlowInterlock flowGuard({FARM_FLOW_INTERLOCK_ENABLED==1,
@@ -203,6 +212,7 @@ static void publishPumpStatus() {
   base(doc);
   fillPumpStatus(doc,relay.isOn() && !forcedOff?"ON":"OFF",relay.lockout(),stateReason,
     activeCommand.length()?activeCommand.c_str():nullptr);
+  if(FARM_PUMP_FENCING_ENABLED)pumpFence::status(doc,pumpOrder.lastOrdinal(),pumpOrder.restartRequired());
   String payload; serializeJson(doc, payload);
   esp_mqtt_client_publish(client, pumpStatusTopic.c_str(), payload.c_str(), 0, 1, 0);
 }
@@ -221,6 +231,7 @@ static int64_t parseUtc(const char* value) {
   return end && !*end ? (int64_t)mktime(&tm) : 0;
 }
 static void handleCommand(const CommandPacket &packet) {
+  if(strlen(packet.payload)!=packet.size){Serial.println("Command rejected: embedded NUL");return;}
   JsonDocument doc;
   if (deserializeJson(doc, packet.payload)) { Serial.println("Command rejected: JSON"); return; }
   const char* id = doc["commandId"] | "";
@@ -233,7 +244,21 @@ static void handleCommand(const CommandPacket &packet) {
   settleFlowFault();
   checkWaterSupply();
   bool wasOn = relay.isOn();
+  pumpFence::Command fencedCommand;bool hasFence=false;
   if (packet.retained) error = "RETAINED_COMMAND";
+  else if(FARM_PUMP_FENCING_ENABLED){
+    if(!pumpFence::decode(packet.payload,fencedCommand))error="INVALID_COMMAND";
+    else {
+      hasFence=!fencedCommand.legacyOff;
+      if(hasFence){
+        error=pumpOrder.accept(fencedCommand.ordinal,fencedCommand.target,bootId,off);
+        if(error&&strcmp(error,"STALE_ORDINAL")==0){publishPumpStatus();return;}
+      }
+      if(!error)error=relay.apply(id,on?RelaySafety::ON:off?RelaySafety::OFF:RelaySafety::RESET,fencedCommand.seconds,
+        fencedCommand.issued,fencedCommand.expires,time(nullptr),millis(),strcmp(FARM_WIFI_SSID,"Wokwi-GUEST")==0?FARM_WOKWI_CLOCK_TOLERANCE_SECONDS:2);
+      if(!error&&fencedCommand.legacyOff){relay.trip();pumpOrder.legacyEmergencyStop();}
+    }
+  }
   else if (!doc.is<JsonObject>() || doc.size() != (on ? 7 : 6)
     || !doc["schemaVersion"].is<int>() || doc["schemaVersion"].as<int>() != 1
     || strcmp(doc["deviceId"] | "", "PUMP01") != 0 || (!on && !off && !reset)
@@ -290,6 +315,7 @@ static void handleCommand(const CommandPacket &packet) {
   ack["reportedState"] = relay.isOn() && !forcedOff ? "ON" : "OFF";
   ack["safetyLockout"] = relay.lockout();
   if (error) ack["errorCode"] = error; else ack["errorCode"] = nullptr;
+  if(hasFence)pumpFence::ack(ack,fencedCommand.ordinal);
   String payload; serializeJson(ack,payload);
   esp_mqtt_client_publish(client, ackTopic.c_str(), payload.c_str(), 0, 1, 0);
   Serial.printf("COMMAND_EXECUTED action=%s state=%s result=%s\n",(on ? "ON" : off ? "OFF" : reset ? "RESET_LOCKOUT" : "INVALID"),relay.isOn() && !forcedOff ? "ON":"OFF",error ? error:"SUCCESS");
@@ -318,7 +344,7 @@ static void mqttEvent(void *, esp_event_base_t, int32_t id, void *eventData) {
         && event->topic_len == (int)commandTopic.length()
         && strncmp(event->topic, commandTopic.c_str(), event->topic_len)==0) {
       CommandPacket packet = {};
-      memcpy(packet.payload,event->data,event->data_len); packet.retained = event->retain;
+      memcpy(packet.payload,event->data,event->data_len); packet.retained = event->retain; packet.size=event->data_len;
       if (xQueueSend(commandQueue,&packet,0)!=pdTRUE) {
         portENTER_CRITICAL(&relayMux); controlFault=true; portEXIT_CRITICAL(&relayMux);
         forceRelayOff(nullptr);

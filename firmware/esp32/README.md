@@ -95,3 +95,16 @@ Existing private configs default disabled if new macros are absent. Enable
 flow only alongside the reservoir interlock, rebuild and merge locally.
 No cloud status capability proves enablement/calibration; live acceptance is
 pending. This prototype forces GPIO OFF, not proof of physical pump/water state.
+
+## Opt-in PUMP01 MQTT boot/ordinal fence
+
+New config FARM_PUMP_FENCING_ENABLED defaults0, including existing private
+configs without the define. Enable1 together with backend
+SMARTFARM_PUMP_FENCING_ENABLED=true/controltrue, rebuild app/FS/merge and
+reboot. Same ENV01 cert/client/topic, no new wiring. ON/RESET require target
+boot and increasing ordinal; duplicate/stale commands publish status only.
+Legacy OFF remains accepted but closes/locks until device reboot. This is
+not HTTP intent ordering, pump ownership, NVS or multi-zone actuation.
+[Chapter34](../../docs/book/CHAPTER_34_PUMP_COMMAND_FENCING.md) includes Windows
+steps and six live cases still unrun. Do not reuse public test flash as a
+credentialed device; no key/endpoint was copied during cloud verification.

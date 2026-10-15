@@ -303,3 +303,14 @@ Nếu trạng thái quá hạn chưa dọn, kiểm tra backend và scheduler pre
 không ghi. Test profile cố ý tắt tick, production mặc định bật. Xem
 [chương33](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md) cho lỗi fixture/cleanup và
 ranh giới với PUMP01/VALVE01 độc lập.
+
+## PUMP01 opt-in boot/ordinal V22
+
+ON/reset bị chặn khi firmware/backend chưa cùng bật hoặc status cũ. Sau
+legacy OFF ở firmware mới, restartRequired là latch đến reboot, không dùng
+RESET_LOCKOUT để xóa. Chỉ schema/capability/ordinal đúng không chứng minh
+GPIO hoặc bơm thật. Lệnh pending/ordinal chưa thấy ngoài20 vẫn có thể chặn
+ON sau timeout; chờ status đúng hoặc đối chiếu boot, không tự hạ DB counter.
+Native packet fixture chỉ cập nhật timestamp lúc seed để validate receive;
+không làm mới cho web trông online. [Chương34](CHAPTER_34_PUMP_COMMAND_FENCING.md)
+ghi cả lỗi compile/test/selector và cách giải quyết.

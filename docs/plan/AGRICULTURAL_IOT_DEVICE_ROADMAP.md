@@ -692,3 +692,14 @@ van→bơm. Không hoàn tất coordinator A3; cần chống lệnh muộn/boot 
 ngăn manual/rule tranh bơm, mapping nhiều van/feedback và interlock trước
 khi nối dispatch. [Chương33](../book/CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md),
 Windows5ca Chưa chạy.
+
+## Cập nhật 15/10/2026 — bảo vệ MQTT PUMP01 V22
+
+Thêm opt-in boot/ordinal/reservation DB, ACK/status validation và legacy OFF
+latch đến reboot. Mặc định legacy; không IAM/Thing/cert/wiring mới.247backend/
+6pump browser/12queue browser/17contracts/native/public firmware default và
+opt-in/lintbuild/full-app native status+restart đạt; queue V21→22 giữ4lượt.
+6ca Windows/AWS/Wokwi Chưa chạy. Đây là chống MQTT cũ, chưa HTTP identity/
+intent fence hoặc pump lease/loại trừ manual-rule/sequence nhiều van. Queue
+vẫn PREVIEW_ONLY, coordinator A3 chưa hoàn tất.
+[Chương34](../book/CHAPTER_34_PUMP_COMMAND_FENCING.md).
