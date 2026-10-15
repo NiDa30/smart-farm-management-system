@@ -1,0 +1,45 @@
+import React,{useEffect,useRef,useState} from 'react';
+import {parseZones,type ZoneSnapshot} from '../zones/zoneApi';
+import {parseQueue,parseQueueItem,queueLabels,type QueueItem,type QueueSnapshot} from './queueApi';
+const API='/api/v1/irrigation-queue';
+export function IrrigationQueuePanel({onBack}:{onBack?:()=>void}) {
+ const [data,setData]=useState<QueueSnapshot|null>(null),[zones,setZones]=useState<ZoneSnapshot|null>(null),[zone,setZone]=useState(''),[seconds,setSeconds]=useState(5);
+ const [busy,setBusy]=useState(false),[epoch,setEpoch]=useState(0),[error,setError]=useState(''),[message,setMessage]=useState(''),[unknown,setUnknown]=useState<string|null>(null),[,redraw]=useState(0);
+ const mounted=useRef(true),flight=useRef(false),mutation=useRef<AbortController|null>(null),clock=useRef({floor:0,at:0,received:0,responseAt:0});
+ useEffect(()=>{mounted.current=true;const timer=setInterval(()=>redraw(v=>v+1),500);return()=>{mounted.current=false;mutation.current?.abort();clearInterval(timer);};},[]);
+ useEffect(()=>{if(busy)return;let alive=true,running=false;let current:AbortController|null=null;
+  async function load(){if(running)return;running=true;const abort=new AbortController();current=abort;const started=performance.now(),timeout=setTimeout(()=>abort.abort(),7000);try{
+   const [r,z]=await Promise.all([fetch(API,{signal:abort.signal,cache:'no-store'}),fetch('/api/v1/irrigation-zones',{signal:abort.signal,cache:'no-store'})]);if(!r.ok||!z.ok)throw new Error();
+   const parsed=parseQueue(await r.json()),views=parseZones(await z.json());if(!alive||flight.current)return;
+   const now=performance.now(),previous=clock.current;clock.current={floor:Math.max(Date.parse(parsed.asOf)+now-started,previous.floor+Math.max(0,now-previous.at)),at:now,received:now,responseAt:now};
+   setData(parsed);setZones(views);setError('');
+  }catch{if(alive)setError('Không đọc được hàng chờ. Dữ liệu đang hiển thị có thể cũ; chưa cho phép thay đổi.');}finally{clearTimeout(timeout);running=false;}}
+  void load();const timer=setInterval(()=>void load(),2000);return()=>{alive=false;current?.abort();clearInterval(timer);};
+ },[busy,epoch]);
+ const estimatedNow=clock.current.floor+Math.max(0,performance.now()-clock.current.at),fresh=!!data&&!error&&performance.now()-clock.current.received<10000&&estimatedNow-Date.parse(data.asOf)<10000;
+ async function work(id:string,path:string,body:unknown,enqueue=false){if(flight.current)return;flight.current=true;clock.current.received=Number.NEGATIVE_INFINITY;setBusy(true);setMessage('');const abort=new AbortController();mutation.current=abort;const timer=setTimeout(()=>abort.abort(),7000);
+  try{const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:abort.signal});if([400,404,409].includes(r.status)){if(mounted.current)setMessage('Yêu cầu chưa được áp dụng. Đọc lại phiên bản, thứ tự và hạn chờ.');return;}
+   if(r.status!==(enqueue?201:200))throw new Error();const item=parseQueueItem(await r.json());if(item.requestId!==id||enqueue&&(item.zoneId!==(body as {zoneId:string}).zoneId||item.zoneRevision!==(body as {zoneRevision:number}).zoneRevision||item.durationSeconds!==(body as {durationSeconds:number}).durationSeconds))throw new Error();if(mounted.current){setUnknown(null);setMessage('Đã lưu: '+queueLabels[item.state]+'. Chỉ là diễn tập, không gửi lệnh thiết bị.');}
+  }catch{if(mounted.current){setUnknown(id);setMessage('Chưa rõ kết quả lưu. Đọc theo mã yêu cầu; không tự gửi lại.');}}finally{clearTimeout(timer);flight.current=false;if(mounted.current){setBusy(false);setEpoch(v=>v+1);}}
+ }
+ async function readUnknown(){if(!unknown||flight.current)return;flight.current=true;clock.current.received=Number.NEGATIVE_INFINITY;setBusy(true);const abort=new AbortController();mutation.current=abort;const timer=setTimeout(()=>abort.abort(),7000);try{const r=await fetch(API+'/requests/'+unknown,{signal:abort.signal,cache:'no-store'});if(!r.ok)throw new Error();const item=parseQueueItem(await r.json());if(item.requestId!==unknown)throw new Error();if(mounted.current){setUnknown(null);setMessage('Trạng thái đã lưu: '+queueLabels[item.state]+'. Không phát lại yêu cầu.');}}catch{if(mounted.current)setMessage('Chưa đối chiếu được. Giữ mã yêu cầu để đọc lại; không tự gửi lại.');}finally{clearTimeout(timer);flight.current=false;if(mounted.current){setBusy(false);setEpoch(v=>v+1);}}}
+ function enqueue(){if(!data||!selected)return;const id=crypto.randomUUID();void work(id,'/requests',{requestId:id,zoneId:zone,zoneRevision:selected.config.revision,durationSeconds:seconds,requestedAt:new Date(Date.parse(data.asOf)+Math.max(0,performance.now()-clock.current.responseAt)).toISOString()},true);}
+ const selected=zones?.zones.find(v=>v.config.zoneId===zone),canWrite=fresh&&!busy&&!unknown;
+ function row(item:QueueItem){return <li key={item.requestId} className="border rounded p-3 space-y-1"><p>#{item.ticket} · {item.zoneSnapshot.name} ({item.zoneId}) · {item.durationSeconds} giây · <strong>{queueLabels[item.state]}</strong></p><p className="text-xs text-slate-600">Phiên bản vùng {item.zoneRevision} · Mã {item.requestId}</p>{item.reason==='BACKEND_RESTARTED'&&<p>Backend khởi động lại; không tiếp tục lượt cũ.</p>}{item.state==='QUEUED'&&<p>Hạn chờ: {new Date(item.expiresAt).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}</p>}{item.state==='REHEARSING'&&<p>Kết thúc dự kiến: {new Date(item.plannedEndAt!).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}. Chờ backend xác nhận kết quả diễn tập.</p>}{['QUEUED','REHEARSING'].includes(item.state)&&<button className="underline" disabled={!canWrite} onClick={()=>void work(item.requestId,'/requests/'+item.requestId+'/cancel',{revision:data!.revision})}>Hủy lượt #{item.ticket}</button>}</li>;}
+ const head=data?.waiting[0],headValid=!!head&&Date.parse(head.expiresAt)>estimatedNow&&zones?.zones.some(z=>z.config.zoneId===head.zoneId&&z.config.revision===head.zoneRevision&&z.config.expectedSource==='SIMULATOR');
+ return <section aria-label="Hàng chờ tưới diễn tập" className="max-w-5xl mx-auto space-y-4">
+  {onBack&&<button className="underline" onClick={onBack} disabled={busy}>Quay lại điều khiển</button>}
+  <h1 className="text-xl font-bold">Hàng chờ tưới nhiều vùng</h1><p className="bg-amber-50 rounded p-3">Chế độ diễn tập một bơm chung. Chỉ mô phỏng thứ tự và thời gian; không gửi lệnh MQTT, không bật bơm hoặc van trên simulator. Kết quả “Đã diễn tập” không chứng minh đã tưới.</p>
+  {error&&<p role="alert">{error}</p>}{data&&!fresh&&!error&&<p role="alert">Dữ liệu hàng chờ đã cũ. Đọc lại trước khi thay đổi.</p>}{message&&<p role="status">{message}</p>}
+  {unknown&&<p>Yêu cầu chưa đối chiếu: {unknown} <button className="underline" disabled={busy} onClick={()=>void readUnknown()}>Đọc kết quả theo mã</button></p>}
+  <div className="border rounded bg-white p-4 space-y-3"><label>Vùng mô phỏng<select aria-label="Vùng cho hàng chờ" className="border rounded p-2 ml-2" value={zone} disabled={busy} onChange={e=>setZone(e.target.value)}><option value="">Chọn vùng</option>{zones?.zones.filter(v=>v.config.expectedSource==='SIMULATOR').map(v=><option key={v.config.zoneId} value={v.config.zoneId}>{v.config.name} · {v.config.zoneId}</option>)}</select></label>
+   <label className="block">Thời gian diễn tập (giây)<input aria-label="Thời gian diễn tập" type="number" min={1} max={30} step={1} className="border rounded p-2 ml-2" value={Number.isFinite(seconds)?seconds:''} disabled={busy} onChange={e=>setSeconds(e.target.valueAsNumber)}/></label>
+   <button className="border rounded p-2 disabled:opacity-40" disabled={!canWrite||!selected||selected.config.expectedSource!=='SIMULATOR'||!Number.isInteger(seconds)||seconds<1||seconds>30||!!data&&data.waiting.length+(data.active?1:0)>=50} onClick={enqueue}>Thêm lượt chờ</button>
+   <p className="text-sm">Tối đa 50 lượt chưa kết thúc; mỗi lượt chờ tối đa 5 phút. Không cần đất khô để diễn tập. Sửa cấu hình vùng làm lượt cũ mất hiệu lực.</p>
+  </div>
+  <button className="underline" disabled={busy} onClick={()=>setEpoch(v=>v+1)}>Đọc lại hàng chờ</button>
+  {data&&<><h2 className="font-bold">Lượt đang diễn tập</h2><ul>{data.active?row(data.active):<li>Chưa có lượt đang diễn tập.</li>}</ul>
+   <h2 className="font-bold">Đang chờ · {data.waiting.length}</h2><button className="border rounded p-2 disabled:opacity-40" disabled={!canWrite||!!data.active||!headValid} onClick={()=>head&&void work(head.requestId,'/requests/'+head.requestId+'/rehearse',{revision:data.revision})}>Diễn tập lượt đầu hàng</button><p className="text-sm">Lượt sau chỉ bắt đầu khi bấm nút. Không tự chạy tiếp sau hết giờ, reconnect hoặc restart backend.</p><ul className="space-y-2">{data.waiting.map(row)}</ul>
+   <h2 className="font-bold">20 lượt kết thúc gần nhất</h2><ul className="space-y-2">{data.history.map(row)}</ul></>}
+ </section>;
+}

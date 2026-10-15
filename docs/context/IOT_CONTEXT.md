@@ -601,3 +601,12 @@ Khi triển khai ngoài trang trại thật:
    - Không bao giờ hardcode một chuỗi cố định làm MQTT `clientId`. Mỗi tab trình duyệt hoặc node ESP32 phải tự sinh hậu tố ngẫu nhiên (ví dụ: `web-client-${Math.random().toString(16).slice(2)}`).
 4. **Quy tắc an toàn cơ điện (Safety Rules)**:
    - Các lệnh điều khiển chấp hành tác động tới máy bơm áp lực lớn bắt buộc phải có Modal xác nhận xác nhận an toàn (Confirmation Dialog) và kiểm tra trạng thái van hồi nước.
+
+## Bằng chứng bổ sung 15/10/2026 — queue V21
+
+Hàng chờ tưới nhiều vùng chỉ PREVIEW_ONLY: FIFO, snapshot phiên bản vùng,
+idempotency/TTL/cancel, một suất diễn tập và restart interrupted. Không
+MQTT/lease PUMP01 hoặc điều khiển van thật.229backend/12browser/5unit mới/
+9valve browser/lintbuild và full-app PostgreSQL restart đạt; Windows5ca Chưa
+chạy. [Chương33](../book/CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md) là bằng chứng
+hiện hành; chưa coi group coordinator A3 hoàn tất.

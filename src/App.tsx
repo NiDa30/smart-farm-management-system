@@ -55,6 +55,7 @@ import { DeviceMonitor } from './modules/iot/devices/DeviceMonitor';
 import { SensorRealtime } from './modules/iot/realtime/SensorRealtime';
 import { HistoricalData } from './modules/iot/history/HistoricalData';
 import { ValveDemoPanel } from './modules/iot/irrigation/ValveDemoPanel';
+import { IrrigationQueuePanel } from './modules/iot/irrigation/IrrigationQueuePanel';
 import { PumpControl } from './modules/iot/control/PumpControl';
 import { DigitalTwinView } from './modules/iot/digital-twin/DigitalTwinView';
 import { AutomationManager } from './modules/iot/automation/AutomationManager';
@@ -269,8 +270,9 @@ const AppContent: React.FC = () => {
       return <HistoricalData />;
     }
     if (currentRoute==='/iot/control/valve-demo')return <ValveDemoPanel onBack={()=>navigate('/iot/control')}/>;
+    if (currentRoute==='/iot/control/queue')return <IrrigationQueuePanel onBack={()=>navigate('/iot/control')}/>;
     if (currentRoute.startsWith('/iot/control')) {
-      return <PumpControl onValveDemo={()=>navigate('/iot/control/valve-demo')}/>;
+      return <PumpControl onValveDemo={()=>navigate('/iot/control/valve-demo')} onQueue={()=>navigate('/iot/control/queue')}/>;
     }
     if (currentRoute.startsWith('/iot/digital-twin')) {
       return <DigitalTwinView />;

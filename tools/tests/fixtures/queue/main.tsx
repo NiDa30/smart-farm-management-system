@@ -1,0 +1,1 @@
+import React from 'react';import {createRoot} from 'react-dom/client';import {IrrigationQueuePanel} from '../../../../src/modules/iot/irrigation/IrrigationQueuePanel';createRoot(document.getElementById('root')!).render(<IrrigationQueuePanel/>);

@@ -17,7 +17,8 @@
     "test:alerts": "playwright test --config playwright.alerts.config.ts",
     "test:nodes": "playwright test --config playwright.nodes.config.ts",
     "test:volume": "playwright test --config playwright.volume.config.ts",
-    "test:valve": "playwright test --config playwright.valve.config.ts"
+    "test:valve": "playwright test --config playwright.valve.config.ts",
+    "test:queue": "playwright test --config playwright.queue.config.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

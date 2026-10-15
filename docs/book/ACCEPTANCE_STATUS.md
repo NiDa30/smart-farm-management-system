@@ -154,3 +154,12 @@ GPIO và run history. Đối chiếu riêng ca đất khô, đất đủ ẩm/t�
 khoảng nghỉ, thao tác thủ công, thiếu ACK và restart. Kịch bản này là danh sách
 cần xác nhận, không phải kết quả đã đạt.
 Ghi kết quả vào [mẫu nhật ký Wokwi](WOKWI_AUTOMATION_TEST_LOG.md); các ca chưa có bằng chứng chi tiết vẫn để “Chưa chạy”.
+
+## Hàng chờ V21 — 15/10/2026
+
+229backend/12queue browser/5unit/9valve browser/lintbuild đạt, không skip.
+Full-app PostgreSQL + restart tiến trình thật giữ REHEARSED/INTERRUPTED/
+CANCELLED, không tự resume; pump/valve commands và watering_run0. Migration
+V20→V21 giữ fixture van. Đây là PREVIEW_ONLY, chưa lease hoặc điều phối bơm
+van thật. Windows5ca Chưa chạy, không có AWS/Wokwi/GPIO mới.
+[Chương33](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md).

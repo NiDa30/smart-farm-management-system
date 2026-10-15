@@ -946,3 +946,14 @@ Sau điều chỉnh IAM, lệnh CLI attach-policy không lỗi. Lần chạy scr
 - [Chương32](CHAPTER_32_IRRIGATION_VALVE_DEMO.md),
   [bàn giao](../implementation/LOCAL_IRRIGATION_VALVE_REPORT.md).
   Sáu ca AWS/Wokwi mới Chưa chạy; coordinator/van thật/rule SOIL/NVS còn sau.
+
+## 15/10/2026 — FIFO nhiều vùng, chỉ diễn tập
+
+V21 thêm queue ledger/version/zone snapshot, FIFO một suất DB-locked,50lượt/
+TTL5phút,1–30giây, hủy/idempotency/lookup ngoài20; restart interrupted không
+resume. UI vào từ Actuator, không gửi MQTT, không sửa rule/cert/firmware.
+229backend/12queue browser/5unit/9valve browser/lintbuild đạt. Full-app thật
+qua proxy/PostgreSQL giữ lịch sử sau restart process; command/run0. Nâng
+V20→V21 giữ dữ liệu fixture van. Lỗi singleton rỗng và FK fixture sót đã xử
+lý, ghi tại [chương33](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md). Windows5ca
+Chưa chạy; coordinator phần cứng/lease PUMP01 vẫn chưa làm.

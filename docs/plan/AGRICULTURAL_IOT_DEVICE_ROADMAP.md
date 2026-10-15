@@ -680,3 +680,15 @@ helper chỉ render policy.212 backend/9 browser/2 unit/native/public ESP32/
 buildfs/merge/full-app đạt; sáu ca AWS/Wokwi mới Chưa chạy. Đọc
 [chương32](../book/CHAPTER_32_IRRIGATION_VALVE_DEMO.md). A3 mới có prototype
 đầu ra một van; chưa điều phối bơm hoặc mở rộng bốn dãy.
+
+## Cập nhật 15/10/2026 — A3 hàng chờ diễn tập V21
+
+Có FIFO nhiều vùng SIMULATOR, snapshot/revision, TTL5phút/cap50, hủy và một
+suất diễn tập1–30giây. Restart interrupted không resume, lượt sau cần bấm.
+229backend/12queue browser/5unit/9valve browser/lintbuild/full-app PostgreSQL
+restart đạt; migration V20→V21 giữ dữ liệu van, không MQTT/command/run.
+Đây là nền kiểm tra hàng chờ **PREVIEW_ONLY**, chưa lease PUMP01 hay chuỗi
+van→bơm. Không hoàn tất coordinator A3; cần chống lệnh muộn/boot ở PUMP01,
+ngăn manual/rule tranh bơm, mapping nhiều van/feedback và interlock trước
+khi nối dispatch. [Chương33](../book/CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md),
+Windows5ca Chưa chạy.

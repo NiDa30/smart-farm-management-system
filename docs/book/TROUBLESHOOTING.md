@@ -292,3 +292,14 @@ Nếu API lặp lại cùng asOf, polling không được đặt lại tuổi s�
 tra cuối phát hiện ca expiry8pass/1fail; UI đã dùng mốc server cộng monotonic
 không lùi qua polling, cuối9/9 đạt. Ledger mới hơn status hoặc HTTP chưa rõ
 không giữ khẳng định CLOSED từ trước lệnh. Không tăng thời hạn mẫu để chữa.
+
+## Hàng chờ tưới chỉ diễn tập V21
+
+Queue không bật đèn simulator là đúng: PREVIEW_ONLY chưa dispatch thiết bị.
+Lượt tiếp không tự chạy, phải bấm đầu hàng. 409: đọc lại revision/thứ tự/TTL
+và cấu hình vùng SIMULATOR; không tự retry bằng UUID mới khi HTTP chưa rõ.
+Restart làm active INTERRUPTED, không coi thời gian trôi qua là đã tưới.
+Nếu trạng thái quá hạn chưa dọn, kiểm tra backend và scheduler preview; GET
+không ghi. Test profile cố ý tắt tick, production mặc định bật. Xem
+[chương33](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md) cho lỗi fixture/cleanup và
+ranh giới với PUMP01/VALVE01 độc lập.

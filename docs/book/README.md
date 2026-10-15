@@ -76,3 +76,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Ước tính lượng nước FLOW và độ phủ dữ liệu](CHAPTER_31_WATER_VOLUME.md)
 
 - [Controller riêng cho một van mô phỏng](CHAPTER_32_IRRIGATION_VALVE_DEMO.md)
+
+- [Hàng chờ tưới nhiều vùng ở chế độ diễn tập](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md)

@@ -263,3 +263,11 @@ zone, IRRIGATION_DEMO_ENABLED1/SIMULATOR1, build/buildfs/merge và diagram mới
 Backend dùng SMARTFARM_IRRIGATION_DEMO_ENABLED=true độc lập cờ PUMP01.
 Helper render_irrigation_policies.py chỉ render, không provision AWS. Làm theo
 [chương32](CHAPTER_32_IRRIGATION_VALVE_DEMO.md); sáu ca live mới Chưa chạy.
+
+## Hàng chờ tưới diễn tập V21 — 15/10/2026
+
+Pull nhánh, restart backend/frontend để V21 chạy; giữ DB/volume. Vào Điều
+khiển Actuator → Mở hàng chờ tưới diễn tập. Cần vùng SIMULATOR đã gán ba kênh,
+không cần gateway/AWS/firmware mới. Thêm lượt1–30giây, bấm diễn tập đầu hàng;
+không tự chạy lượt sau và không bật LED/bơm/van. Restart ngắt lượt đang diễn
+tập. Xem [chương33](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md);5ca Windows chưa chạy.
