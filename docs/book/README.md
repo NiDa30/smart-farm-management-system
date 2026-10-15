@@ -88,3 +88,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Phản hồi vị trí van bằng hai công tắc độc lập](CHAPTER_37_VALVE_POSITION_FEEDBACK.md)
 
 - [Nhánh tưới: vùng, van dự kiến và trạm nước](CHAPTER_38_IRRIGATION_CIRCUITS.md)
+
+- [Nhận phản hồi riêng cho từng van giám sát](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md)

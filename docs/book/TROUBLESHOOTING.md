@@ -379,3 +379,19 @@ duyệt lại; không sửa record cũ để đổi van. [Chương38](CHAPTER_38
 Lưu nhánh chỉ tạo cấu hình. Firmware/transport hiện hữu chỉ hỗ trợ demo
 IRRIGATION01/VALVE01, không dùng phản hồi đó cho VALVE02/03. Thêm nhánh
 không tạo Thing/cert, không bổ sung wiring/simulator hoặc bật bơm.
+
+
+## V27: van02+ chưa có trạng thái
+
+Kiểm tra monitor firmware và SMARTFARM_IRRIGATION_MONITOR_ENABLED=true trên
+backend, MQTT đang kết nối, policy có đúng topic status từng van. Backend
+subscribe danh sách ở startup/reconnect: thêm van mới cần restart backend.
+Nhánh phải SIMULATOR và CURRENT; topic, controller/van/circuit/zone/revision
+phải khớp. Một board giám sát hiện chỉ một van; hai board không dùng chung
+MQTT client/controllerID. Không dùng certificate ENV01 để nhân bản board.
+
+CONFIG_CHANGED cần cập nhật revision trong private config và boot mới; chỉ
+đổi timestamp/sequence không giải quyết ánh xạ cũ. Monitor fault không có
+reset command; sửa công tắc và reboot. Mẫu cũ vẫn được lưu nhưng không được
+coi là CLOSED mới. DEVICE_FAULT phải hiển thị lỗi dù vị trí CLOSED.
+[Chương39](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md).

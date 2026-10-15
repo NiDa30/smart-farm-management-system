@@ -30,6 +30,7 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     private final boolean controlsEnabled;
     private final boolean irrigationEnabled;
     private final vn.smartfarm.iot.irrigation.IrrigationDemo irrigation;
+    private final vn.smartfarm.iot.irrigation.CircuitValveMonitor valveMonitor;
     private volatile boolean irrigationReady;
     @Override public boolean irrigationConnected(){return irrigationReady && connection!=null;}
     @Override public void publishIrrigation(byte[] payload)throws Exception {
@@ -38,6 +39,8 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     }
     private final ThreadPoolExecutor controlWorker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(32), runnable -> new Thread(runnable, "pump-control"));
+    private final ThreadPoolExecutor valveMonitorWorker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
+        new ArrayBlockingQueue<>(64), runnable -> new Thread(runnable, "valve-monitor-storage"));
     private MqttClientConnection connection;
     private volatile boolean controlReady, initialized, stopping;
     @Override public boolean controlConnected() { return controlReady && connection != null; }
@@ -50,9 +53,10 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     public TelemetryIngestion(vn.smartfarm.iot.nodes.TelemetryRouter router, vn.smartfarm.iot.control.PumpService pump,
         vn.smartfarm.iot.monitoring.MqttHealth health,
         vn.smartfarm.iot.irrigation.IrrigationDemo irrigation,
+        vn.smartfarm.iot.irrigation.CircuitValveMonitor valveMonitor,
         @org.springframework.beans.factory.annotation.Value("${smartfarm.irrigation.demo-enabled:false}") boolean irrigationEnabled,
         @org.springframework.beans.factory.annotation.Value("${smartfarm.control.enabled:false}") boolean controlsEnabled) {
-        this.irrigation=irrigation;this.irrigationEnabled=irrigationEnabled;this.health=health; this.router = router; this.pump=pump; this.controlsEnabled=controlsEnabled;
+        this.irrigation=irrigation;this.valveMonitor=valveMonitor;this.irrigationEnabled=irrigationEnabled;this.health=health; this.router = router; this.pump=pump; this.controlsEnabled=controlsEnabled;
     }
 
     @Override
@@ -128,6 +132,14 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                 catch(RejectedExecutionException e){LOG.error("Irrigation queue full; ACK/status not persisted");}
             }).get(10,TimeUnit.SECONDS);
         }
+        for(String topic:valveMonitor.topics()){
+            connection.subscribe(topic,QualityOfService.AT_LEAST_ONCE,message->{
+                if(message.getRetain()||message.getPayload().length>4096)return;
+                byte[] copy=Arrays.copyOf(message.getPayload(),message.getPayload().length);
+                try{valveMonitorWorker.execute(()->{try{valveMonitor.receive(message.getTopic(),copy,false);health.messageProcessed();}catch(RuntimeException e){LOG.warn("Valve monitor message rejected or not persisted");}});}
+                catch(RejectedExecutionException e){LOG.error("Valve monitor storage queue full");}
+            }).get(10,TimeUnit.SECONDS);
+        }
         irrigationReady=irrigationEnabled;
         health.subscriptionsReady(healthVersion);
         controlReady=controlsEnabled;
@@ -157,6 +169,8 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                 finally { connection.close(); }
             }
         } finally {
+            valveMonitorWorker.shutdown();
+            if (!valveMonitorWorker.awaitTermination(5,TimeUnit.SECONDS)) valveMonitorWorker.shutdownNow();
             controlWorker.shutdown();
             if (!controlWorker.awaitTermination(5,TimeUnit.SECONDS)) controlWorker.shutdownNow();
             worker.shutdown();

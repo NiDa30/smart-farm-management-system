@@ -14,4 +14,13 @@ class PoliciesTest(unittest.TestCase):
    with self.assertRaises(ValueError):node_id(v)
  def test_invalid_account_rejected(self):
   with self.assertRaises(ValueError):policies('ap-southeast-1','bad')
+ def test_monitor_can_only_publish_own_status(self):
+  p=policies('ap-southeast-1','123456789012','IRRIGATION02','VALVE03',True);s=str(p)
+  self.assertNotIn('*',s);self.assertNotIn('RetainPublish',s);self.assertNotIn('/command',s);self.assertNotIn('/ack',s);self.assertNotIn('PUMP01',s)
+  self.assertEqual(['iot:Connect','iot:Publish'],[x['Action'] for x in p['devicePolicy']['Statement']]);self.assertEqual(['iot:Subscribe','iot:Receive'],[x['Action'] for x in p['backendAdditionalIdentityPolicy']['Statement']])
+  self.assertIn('client/IRRIGATION02',s);self.assertIn('topic/smartfarm/FARM001/VALVE03/status',s)
+ def test_monitor_ids_do_not_expand_legacy_command_rights(self):
+  for controller,valve in [('IRRIGATION01','VALVE02'),('IRRIGATION02','VALVE01'),('IRRIGATION00','VALVE02'),('IRRIGATION02','VALVE100'),('IRRIGATION02','VALVE*')]:
+   with self.assertRaises(ValueError):policies('ap-southeast-1','123456789012',controller,valve,True)
+  with self.assertRaises(ValueError):policies('ap-southeast-1','123456789012','IRRIGATION02','VALVE02')
 if __name__=='__main__':unittest.main()

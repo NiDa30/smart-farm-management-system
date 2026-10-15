@@ -157,3 +157,10 @@ xuyên van–bơm và chính sách nước/flow proof. Tự tưới từ vùng S
 bơm còn sau. V26 không đánh dấu coordinator A3 hoàn tất.
 
 Xem [báo cáo V26](../implementation/LOCAL_IRRIGATION_CIRCUITS_REPORT.md).
+
+
+## Bổ sung sau V26
+
+[Chương39](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md) thêm profile chỉ giám sát cho
+van02–99 và dữ liệu quan sát riêng theo nhánh. Một board hiện báo một van;
+chưa mở quyền điều khiển nhiều van hoặc nối hàng chờ vào pump owner.

@@ -75,3 +75,5 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 37. [Phản hồi vị trí van](CHAPTER_37_VALVE_POSITION_FEEDBACK.md) — hai end stop độc lập, debounce/travel/fault, GPIO khác vị trí và nước.
 
 38. [Nhánh tưới và bản chụp hàng chờ](CHAPTER_38_IRRIGATION_CIRCUITS.md) — ánh xạ nhiều nhánh, revision, độc quyền và cấu hình chưa dispatch.
+
+39. [Van giám sát theo nhánh](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md) — ID riêng, packet/version/boot, GPIO tắt và dữ liệu không bị mượn giữa van.

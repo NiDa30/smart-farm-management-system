@@ -15,13 +15,13 @@ import vn.smartfarm.iot.nodes.*;
 public class IrrigationCircuits {
  public record Config(String circuitId,String name,String zoneId,int zoneRevision,String controllerId,String valveId,String pumpId,String waterNodeId,String lowChannelId,String flowChannelId,String expectedSource,int revision) {}
  public record Signal(String state,NodeInventory.Reading latest) {}
- public record View(Config config,String configurationState,Signal low,Signal flow,String valveState) {}
- public record Snapshot(String mode,boolean dispatchAvailable,Instant asOf,long revision,List<View> circuits) {}
- private final JdbcTemplate jdbc;private final ObjectMapper mapper;private final NodeInventory nodes;private final IrrigationDemo valve;
- public IrrigationCircuits(JdbcTemplate jdbc,ObjectMapper mapper,NodeInventory nodes,IrrigationDemo valve){this.jdbc=jdbc;this.mapper=mapper;this.nodes=nodes;this.valve=valve;}
+ public record View(Config config,String configurationState,Signal low,Signal flow,String valveState,CircuitValveMonitor.Observation valveObservation) {}
+ public record Snapshot(String mode,boolean dispatchAvailable,boolean valveMonitorEnabled,Instant asOf,long revision,List<View> circuits) {}
+ private final JdbcTemplate jdbc;private final ObjectMapper mapper;private final NodeInventory nodes;private final IrrigationDemo valve;private final CircuitValveMonitor monitor;
+ public IrrigationCircuits(JdbcTemplate jdbc,ObjectMapper mapper,NodeInventory nodes,IrrigationDemo valve,CircuitValveMonitor monitor){this.jdbc=jdbc;this.mapper=mapper;this.nodes=nodes;this.valve=valve;this.monitor=monitor;}
  static Config map(java.sql.ResultSet r,int n)throws java.sql.SQLException{return new Config(r.getString("circuit_id"),r.getString("name"),r.getString("zone_id"),r.getInt("zone_revision"),r.getString("controller_id"),r.getString("valve_id"),r.getString("pump_id"),r.getString("water_node_id"),r.getString("low_channel_id"),r.getString("flow_channel_id"),r.getString("expected_source"),r.getInt("revision"));}
  @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
- public Snapshot snapshot(){var inventory=nodes.snapshot();var observed=valve.snapshot();Instant now=Instant.now();return new Snapshot("CONFIGURATION_ONLY",false,now,jdbc.queryForObject("SELECT revision FROM irrigation_circuit_state WHERE singleton=1",Long.class),jdbc.query("SELECT * FROM irrigation_circuit ORDER BY circuit_id",IrrigationCircuits::map).stream().map(c->view(c,inventory,observed,now)).toList());}
+ public Snapshot snapshot(){var inventory=nodes.snapshot();var observed=valve.snapshot();Instant now=Instant.now();return new Snapshot("CONFIGURATION_ONLY",false,monitor.enabled(),now,jdbc.queryForObject("SELECT revision FROM irrigation_circuit_state WHERE singleton=1",Long.class),jdbc.query("SELECT * FROM irrigation_circuit ORDER BY circuit_id",IrrigationCircuits::map).stream().map(c->view(c,inventory,observed,now)).toList());}
  @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
  public Config find(String id){return jdbc.query("SELECT * FROM irrigation_circuit WHERE circuit_id=?",IrrigationCircuits::map,id).stream().findFirst().orElseThrow(()->bad(HttpStatus.NOT_FOUND,"Circuit not found"));}
  @Transactional
@@ -46,13 +46,14 @@ public class IrrigationCircuits {
  private View view(Config c,NodeInventory.Snapshot inventory,IrrigationDemo.Snapshot observed,Instant now){var node=inventory.nodes().stream().filter(n->n.nodeId().equals(c.waterNodeId())).findFirst();var low=node.flatMap(n->n.channels().stream().filter(ch->ch.channelId().equals(c.lowChannelId())).findFirst()).map(NodeInventory.Channel::latest).orElse(null);var flow=node.flatMap(n->n.channels().stream().filter(ch->ch.channelId().equals(c.flowChannelId())).findFirst()).map(NodeInventory.Channel::latest).orElse(null);String lowState=state(low,c,now),flowState=state(flow,c,now);
   if(lowState.equals("FRESH"))lowState=low.value() instanceof Boolean b?(b?"AVAILABLE":"LOW"):"SENSOR_FAULT";
   if(flowState.equals("FRESH")&&(!(flow.value() instanceof Number n)||!Double.isFinite(n.doubleValue())||n.doubleValue()<0))flowState="SENSOR_FAULT";
-  String valveState="NOT_CONNECTED";var s=observed.latest();if(c.controllerId().equals("IRRIGATION01")&&c.valveId().equals("VALVE01")&&c.expectedSource().equals("SIMULATOR")){
+  String health=configurationState(jdbc,c);var observation=monitor.latest(c.valveId());String valveState=monitor.state(c,observation,now);if(observation!=null&&!health.equals("CURRENT"))valveState="CONFIG_CHANGED";
+  var s=observed.latest();if(c.controllerId().equals("IRRIGATION01")&&c.valveId().equals("VALVE01")&&c.expectedSource().equals("SIMULATOR")){
    if(!c.zoneId().equals(observed.binding().zoneId())||!Objects.equals(c.zoneRevision(),observed.binding().zoneRevision()))valveState="BINDING_MISMATCH";
    else if(s==null||!s.zoneId().equals(c.zoneId()))valveState="NO_STATUS";
    else if(!fresh(s.observedAt(),s.receivedAt(),now))valveState="STALE";
    else if(s.positionFeedback()==null)valveState="UNVERIFIED";
    else valveState=s.positionFeedback().fault()!=null?"FAULT":s.positionFeedback().state();
-  }return new View(c,configurationState(jdbc,c),new Signal(lowState,low),new Signal(flowState,flow),valveState);
+  }return new View(c,health,new Signal(lowState,low),new Signal(flowState,flow),valveState,observation);
  }
  private static boolean fresh(Instant a,Instant b,Instant now){return a.isAfter(now.minusSeconds(15))&&b.isAfter(now.minusSeconds(15))&&!a.isAfter(now.plusSeconds(2))&&!b.isAfter(now.plusSeconds(2));}
  private static String state(NodeInventory.Reading r,Config c,Instant now){if(r==null)return "MISSING";if(r.observedAt().isAfter(now.plusSeconds(2))||r.receivedAt().isAfter(now.plusSeconds(2)))return "CLOCK_SKEW";if(!fresh(r.observedAt(),r.receivedAt(),now))return "STALE";if(!r.quality().equals("VALID")||r.value()==null)return "SENSOR_FAULT";if(!c.expectedSource().equals(r.dataSource()))return "SOURCE_MISMATCH";return "FRESH";}

@@ -1029,3 +1029,20 @@ mới Chưa chạy. Đợt test đầu thấy binding singleton fixture bị sui
 TRUNCATE CASCADE; thêm setup nếu thiếu, không sửa/reset DB demo.
 [Chương38](CHAPTER_38_IRRIGATION_CIRCUITS.md),
 [bàn giao](../implementation/LOCAL_IRRIGATION_CIRCUITS_REPORT.md).
+
+
+## 15/10/2026 — V27 trạng thái riêng cho van02–99
+
+Sau cấu hình nhánh, thêm profile firmware chỉ giám sát, policy render hẹp
+và receiver theo từng van/phiên bản. Sequence/retired boot/capability/fault
+được kiểm tra, không mượn dữ liệu giữa nhánh. Worker riêng không chặn ACK/
+status bơm; GPIO monitor giữ tắt, không thêm command mới.
+333backend/18browser nhánh/16queue browser/5policy/native/public firmware
+default+monitor/emptyFSmerge/lintbuild đạt. Static_assert reject cấu hình
+monitor+control là expected failure. Full-app native→Java/PostgreSQL→web mới
+và cũ sau restart thật, metadata giữ nguyên và V26 rows bảo toàn, command0.
+Fresh thử đầu quá hạn; một heartbeat native mới tăngseq1, không sửa timestamp
+seq0 để qua test. Policy assertion ack nhầm backend được sửa sang /ack.
+Sách [chương39](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md),
+[bàn giao](../implementation/LOCAL_CIRCUIT_VALVE_MONITOR_REPORT.md).
+5ca Windows/Wokwi mới Chưa chạy; chưa coordinator/dispatch queue.

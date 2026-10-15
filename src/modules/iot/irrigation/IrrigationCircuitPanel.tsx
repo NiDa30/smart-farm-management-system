@@ -1,7 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {parseZones,type ZoneSnapshot} from '../zones/zoneApi';
 import {parseNodes,type NodesSnapshot} from '../nodes/nodeApi';
-import {parseCircuit,parseCircuits,sameCircuit,circuitLabels,type CircuitConfig,type CircuitSnapshot} from './circuitApi';
+import {parseCircuit,parseCircuits,sameCircuit,circuitLabels,observedValveState,type CircuitConfig,type CircuitSnapshot} from './circuitApi';
 const API='/api/v1/irrigation-circuits';
 const blank=():CircuitConfig=>({circuitId:'',name:'',zoneId:'',zoneRevision:1,controllerId:'IRRIGATION01',valveId:'VALVE01',pumpId:'PUMP01',waterNodeId:'',lowChannelId:'',flowChannelId:'',expectedSource:'SIMULATOR',revision:1});
 export function IrrigationCircuitPanel({onBack,onQueue}:{onBack?:()=>void;onQueue?:()=>void}) {
@@ -34,7 +34,7 @@ export function IrrigationCircuitPanel({onBack,onQueue}:{onBack?:()=>void;onQueu
  return <section aria-label="Cấu hình nhánh tưới" className="max-w-5xl mx-auto space-y-4">
   <div>{onBack&&<button className="underline mr-4" disabled={busy} onClick={onBack}>Quay lại điều khiển</button>}{onQueue&&<button className="underline" disabled={busy} onClick={onQueue}>Mở hàng chờ diễn tập</button>}</div>
   <h1 className="text-xl font-bold">Nhánh tưới theo vùng và trạm nước</h1>
-  <p className="bg-amber-50 p-3 rounded">Cấu hình nhiều nhánh, dùng chung PUMP01 hoặc trạm nước. Mỗi vùng và mã van chỉ thuộc một nhánh. Mã controller/van mới là dự kiến; chưa tạo thiết bị AWS, chưa có điều khiển nhiều van. Hàng chờ vẫn chỉ diễn tập.</p>
+  <p className="bg-amber-50 p-3 rounded">Cấu hình nhiều nhánh, dùng chung PUMP01 hoặc trạm nước. Mỗi vùng và mã van chỉ thuộc một nhánh. Mã controller/van mới là dự kiến; chưa tạo thiết bị AWS, các van mới có chế độ giám sát riêng. Hàng chờ vẫn chỉ diễn tập.</p>
   {error&&<p role="alert">{error}</p>}{data&&!fresh&&!error&&<p role="alert">Dữ liệu cấu hình đã cũ. Đọc lại trước khi lưu.</p>}{message&&<p role="status">{message}</p>}
   {pending&&<p>Nhánh cần đối chiếu: {pending.config.circuitId} <button className="underline" disabled={busy} onClick={()=>void reconcile()}>Đối chiếu theo mã nhánh</button></p>}
   <button className="underline mr-4" disabled={locked} onClick={()=>{setForm(blank());setEditing(false);setMessage('');}}>Thêm nhánh mới</button><button className="underline" disabled={busy} onClick={()=>setEpoch(v=>v+1)}>Đọc lại cấu hình nhánh</button>
@@ -49,7 +49,8 @@ export function IrrigationCircuitPanel({onBack,onQueue}:{onBack?:()=>void;onQueu
    <p>Nguồn theo vùng: {effective.expectedSource} · phiên bản vùng {effective.zoneRevision}{editing?' · phiên bản nhánh '+form.revision:''}</p>
    <button className="border rounded p-2 disabled:opacity-40" type="submit" disabled={locked||!fresh||!valid}>{editing?'Lưu sửa nhánh':'Tạo nhánh'}</button>
   </form>
-  <ul className="space-y-3">{data?.circuits.map(v=><li key={v.config.circuitId} className="border p-4 rounded bg-white"><h2 className="font-bold">{v.config.name} · {v.config.circuitId} · v{v.config.revision}</h2><p>{v.config.zoneId} → {v.config.controllerId}/{v.config.valveId} · {v.config.pumpId} · {v.config.waterNodeId} ({v.config.expectedSource})</p><p>{circuitLabels[v.configurationState]}</p><p>Phao {v.config.lowChannelId}: {fresh&&now-Date.parse(data.asOf)<15000?circuitLabels[v.low.state]:'Cần đọc lại dữ liệu'} · Lưu lượng {v.config.flowChannelId}: {fresh?circuitLabels[v.flow.state]:'Cần đọc lại dữ liệu'}</p><p>Van: {fresh?circuitLabels[v.valveState]:'Cần đọc lại dữ liệu'}. Không suy ra nước đã đi qua nhánh.</p><button className="underline" disabled={locked||!fresh} onClick={()=>edit(v.config)}>Sửa nhánh {v.config.circuitId}</button></li>)}</ul>
-  <p className="text-sm">Chỉ IRRIGATION01/VALVE01 có nguồn phản hồi demo hiện tại. Số lưu lượng 0 khi nghỉ không tự coi là lỗi. Tín hiệu chỉ để khảo sát, chưa phải điều kiện cho phép vận hành.</p>
+  {data&&<p>Giám sát van riêng: {data.valveMonitorEnabled?'Đã bật':'Đang tắt'}. Chỉ hiển thị phản hồi, không gửi lệnh mở van.</p>}
+  <ul className="space-y-3">{data?.circuits.map(v=><li key={v.config.circuitId} className="border p-4 rounded bg-white"><h2 className="font-bold">{v.config.name} · {v.config.circuitId} · v{v.config.revision}</h2><p>{v.config.zoneId} → {v.config.controllerId}/{v.config.valveId} · {v.config.pumpId} · {v.config.waterNodeId} ({v.config.expectedSource})</p><p>{circuitLabels[v.configurationState]}</p><p>Phao {v.config.lowChannelId}: {fresh&&now-Date.parse(data.asOf)<15000?circuitLabels[v.low.state]:'Cần đọc lại dữ liệu'} · Lưu lượng {v.config.flowChannelId}: {fresh?circuitLabels[v.flow.state]:'Cần đọc lại dữ liệu'}</p><p>Van: {observedValveState(v,now,fresh)}. Không suy ra nước đã đi qua nhánh.</p>{v.valveObservation&&<p className="text-sm">Quan sát riêng: {v.valveObservation.controllerId}/{v.valveObservation.actuatorId} · Mô phỏng · GPIO trong mẫu: Tắt{v.valveObservation.reason==='DEVICE_FAULT'?' · Thiết bị báo lỗi':''} · Báo lúc {new Date(v.valveObservation.observedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}{v.valveObservation.positionFeedback?.fault&&` · Lỗi lưu: ${v.valveObservation.positionFeedback.fault}`}</p>}<button className="underline" disabled={locked||!fresh} onClick={()=>edit(v.config)}>Sửa nhánh {v.config.circuitId}</button></li>)}</ul>
+  <p className="text-sm">IRRIGATION01/VALVE01 giữ đường điều khiển demo cũ. Controller/van 02–99 có firmware giám sát riêng; cần khai báo đúng nhánh, chứng chỉ và bật nhận giám sát. Mỗi board giám sát hiện báo một van; các board phải dùng controller ID khác nhau. Số lưu lượng 0 khi nghỉ không tự coi là lỗi. Tín hiệu chỉ để khảo sát, chưa phải điều kiện cho phép vận hành.</p>
  </section>;
 }

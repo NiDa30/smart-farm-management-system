@@ -127,3 +127,17 @@ reviewed circuitId/circuitRevision pair. Changes interrupt/invalidate rather
 than retarget requests. Legacy rows remain null. See
 [chapter38](../docs/book/CHAPTER_38_IRRIGATION_CIRCUITS.md) and
 [handoff](../docs/implementation/LOCAL_IRRIGATION_CIRCUITS_REPORT.md).
+
+
+## Per-circuit valve observations (V27)
+
+SMARTFARM_IRRIGATION_MONITOR_ENABLED defaults false. With MQTT enabled, subscribe
+exact status topics from current SIMULATOR circuits at startup/reconnect; new
+topics after startup require restart. Separate bounded writer protects pump
+ACK/status processing. Controller/valve02–99 monitor packets must match current
+circuit/zone revisions; retained, controlled or physical-source packets reject.
+Per-valve latest/retired boots persist, duplicate packets do not renew receipt.
+No new HTTP receive/command endpoint. Circuits GET adds valveMonitorEnabled and
+valveObservation. Queue remains preview-only.
+[Chapter39](../docs/book/CHAPTER_39_CIRCUIT_VALVE_MONITOR.md),
+[handoff](../docs/implementation/LOCAL_CIRCUIT_VALVE_MONITOR_REPORT.md).

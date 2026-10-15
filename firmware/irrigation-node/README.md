@@ -47,3 +47,22 @@ status as an OPEN precondition. Backend default false preserves LED-only demo.
 No IAM/topic/certificate change. See [chapter37](../../docs/book/CHAPTER_37_VALVE_POSITION_FEEDBACK.md)
 for six unrun live cases and limits; feedback is SIMULATOR, not physical
 mechanical/water-delivery acceptance. Never infer position from command ACK.
+
+
+## Optional separate monitor board (V27)
+
+Set IRRIGATION_MONITOR_ONLY1, DEMO_ENABLED0 and own CONTROLLER_ID/VALVE_ID02–99,
+CIRCUIT_ID/CIRCUIT_REVISION, ZONE_ID/ZONE_REVISION matching a current simulator
+circuit. Position feedback remains an explicit opt-in. One valve per board;
+simultaneously running boards need distinct controller/client IDs and their
+own certificate/status-only policy. No command subscribe or ACK publish, GPIO26
+stays LOW; monitor+demo-enabled is a compile error. Legacy01 profile defaults
+unchanged when new macros are absent. No physical-valve mode.
+
+Backend flag SMARTFARM_IRRIGATION_MONITOR_ENABLED=true plus appropriate exact
+status Subscribe/Receive policy is needed. Restart backend after adding a new
+valve/topic. Circuit revision changes require updated firmware config and a
+new boot; monitor faults need corrected inputs and reboot, no CLOSE/reset
+command is provided.
+[Vietnamese chapter39](../../docs/book/CHAPTER_39_CIRCUIT_VALVE_MONITOR.md) lists
+configuration, policy rendering and Windows/Wokwi cases still unrun.

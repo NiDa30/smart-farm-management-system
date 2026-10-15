@@ -50,7 +50,7 @@ with sync_playwright() as p:
    for label,value in [('Vùng của nhánh',f'CZONE0{i}'),('Trạm nước của nhánh','CWATER01'),('Kênh phao của nhánh','LOW'),('Kênh lưu lượng của nhánh','FLOW')]:page.get_by_label(label,exact=True).select_option(value)
    page.get_by_role('button',name='Tạo nhánh',exact=True).click();expect(page.get_by_role('status')).to_contain_text('Đã lưu cấu hình nhánh')
  else:
-  saved=json.loads(evidence.read_text());assert get('/api/v1/irrigation-circuits')['circuits']==saved['circuits']
+  saved=json.loads(evidence.read_text());assert [c['config'] for c in get('/api/v1/irrigation-circuits')['circuits']]==[c['config'] for c in saved['circuits']]
  expect(page.get_by_text('Van:',exact=False)).to_have_count(2)
  page.screenshot(path=f'/tmp/irrigation-circuits-{phase}.png',full_page=True,animations='disabled')
  page.get_by_role('button',name='Mở hàng chờ diễn tập',exact=True).click()

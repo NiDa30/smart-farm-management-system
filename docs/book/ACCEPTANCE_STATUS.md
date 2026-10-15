@@ -214,3 +214,17 @@ MQTT/control/valve-demo false, command/run0. Firmware không đổi;5ca Windows
 mới Chưa chạy. Cấu hình dự kiến chưa provision/giữ chỗ registry, chưa multi-
 valve transport/coordinator/flow proof hoặc tự tưới SOIL.
 [Chương38](CHAPTER_38_IRRIGATION_CIRCUITS.md).
+
+
+## Giám sát van theo nhánh V27 — 15/10/2026
+
+333backend skip0 (17receiver+1worker isolation mới),18browser nhánh,16queue
+browser,5policy/native/default+monitor firmware/emptyFSmerge/lintbuild đạt.
+Config monitor+control bị compile từ chối đúng lý do (expected failure).
+Full-app native encoder→receiver→PostgreSQL→React fresh rồi stale sau restart
+JVM thật; metadata seq1 giữ nguyên, VALVE03 không mượn statusVALVE02, command/
+run0. V26→27 giữ đúng2circuit/3queue records. Fresh thử đầu quá15s: dùng một
+heartbeat native mới sequence1, không sửa timestamp0 hoặc resetDB.
+5ca Windows/AWS/Wokwi mới Chưa chạy. Monitor chỉ SIMULATOR, một van/board;
+chưa command nhiều van, coordinator hoặc dispatch queue.
+[Chương39](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md).

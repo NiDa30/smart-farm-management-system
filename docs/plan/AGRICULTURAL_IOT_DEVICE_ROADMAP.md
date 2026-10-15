@@ -753,3 +753,18 @@ browser/lintbuild/full-app PostgreSQL+restart thật đạt, command/run0.
 Đây là cấu hình nhiều nhánh, chưa provision/giữ chỗ registry, giao thức nhiều
 van, coordinator/flow proof/interlock xuyên van–bơm hoặc tự tưới vùng SOIL.
 Không đánh dấu A3 hoàn tất. [Chương38](../book/CHAPTER_38_IRRIGATION_CIRCUITS.md).
+
+
+## Cập nhật 15/10/2026 — A3 nhận phản hồi nhiều van V27
+
+Monitor-only cho controller/valve02–99, một van/board, status theo từng
+circuit/zone revision. Firmware giữGPIOLOW, không command/ACK mới; policy
+renderer chỉ quyềnstatus, chưa provision. Backendsubscribe exact configured
+topics opt-in/worker riêng, kiểm tra sequence/retiredboot/source/capability/
+fault; UI không mượn trạng thái giữa van. Default legacy01 giữ tương thích.
+333backend/18browser nhánh/16queue browser/5policy/native/default+monitor
+firmware/emptyFSmerge/lintbuild/full-app native→PostgreSQL+restart đạt; V26
+rows giữ nguyên, command0. 5ca Windows/AWS/Wokwi mới Chưa chạy. Còn command
+nhiều van, namespace/provisioning hoàn chỉnh, local interlock xuyên van–bơm,
+flow proof/coordinator và dispatch queue trước khi tự tưới SOIL; A3 chưa xong.
+[Chương39](../book/CHAPTER_39_CIRCUIT_VALVE_MONITOR.md).

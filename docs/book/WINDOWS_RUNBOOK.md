@@ -348,3 +348,20 @@ trạm và controller dùng chung được. Nếu đã có ánh xạ, hàng ch�
 bản nhánh đang xem; sửa cấu hình làm lượt cũ mất hiệu lực, không chuyển đích.
 Đây vẫn là cấu hình/diễn tập, chưa nhiều van trên Wokwi hoặc điều phối bơm.
 [Năm ca Windows chưa chạy và giới hạn](CHAPTER_38_IRRIGATION_CIRCUITS.md).
+
+
+## V27 — nhận trạng thái van giám sát riêng
+
+Pull feat/day1-iot-foundation, restart backend theo lệnh đang dùng và thêm
+SMARTFARM_IRRIGATION_MONITOR_ENABLED=true; giữ các cờ demo/control theo phép
+thử hiện tại. Flag mới không tự bật điều khiển van/bơm. Cần MQTT kết nối
+và quyền Subscribe/Receive status cho từng van. Thêm nhánh/van sau startup
+cần restart backend để đăng ký topic mới.
+
+Project firmware/irrigation-node dùng config monitor với controller/van02–99,
+circuit/zone/revision khớp web, DEMO_ENABLED0, nguồnSIMULATOR và công tắc
+feedback. Mỗi board có controllerID/certificate riêng, hiện chỉ một van/board.
+Build app/FS/merge riêng; không flash project ENV01 nhầm sang board này.
+Policy helper --monitor-only chỉ render quyền status, không provision.
+Xem [chương39](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md) cho config/lệnh và5ca
+Windows/Wokwi còn Chưa chạy. Không có nút điều khiển van02+ trong V27.
