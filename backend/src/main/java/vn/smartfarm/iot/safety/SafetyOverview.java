@@ -21,7 +21,7 @@ import vn.smartfarm.iot.telemetry.TelemetryRepository;
 public class SafetyOverview {
     public record Sensor(Instant observedAt, Instant receivedAt, double soilMoisture) {}
     public record Relay(Instant observedAt, Instant receivedAt, String reportedState,
-                        boolean safetyLockout, String stateReason) {}
+                        boolean safetyLockout, String stateReason,vn.smartfarm.iot.control.PumpValveInterlock valveInterlock) {}
     public record Queue(long unresolved, long overdue) {}
     public record Problem(UUID commandId, String action, Instant issuedAt, Instant expiresAt,
                           String state, String errorCode) {}
@@ -54,7 +54,7 @@ public class SafetyOverview {
                 r.telemetry().soilMoisture())).orElse(null);
         var relays = jdbc.query("SELECT * FROM pump_status WHERE singleton=1", (rs, n) ->
                 new Relay(rs.getTimestamp("observed_at").toInstant(), rs.getTimestamp("received_at").toInstant(),
-                        rs.getString("reported_state"), rs.getBoolean("safety_lockout"), rs.getString("state_reason")));
+                        rs.getString("reported_state"), rs.getBoolean("safety_lockout"), rs.getString("state_reason"),pump.storedValveInterlock(rs.getString("valve_interlock"))));
         Timestamp lateBefore = Timestamp.from(now.minusSeconds(5));
         Queue queue = jdbc.query("""
                 SELECT COUNT(*) AS unresolved, COUNT(*) FILTER (WHERE expires_at < ?) AS overdue

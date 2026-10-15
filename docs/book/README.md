@@ -94,3 +94,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Cảnh báo lỗi van và controller theo nhánh](CHAPTER_40_VALVE_ALERTS.md)
 
 - [Lịch sử bản tin van và CSV](CHAPTER_41_VALVE_HISTORY.md)
+
+- [Liên động phản hồi van tại board bơm](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md)

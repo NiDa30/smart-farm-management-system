@@ -251,3 +251,17 @@ không dựng history từ latest cũ. MQTT/control/demo false, monitor true,
 commands/run/queue mới0. Năm ca Windows/AWS/Wokwi mới Chưa chạy. Chưa retention
 tự động, lịch sử demo01 hoặc coordinator/dispatch queue.
 [Chương41](CHAPTER_41_VALVE_HISTORY.md).
+
+## Liên động van tại PUMP01 V30 — 15/10/2026
+
+384backend, không skip (15mới),17Safety/15Pump/11Event Log browser,9unit frontend,
+8contract Python và13ca native guard đạt; native encoder/relay/flow hồi quy đạt.
+Firmware public default/guard/guard+fence/guard+flow+fence build, expected reject PHYSICAL,
+khôi phục build hợp lệ, emptyFS/merge4MiB, lintbuild đạt. Không privateconfig/PEM.
+Full-app native→receiver→PostgreSQL→React: proof mới, fault được lưu, restart
+giữ clocks/latch report và hiển thị cũ; Event Log đọc chi tiết. Fault smoke ban
+đầu fail selector tìm reason ở bảng, sửa selector và stored smoke đạt, không
+phát lại/refresh packet cũ. V29 rows giữ nguyên, commands/run/queue mới0.
+Sáu ca Windows/AWS/Wokwi/GPIO mới Chưa chạy. Guard chỉ opt-in công tắc mô phỏng
+tại board bơm; không proof nhánh/remote valve, NVS hoặc coordinator/dispatch.
+[Chương42](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md).

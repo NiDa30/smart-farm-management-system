@@ -393,3 +393,17 @@ Chưa có dữ liệu ngay sau nâng cấp là đúng nếu chưa nhận packet 
 dựng lại từ latest status cũ. CSV chỉ xuất các dòng đã tải bằng Tải thêm.
 Xem [chương41](CHAPTER_41_VALVE_HISTORY.md) cho5ca Windows/AWS/Wokwi Chưa chạy,
 ngữ nghĩa hai đồng hồ, snapshot cũ và lưu ý chưa có retention tự động.
+
+## V30 — liên động van cục bộ tại ENV01/PUMP01
+
+Pull nhánh và restart backend để áp V30; không xóa volume. Khác V29, phần
+guard mới cần opt-in private config FARM_VALVE_PROOF_ENABLED=1, nguồn SIMULATOR1,
+phao1, build app/FS/merge và restart simulator. Config cũ thiếu macro vẫn tắt.
+Không thêm IAM/client/topic. Xem lệnh trong [chương42](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md).
+
+Hai switch mới ở project firmware/esp32: CLOSED GPIO32, OPEN GPIO33, activeLOW.
+Để thử ON, OPEN phải đóng về GND và CLOSED phải hở; chờ ổn định. Cả hai hở
+hoặc đóng đều không cho bật. Khôi phục tiếp điểm không auto resume; reset
+không bật relay. Giữ phao/flow/fence đúng cấu hình đang dùng.
+Thẻ mới ở An toàn Fail-Safe & Edge chỉ trình bày bản báo; thiếu/cũ không được
+coi là guard đang hoạt động. Sáu ca Windows/AWS/Wokwi/GPIO đều Chưa chạy.

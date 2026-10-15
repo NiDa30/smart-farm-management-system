@@ -108,3 +108,23 @@ not HTTP intent ordering, pump ownership, NVS or multi-zone actuation.
 [Chapter34](../../docs/book/CHAPTER_34_PUMP_COMMAND_FENCING.md) includes Windows
 steps and six live cases still unrun. Do not reuse public test flash as a
 credentialed device; no key/endpoint was copied during cloud verification.
+
+## Opt-in local valve proof at PUMP01 (V30)
+
+FARM_VALVE_PROOF_ENABLED defaults0, including private configs missing the define.
+Simulator-only; enable1 with FARM_VALVE_PROOF_SIMULATOR=1 and reservoir guard1,
+then rebuild app/FS/merge and reboot. New independent slide-switches use GPIO32
+CLOSED and GPIO33 OPEN, common2 to GPIO, terminal1 to GND, activeLOW. No relay
+output/ACK/MQTT signal is used as proof. No new AWS topic/certificate required.
+
+OPEN without CLOSED must settle100ms before ON/reset. Loss while running or
+conflict cuts GPIO in a separate25ms ESP timer and latches. A sampling gap>250ms
+is a proof-loss fault when the sampler resumes. Restoring contacts never resumes;
+reset requires healthy OPEN and other guards, and never energizes the relay.
+Fault metadata is additive on status only, declared SIMULATOR, not physical
+attestation or a per-circuit interlock. Latch remains RAM-only, no NVS. Existing
+boot/ordinal fencing is separate and must match backend when enabled.
+[Chapter42](../../docs/book/CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md) has Windows
+steps and six unrun live cases. Default/guard/guard+fence public cloud builds,
+including combined guard+flow+fence and a cancelled-watcher output check,
+native tests and empty-FS merge passed; no new AWS/Wokwi/GPIO live acceptance.

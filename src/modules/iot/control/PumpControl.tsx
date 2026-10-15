@@ -99,7 +99,7 @@ export const PumpControl: React.FC<{onValveDemo?:()=>void;onQueue?:()=>void;onCi
     catch(e){if(mounted.current)setError(e instanceof Error?e.message:'Chưa đối chiếu được.');}
     finally{clearTimeout(timer);flight.current=false;if(mounted.current){setAvailable(false);setSending(false);setRefresh(v=>v+1);}}
   }
-  const reasons: Record<string,string> = { BOOT: 'Khởi động thiết bị', COMMAND_ON: 'Nhận lệnh bật', COMMAND_OFF: 'Tắt thủ công', LOCKOUT_RESET: 'Reset khóa', TIMER_EXPIRED: 'Hết thời gian hẹn', CONNECTION_LOST: 'Mất kết nối khi đang bật', DEVICE_FAULT: 'Lỗi thiết bị', WATER_LOW: 'Bồn cạn nước hoặc đứt dây phao', FLOW_LOW: 'Thiếu lưu lượng tại bộ điều khiển (thiết bị báo)', FLOW_SENSOR_FAULT: 'Tín hiệu lưu lượng tại bộ điều khiển lỗi (thiết bị báo)' };
+  const reasons: Record<string,string> = { VALVE_NOT_OPEN: 'Chưa có phản hồi van mở tại bơm', VALVE_PROOF_LOST: 'Mất phản hồi van mở khi bơm đang bật', VALVE_SWITCH_CONFLICT: 'Hai công tắc van tại bơm mâu thuẫn', BOOT: 'Khởi động thiết bị', COMMAND_ON: 'Nhận lệnh bật', COMMAND_OFF: 'Tắt thủ công', LOCKOUT_RESET: 'Reset khóa', TIMER_EXPIRED: 'Hết thời gian hẹn', CONNECTION_LOST: 'Mất kết nối khi đang bật', DEVICE_FAULT: 'Lỗi thiết bị', WATER_LOW: 'Bồn cạn nước hoặc đứt dây phao', FLOW_LOW: 'Thiếu lưu lượng tại bộ điều khiển (thiết bị báo)', FLOW_SENSOR_FAULT: 'Tín hiệu lưu lượng tại bộ điều khiển lỗi (thiết bị báo)' };
   const labels: Record<string,string> = { PENDING: 'Đang gửi', SENT: 'Đã gửi, chờ ACK', EXECUTED: 'Thiết bị đã ACK', FAILED: 'Thiết bị từ chối', TIMED_OUT: 'Quá hạn ACK', PUBLISH_UNCERTAIN: 'Chưa xác nhận gửi' };
   return <div className="max-w-5xl mx-auto space-y-5">
     {onValveDemo&&<button className="underline" onClick={onValveDemo}>Mở controller van mô phỏng</button>}

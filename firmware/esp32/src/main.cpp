@@ -13,6 +13,7 @@
 #include "PumpStatusPacket.h"
 #include "PumpCommandFence.h"
 #include "FencedPumpPacket.h"
+#include "ValveProofInterlock.h"
 
 #if __has_include("config.local.h")
 #include "config.local.h"
@@ -80,6 +81,17 @@ static_assert(FARM_WOKWI_CLOCK_TOLERANCE_SECONDS >= 0 && FARM_WOKWI_CLOCK_TOLERA
 #endif
 static_assert(FARM_PUMP_FENCING_ENABLED==0||FARM_PUMP_FENCING_ENABLED==1,"Pump fence opt-in must be 0 or 1");
 
+#ifndef FARM_VALVE_PROOF_ENABLED
+#define FARM_VALVE_PROOF_ENABLED 0
+#endif
+#ifndef FARM_VALVE_PROOF_SIMULATOR
+#define FARM_VALVE_PROOF_SIMULATOR 1
+#endif
+static_assert(FARM_VALVE_PROOF_ENABLED==0||FARM_VALVE_PROOF_ENABLED==1,"Valve proof opt-in must be 0 or 1");
+static_assert(!FARM_VALVE_PROOF_ENABLED||FARM_VALVE_PROOF_SIMULATOR==1,"Local valve proof is a Wokwi prototype only");
+static_assert(!FARM_VALVE_PROOF_ENABLED||FARM_WATER_INTERLOCK_ENABLED,"Valve proof requires reservoir interlock");
+static_assert(!FARM_VALVE_PROOF_ENABLED||(FARM_RELAY_PIN!=32&&FARM_RELAY_PIN!=33&&FARM_DHT_PIN!=32&&FARM_DHT_PIN!=33&&FARM_SOIL_PIN!=32&&FARM_SOIL_PIN!=33&&FARM_WATER_LEVEL_PIN!=32&&FARM_WATER_LEVEL_PIN!=33&&(!FARM_FLOW_INTERLOCK_ENABLED||(FARM_FLOW_PIN!=32&&FARM_FLOW_PIN!=33))),"Valve proof contacts require separate GPIO32/33");
+
 // Only ENV01 may control PUMP01 in this Wokwi MVP. Default disabled.
 static DHTesp dht;
 static esp_mqtt_client_handle_t client = nullptr;
@@ -92,7 +104,9 @@ static bool controlEnabled = false;
 static String commandTopic, pumpStatusTopic, ackTopic, activeCommand;
 struct CommandPacket { char payload[769]; bool retained; size_t size; };
 static QueueHandle_t commandQueue;
-static esp_timer_handle_t relayTimer, flowTimer;
+static esp_timer_handle_t relayTimer, flowTimer,valveProofTimer;
+static ValveProofInterlock valveProof(FARM_VALVE_PROOF_ENABLED==1);
+static volatile ValveProofInterlock::Fault pendingValveFault=ValveProofInterlock::NONE;
 static FlowInterlock flowGuard({FARM_FLOW_INTERLOCK_ENABLED==1,
   FARM_FLOW_SIMULATOR==1||strspn(FARM_FLOW_CALIBRATION_VERSION," \t\r\n")<strlen(FARM_FLOW_CALIBRATION_VERSION),
   FARM_FLOW_PULSES_PER_LITRE,FARM_FLOW_MINIMUM_LPM,FARM_FLOW_MAXIMUM_HZ,FARM_FLOW_GRACE_MS});
@@ -120,13 +134,27 @@ static void sampleFlow(void*) {
   if(forcedOff)flowGuard.stop();
   auto fault=flowGuard.sample(millis(),pulses,overflow);
   if(fault!=FlowInterlock::NONE) {
-    pendingFlowFault=fault;forcedOff=true;
+    pendingFlowFault=fault;forcedOff=true;valveProof.stop();
     digitalWrite(FARM_RELAY_PIN,FARM_RELAY_OFF_LEVEL);
   }
   portEXIT_CRITICAL(&relayMux);
 }
 static void stopFlow() {
   portENTER_CRITICAL(&relayMux);flowGuard.stop();portEXIT_CRITICAL(&relayMux);
+}
+// relayMux held. Independent timer task also calls this while Arduino loop is blocked.
+static void sampleValveProofLocked(){
+  if(!FARM_VALVE_PROOF_ENABLED)return;
+  auto before=valveProof.fault();
+  valveProof.sample(millis(),digitalRead(33)==LOW,digitalRead(32)==LOW);
+  if(valveProof.fault()!=ValveProofInterlock::NONE&&before==ValveProofInterlock::NONE){pendingValveFault=valveProof.fault();forcedOff=true;digitalWrite(FARM_RELAY_PIN,FARM_RELAY_OFF_LEVEL);}
+}
+static void sampleValveProof(void*){portENTER_CRITICAL(&relayMux);sampleValveProofLocked();portEXIT_CRITICAL(&relayMux);}
+static void stopValveProof(){portENTER_CRITICAL(&relayMux);valveProof.stop();portEXIT_CRITICAL(&relayMux);}
+static bool settleValveFault(){
+  portENTER_CRITICAL(&relayMux);auto fault=pendingValveFault;pendingValveFault=ValveProofInterlock::NONE;portEXIT_CRITICAL(&relayMux);
+  if(fault==ValveProofInterlock::NONE)return false;
+  relay.fail(activeCommand.c_str(),ValveProofInterlock::faultName(fault));stateReason=ValveProofInterlock::faultName(fault);activeCommand="";stopFlow();esp_timer_stop(relayTimer);return true;
 }
 // RelaySafety stays loop-owned. The callback has already forced the GPIO OFF.
 static bool settleFlowFault() {
@@ -149,6 +177,7 @@ static bool checkWaterSupply() {
   if (!present) {
     portENTER_CRITICAL(&relayMux);
     forcedOff = true;
+    valveProof.stop();
     digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
     portEXIT_CRITICAL(&relayMux);
     stateReason = "WATER_LOW";
@@ -162,13 +191,17 @@ static bool checkWaterSupply() {
 static void forceRelayOff(void*) {
   portENTER_CRITICAL(&relayMux);
   forcedOff = true;
+  valveProof.stop();
   offCause = TIMER_CAUSE;
   digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
   portEXIT_CRITICAL(&relayMux);
 }
 static void applyRelayOutput() {
   portENTER_CRITICAL(&relayMux);
-  digitalWrite(FARM_RELAY_PIN, controlEnabled && connected && !forcedOff && flowGuard.fault()==FlowInterlock::NONE && waterPresent() && relay.isOn()
+  if(!relay.isOn())valveProof.stop();
+  sampleValveProofLocked();
+  if(relay.isOn()&&connected&&!forcedOff){auto fault=valveProof.outputCheck();if(fault!=ValveProofInterlock::NONE){pendingValveFault=fault;forcedOff=true;}}
+  digitalWrite(FARM_RELAY_PIN, controlEnabled && connected && !forcedOff && valveProof.ready() && flowGuard.fault()==FlowInterlock::NONE && waterPresent() && relay.isOn()
     ? !FARM_RELAY_OFF_LEVEL : FARM_RELAY_OFF_LEVEL);
   portEXIT_CRITICAL(&relayMux);
 }
@@ -208,10 +241,14 @@ static void publishStatus() {
 
 static void publishPumpStatus() {
   if (!controlEnabled || !connected) return;
+  settleValveFault();
   JsonDocument doc;
   base(doc);
-  fillPumpStatus(doc,relay.isOn() && !forcedOff?"ON":"OFF",relay.lockout(),stateReason,
+  portENTER_CRITICAL(&relayMux);ValveProofInterlock proof=valveProof;bool cut=forcedOff;portEXIT_CRITICAL(&relayMux);
+  const char* reason=proof.fault()!=ValveProofInterlock::NONE&&strcmp(stateReason,"WATER_LOW")?ValveProofInterlock::faultName(proof.fault()):stateReason;
+  fillPumpStatus(doc,relay.isOn() && !cut?"ON":"OFF",relay.lockout()||proof.fault()!=ValveProofInterlock::NONE,reason,
     activeCommand.length()?activeCommand.c_str():nullptr);
+  if(FARM_VALVE_PROOF_ENABLED)fillValveProof(doc,proof);
   if(FARM_PUMP_FENCING_ENABLED)pumpFence::status(doc,pumpOrder.lastOrdinal(),pumpOrder.restartRequired());
   String payload; serializeJson(doc, payload);
   esp_mqtt_client_publish(client, pumpStatusTopic.c_str(), payload.c_str(), 0, 1, 0);
@@ -242,6 +279,7 @@ static void handleCommand(const CommandPacket &packet) {
   const bool reset = strcmp(action,"RESET_LOCKOUT")==0;
   const char* error = nullptr;
   settleFlowFault();
+  settleValveFault();
   checkWaterSupply();
   bool wasOn = relay.isOn();
   pumpFence::Command fencedCommand;bool hasFence=false;
@@ -270,6 +308,10 @@ static void handleCommand(const CommandPacket &packet) {
     parseUtc(doc["issuedAt"]), parseUtc(doc["expiresAt"]), time(nullptr), millis(),
     strcmp(FARM_WIFI_SSID, "Wokwi-GUEST") == 0 ? FARM_WOKWI_CLOCK_TOLERANCE_SECONDS : 2);
   if (!error && relay.isOn() && !wasOn) {
+    portENTER_CRITICAL(&relayMux);sampleValveProofLocked();auto proofError=valveProof.start();portEXIT_CRITICAL(&relayMux);
+    if(proofError!=ValveProofInterlock::NONE){error=ValveProofInterlock::faultName(proofError);relay.fail(id,error);stateReason=error;}
+  }
+  if (!error && relay.isOn() && !wasOn) {
     esp_timer_stop(relayTimer);
     // Arm independent cutoff before energizing; never renew it on duplicate ON.
     if (esp_timer_start_once(relayTimer, uint64_t(doc["durationSeconds"].as<unsigned>()) * 1000000) != ESP_OK) {
@@ -287,11 +329,18 @@ static void handleCommand(const CommandPacket &packet) {
     portENTER_CRITICAL(&relayMux);auto flowError=flowGuard.reset();
     if(flowError!=FlowInterlock::NONE){pendingFlowFault=flowError;error=flowReason(flowError);}portEXIT_CRITICAL(&relayMux);
   }
+  if(!error&&reset&&!relay.lockout()){
+    portENTER_CRITICAL(&relayMux);sampleValveProofLocked();auto proofError=valveProof.reset();portEXIT_CRITICAL(&relayMux);
+    if(proofError!=ValveProofInterlock::NONE){error=ValveProofInterlock::faultName(proofError);relay.fail(id,error);stateReason=error;}
+  }
   settleFlowFault();
-  if (!relay.isOn()) { stopFlow();esp_timer_stop(relayTimer); activeCommand = ""; }
+  settleValveFault();
+  if (!relay.isOn()) { stopFlow();stopValveProof();esp_timer_stop(relayTimer); activeCommand = ""; }
   if (!connected) { relay.fail(id,"CONNECTION_LOST"); error = "CONNECTION_LOST"; }
   // Recheck after parsing/arming so a switch change cannot energize the output.
   checkWaterSupply();
+  sampleValveProof(nullptr);settleValveFault();
+  if((on||reset)&&FARM_VALVE_PROOF_ENABLED){portENTER_CRITICAL(&relayMux);auto proofError=valveProof.fault();portEXIT_CRITICAL(&relayMux);if(proofError!=ValveProofInterlock::NONE){relay.fail(id,ValveProofInterlock::faultName(proofError));error=ValveProofInterlock::faultName(proofError);}}
   if (!waterPresent() && (on || reset)) { relay.fail(id,"WATER_LOW"); error = "WATER_LOW"; }
   if (!relay.isOn()) activeCommand = "";
   if (!error) {
@@ -302,8 +351,11 @@ static void handleCommand(const CommandPacket &packet) {
   else if (strcmp(error,"CONNECTION_LOST")==0) stateReason = "CONNECTION_LOST";
   portENTER_CRITICAL(&relayMux);auto latchedFlow=flowGuard.fault();portEXIT_CRITICAL(&relayMux);
   if(latchedFlow!=FlowInterlock::NONE&&relay.lockout())stateReason=flowReason(latchedFlow);
+  portENTER_CRITICAL(&relayMux);auto latchedValve=valveProof.fault();portEXIT_CRITICAL(&relayMux);
+  if(latchedValve!=ValveProofInterlock::NONE)stateReason=ValveProofInterlock::faultName(latchedValve);
   if (!waterPresent()) stateReason = "WATER_LOW";
   applyRelayOutput();
+  if(settleValveFault()&&(on||reset)){portENTER_CRITICAL(&relayMux);error=ValveProofInterlock::faultName(valveProof.fault());portEXIT_CRITICAL(&relayMux);}
   if (error && (strcmp(error,"EXPIRED")==0 || strcmp(error,"CLOCK_SKEW")==0 || strcmp(error,"INVALID_LIFETIME")==0 || strcmp(error,"CLOCK_NOT_READY")==0)) {
     int64_t epoch=time(nullptr), issued=parseUtc(doc["issuedAt"] | ""), expires=parseUtc(doc["expiresAt"] | "");
     Serial.printf("COMMAND_TIME now=%lld issued=%lld expires=%lld age=%lld remaining=%lld\n",
@@ -335,6 +387,7 @@ static void mqttEvent(void *, esp_event_base_t, int32_t id, void *eventData) {
     connected = false;
     if (digitalRead(FARM_RELAY_PIN) != FARM_RELAY_OFF_LEVEL) offCause = NETWORK_CAUSE;
     forcedOff = true;
+    valveProof.stop();
     digitalWrite(FARM_RELAY_PIN, FARM_RELAY_OFF_LEVEL);
     portEXIT_CRITICAL(&relayMux);
     Serial.println("AWS MQTT unavailable; check endpoint/cert/policy/network");
@@ -410,6 +463,13 @@ void setup() {
     timerReady=timerReady&&esp_timer_create(&flowArgs,&flowTimer)==ESP_OK;
     timerReady=timerReady&&esp_timer_start_periodic(flowTimer,250000)==ESP_OK;
   }
+  if(FARM_VALVE_PROOF_ENABLED){
+    pinMode(32,INPUT_PULLUP);pinMode(33,INPUT_PULLUP);
+    esp_timer_create_args_t proofArgs={};proofArgs.callback=sampleValveProof;proofArgs.name="valve_proof";
+    timerReady=timerReady&&esp_timer_create(&proofArgs,&valveProofTimer)==ESP_OK;
+    timerReady=timerReady&&esp_timer_start_periodic(valveProofTimer,25000)==ESP_OK;
+    Serial.println("VALVE_PROOF simulator enabled: GPIO32 CLOSED / GPIO33 OPEN; independent active LOW contacts");
+  }
   controlEnabled = FARM_CONTROL_ENABLED == 1 && strcmp(FARM_DEVICE_ID,"ENV01")==0 && strcmp(FARM_ID,"FARM001")==0 && commandQueue && timerReady;
   commandTopic = String("smartfarm/") + FARM_ID + "/PUMP01/command";
   ackTopic = String("smartfarm/") + FARM_ID + "/PUMP01/ack";
@@ -455,17 +515,19 @@ void loop() {
   if (fault) { relay.trip(); stateReason="DEVICE_FAULT"; activeCommand=""; esp_timer_stop(relayTimer); }
   bool wasRunning = relay.isOn();
   bool flowStopped=settleFlowFault();
+  sampleValveProof(nullptr);bool valveStopped=settleValveFault();
   OffCause cause;
   portENTER_CRITICAL(&relayMux); cause=offCause; offCause=NO_CAUSE; portEXIT_CRITICAL(&relayMux);
-  if (!flowStopped && wasRunning && cause == TIMER_CAUSE) { relay.stop(); stateReason="TIMER_EXPIRED"; }
-  else if (!flowStopped && wasRunning && (cause == NETWORK_CAUSE || !link || forcedOff)) { relay.trip(); stateReason="CONNECTION_LOST"; }
+  if (!flowStopped && !valveStopped && wasRunning && cause == TIMER_CAUSE) { relay.stop(); stateReason="TIMER_EXPIRED"; }
+  else if (!flowStopped && !valveStopped && wasRunning && (cause == NETWORK_CAUSE || !link || forcedOff)) { relay.trip(); stateReason="CONNECTION_LOST"; }
   bool stopped = relay.tickSafety(now, link);
   if (stopped && wasRunning) stateReason="TIMER_EXPIRED";
   stopped = stopped || (wasRunning && !relay.isOn());
   bool waterChanged = checkWaterSupply();
   stopped = stopped || (wasRunning && !relay.isOn());
   applyRelayOutput();
-  if (stopped||flowStopped) { stopFlow();activeCommand = ""; esp_timer_stop(relayTimer); publishPumpStatus(); Serial.printf("RELAY_OFF reason=%s\n",stateReason); }
+  if (!relay.isOn())stopValveProof();
+  if (stopped||flowStopped||valveStopped) { stopFlow();activeCommand = ""; esp_timer_stop(relayTimer); publishPumpStatus(); Serial.printf("RELAY_OFF reason=%s\n",stateReason); }
   else if (waterChanged) publishPumpStatus();
   static uint32_t lastFlowDiagnostic=0;
   if(FARM_FLOW_INTERLOCK_ENABLED&&now-lastFlowDiagnostic>=1000){

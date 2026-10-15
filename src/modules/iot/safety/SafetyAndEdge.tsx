@@ -41,6 +41,16 @@ export const SafetyPanel:React.FC<{navigate:(route:string)=>void}>=({navigate})=
       {error&&<p role="alert" className="text-rose-700">{error}</p>}
     </section>
     {snapshot&&<>
+      <section className="bg-white border rounded-xl p-4 space-y-2" aria-label="Liên động van tại bơm">
+        <h2 className="font-semibold">Phản hồi van cục bộ tại PUMP01</h2>
+        {!snapshot.relay?.valveInterlock?<p>Chưa có bằng chứng thiết bị báo hỗ trợ liên động van.</p>:<>
+          <p className="font-semibold">Bằng chứng hiện tại: {!relayCurrent?'Chưa xác định':snapshot.relay.valveInterlock.fault?'Thiết bị báo đã khóa do liên động van':snapshot.relay.valveInterlock.state==='OPEN'?'Thiết bị báo có phản hồi OPEN':'Chưa có phản hồi mở van hợp lệ'}</p>
+          <p>Bản báo đã lưu: {snapshot.relay.valveInterlock.state} · Mô phỏng · phiên bản {snapshot.relay.valveInterlock.version}</p>
+          <p>Lỗi lưu: {snapshot.relay.valveInterlock.fault?reasonLabels[snapshot.relay.valveInterlock.fault]:'Không có lỗi liên động van trong mẫu'}</p>
+          <p className="text-sm">Giờ nguồn: {time(snapshot.relay.observedAt)} · Backend nhận: {time(snapshot.relay.receivedAt)}</p>
+        </>}
+        <p className="text-sm text-slate-600">Hai công tắc độc lập trên board bơm, GPIO32 CLOSED / GPIO33 OPEN. Không lấy phản hồi từ GPIO bơm, ACK hoặc MQTT của van ở board khác. Khôi phục công tắc không tự bật lại; cần đối chiếu rồi reset khóa. Phản hồi này chưa xác nhận van cơ khí, nước thực hoặc quyền điều phối một nhánh cụ thể.</p>
+      </section>
       <div className="grid md:grid-cols-2 gap-4">
         <section className="bg-white border rounded-xl p-4 space-y-2" aria-label="Relay và khóa an toàn">
           <h2 className="font-semibold">Relay PUMP01 và khóa an toàn</h2>
@@ -97,7 +107,7 @@ export const SafetyPanel:React.FC<{navigate:(route:string)=>void}>=({navigate})=
     </>}
     <section className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm space-y-2" aria-label="Giới hạn đang triển khai">
       <h2 className="font-semibold">Giới hạn đang triển khai</h2>
-      <p>Mã firmware có boot OFF, timer, phao cạn và bảo vệ lưu lượng bật theo cấu hình riêng. Trang này chưa xác minh cấu hình/phiên bản đang nạp hoặc việc bảo vệ thực sự tác động GPIO.</p>
+      <p>Mã firmware có boot OFF, timer, phao cạn, bảo vệ lưu lượng và liên động van bật theo cấu hình riêng. Metadata liên động van là bản báo của thiết bị, chưa phải xác minh việc bảo vệ thực sự tác động GPIO.</p>
       <p>Lý do FLOW do bộ điều khiển tự báo, chưa chứng minh hiệu chuẩn hoặc nước thật. Telemetry WATER riêng chưa điều khiển PUMP01. OTA, NVS và bảo vệ trên phần cứng thật chưa nghiệm thu; trạng thái relay không chứng minh nước đã chảy.</p>
       <p>Đặt lại khóa hoặc gửi OFF qua trang Điều khiển Actuator để theo dõi ACK và status mới; trang này không tự gửi lệnh.</p>
     </section>

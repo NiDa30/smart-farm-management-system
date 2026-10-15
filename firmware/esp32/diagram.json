@@ -139,6 +139,35 @@
       "attrs": {
         "text": "FLOW LOCAL - GPIO25 (mo phong)\nTRAI: 45 Hz ~6 L/min | PHAI: 0 xung\nGuard opt-in: moi 5s, 2 cua so thap -> OFF/khoa"
       }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "pump_valve_open",
+      "top": -70,
+      "left": 620,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "pump_valve_closed",
+      "top": 10,
+      "left": 620,
+      "attrs": {
+        "value": "",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label_valve_proof",
+      "top": -180,
+      "left": 610,
+      "attrs": {
+        "text": "VALVE PROOF LOCAL (mo phong, opt-in)\nGPIO32 CLOSED / GPIO33 OPEN\nTRAI: tiep diem dong | PHAI: ho\nON can OPEN dong + CLOSED ho\nMat proof khi chay -> OFF/khoa"
+      }
     }
   ],
   "connections": [
@@ -258,6 +287,30 @@
     ],
     [
       "pump_flow_gate:3",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pump_valve_open:2",
+      "esp:33",
+      "purple",
+      []
+    ],
+    [
+      "pump_valve_open:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "pump_valve_closed:2",
+      "esp:32",
+      "orange",
+      []
+    ],
+    [
+      "pump_valve_closed:1",
       "esp:GND.2",
       "black",
       []

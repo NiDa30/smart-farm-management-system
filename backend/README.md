@@ -177,3 +177,19 @@ stored rows. Web CSV exports loaded rows only. No automatic retention yet;
 monitor heartbeats grow local PostgreSQL storage. Legacy demo01 is separate.
 See [chapter41](../docs/book/CHAPTER_41_VALVE_HISTORY.md) and
 [handoff](../docs/implementation/LOCAL_VALVE_HISTORY_REPORT.md).
+
+## Device-reported local valve interlock (V30)
+
+PUMP01 status optionally adds valveInterlock {version:1,enabled:true,
+dataSource:SIMULATOR,state:UNKNOWN|CLOSED|OPEN|CONFLICT,fault:null|VALVE_*}.
+Validate exact shape, source, locked OFF for fault and OPEN/no fault for ON.
+Capability cannot disappear within a boot; a fault clears only on reported
+LOCKOUT_RESET with healthy OPEN, unlocked OFF. New boot may have no capability,
+which becomes unknown rather than borrowing previous proof. ACK shape unchanged.
+
+V30 adds nullable pump_status.valve_interlock without backfill or enablement.
+GET /api/v1/safety exposes relay.valveInterlock; no command dispatch is added.
+Metadata is a device report, not a cloud ON permission or remote valve identity.
+Firmware checks local contacts; legacy requests can still be refused at edge.
+[Chapter42](../docs/book/CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md),
+[handoff](../docs/implementation/LOCAL_PUMP_VALVE_INTERLOCK_REPORT.md).

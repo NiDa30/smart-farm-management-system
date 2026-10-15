@@ -792,3 +792,16 @@ PostgreSQL+restart đạt; V28 rows giữ nguyên, commands0. Năm ca Windows/AW
 Wokwi mới Chưa chạy; chưa retention tự động. Đây là khả năng đối chiếu WS02
 phục vụ A3, chưa command nhiều van/coordinator/interlock/dispatch queue.
 [Chương41](../book/CHAPTER_41_VALVE_HISTORY.md).
+
+## Cập nhật 15/10/2026 — A3 liên động van tại bơm V30
+
+PUMP01 có guard opt-in ở edge: hai công tắc CLOSED/OPEN độc lập tại board,
+OPEN ổn định100ms mới ON; mất proof/conflict cắt GPIO ở timer riêng và latch.
+Status có metadata SIMULATOR, Safety trình bày mới/cũ/thiếu; không lấy ACK
+hoặc MQTT van làm proof. 384backend/43browser/9unit/8contract/13nativeguard,
+public default+guard+fence firmware/emptyFSmerge/lintbuild/full-app native
+PostgreSQL+restart đạt; V29 rows giữ nguyên, không AWS/commands.
+Sáu ca Windows/AWS/Wokwi/GPIO mới Chưa chạy. Đây mới một đường công tắc mô
+phỏng tại bơm, chưa biết nhánh/valveId, chưa interlock xuyên controller, NVS,
+command nhiều van hoặc coordinator/dispatch queue. A3 chưa hoàn tất.
+[Chương42](../book/CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md).

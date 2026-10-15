@@ -426,3 +426,22 @@ dòng đã tải, không hứa toàn bộ range. Đổi tên/revision mà lịch
 là đúng: đó là snapshot lúc nhận. Khi unit test JSON sequence thất bại dù
 giá trị in ra giống nhau, đối chiếu typed record để phân biệt LongNode/
 IntNode, không bỏ kiểm tra metadata. [Chương41](CHAPTER_41_VALVE_HISTORY.md).
+
+## V30: ON bị VALVE_NOT_OPEN hoặc proof đã OPEN mà vẫn khóa
+
+Guard cần OPEN GPIO33 activeLOW, CLOSED GPIO32 không active và giữ100ms.
+Hai tiếp điểm độc lập, không tự chạy theo LED. UNKNOWN/CONFLICT không được
+điền OPEN. Mất proof lúc chạy giữ lỗi đầu tiên; phục hồi tiếp điểm vẫn cần
+reset hợp lệ, không tự ON. Reset khi chưa OPEN bị từ chối. Phao cạn/flow/fence
+vẫn có khóa riêng; guard van không bỏ qua chúng. Reboot OFF nhưng latch chưa
+NVS, không khẳng định lỗi RAM được bảo toàn.
+
+Web không thấy metadata: kiểm tra private config opt-in, đã build/merge/boot
+firmware mới và status mới, không chỉ pull backend. Packet legacy không được
+suy ra guard tắt hay đã bật. Cùng boot làm mất capability hoặc xóa fault bằng
+reason không phải LOCKOUT_RESET sẽ không làm mới status.
+
+Smoke Event Log tìm reason trực tiếp trong bảng sẽ không thấy; bấm Chi tiết
+đúng device event. Đã sửa selector, giữ nguyên fault/source/receipt rồi chạy
+stored sau restart đạt. Không xóa evidence hoặc tạo timestamp mới chỉ để qua
+fresh assertion. [Chương42](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md).

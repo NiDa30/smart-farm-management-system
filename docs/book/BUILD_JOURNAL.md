@@ -1077,3 +1077,20 @@ ca ceiling đổi nên sửa fixture về token cuối null, không nới valida
 Năm ca Windows/Wokwi mới Chưa chạy. Retention/coordinator/dispatch còn sau.
 [Chương41](CHAPTER_41_VALVE_HISTORY.md),
 [bàn giao](../implementation/LOCAL_VALVE_HISTORY_REPORT.md).
+
+## 15/10/2026 — V30 liên động van cục bộ tại bơm
+
+ENV01 có guard opt-in, GPIO32 CLOSED/GPIO33 OPEN độc lập, OPEN ổn định100ms
+trước ON/reset; mất proof/conflict khi chạy cắt đầu ra ở timer25ms và latch.
+Không dùng MQTT van làm proof, chưa ánh xạ nhánh. Mẫu status khai báo source
+SIMULATOR và metadata nullable V30; backend kiểm tra nhất quán/sticky capability/
+reset, web Safety tách dữ liệu mới/cũ/thiếu. Mặc định0 giữ private config cũ.
+384backend/43browser/9unit frontend/8contract/13nativeguard, encoder và hồi quy
+relay/flow/default+opt-in+fence/all-guards firmware/lintbuild/emptyFSmerge đạt. Khai báo
+PHYSICAL compile reject đúng; restore profile build đạt. Full-app receive,
+proof mới/fault, restart metadata và V29 upgrade đạt, không AWS/commands.
+Smoke fault tìm reason ở bảng Event Log sai vì reason nằm trong chi tiết;
+giữ fault/clock cũ, sửa selector, rerun stored đạt. Không reseed để qua fresh.
+Sáu ca Windows/Wokwi mới Chưa chạy; latch RAM/NVS và coordinator còn sau.
+[Chương42](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md),
+[bàn giao](../implementation/LOCAL_PUMP_VALVE_INTERLOCK_REPORT.md).

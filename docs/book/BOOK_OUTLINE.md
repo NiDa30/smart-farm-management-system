@@ -81,3 +81,5 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 40. [Cảnh báo van và controller](CHAPTER_40_VALVE_ALERTS.md) — đợt lỗi, hai mẫu phục hồi, ghi chú đầu tiên và Event Log; chưa dispatch.
 
 41. [Lịch sử van](CHAPTER_41_VALVE_HISTORY.md) — snapshot cấu hình từng bản tin, hai đồng hồ, phân trang ổn định và CSV.
+
+42. [Liên động van tại bơm](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md) — hai tiếp điểm độc lập, guard timer, latch/reset và metadata mô phỏng; chưa coordinator.

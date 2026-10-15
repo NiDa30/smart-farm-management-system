@@ -39,3 +39,9 @@
 // Enable together with backend SMARTFARM_PUMP_FENCING_ENABLED=true after rebuilding this firmware.
 // Default remains legacy. Legacy emergency OFF in fenced mode latches until device reboot.
 #define FARM_PUMP_FENCING_ENABLED 0
+
+// Optional simulator-only local valve proof at the pump board. Both contacts
+// independent: GPIO32 CLOSED, GPIO33 OPEN, active LOW. UNKNOWN blocks ON.
+// Open proof must settle 100ms; loss while running cuts OFF and latches.
+#define FARM_VALVE_PROOF_ENABLED 0
+#define FARM_VALVE_PROOF_SIMULATOR 1
