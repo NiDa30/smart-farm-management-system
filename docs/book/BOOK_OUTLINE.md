@@ -71,3 +71,5 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 34. [MQTT fence PUMP01](CHAPTER_34_PUMP_COMMAND_FENCING.md) — boot/ordinal và ACK/status.
 35. [HTTP intent PUMP01](CHAPTER_35_PUMP_HTTP_INTENT.md) — review version/UUID và đối chiếu mất phản hồi.
 36. [Quyền sử dụng bơm](CHAPTER_36_PUMP_OWNERSHIP.md) — claim bền vững, epoch quy tắc, chuyển quyền có bằng chứng OFF.
+
+37. [Phản hồi vị trí van](CHAPTER_37_VALVE_POSITION_FEEDBACK.md) — hai end stop độc lập, debounce/travel/fault, GPIO khác vị trí và nước.

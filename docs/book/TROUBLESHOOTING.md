@@ -340,3 +340,25 @@ Không tăng giới hạn production hay bỏ ca concurrency. Full suite sau s�
 công khi backend cho điều khiển, chờ ACK/status; không sửa DB để ép nhả claim.
 Run từ bản cũ cần watering_run + active reference để gửi OFF tự động; LEGACY
 đơn lẻ không cấp quyền tự động. Queue vẫn PREVIEW_ONLY.
+
+
+## V25: chạy full test sau targeted valve vướng FK SOIL
+
+Fixture còn zone tham chiếu node SOIL nên test SOIL sau không dọn được.
+Cleanup sau test phải xóa đúng command/status/binding/zone/node của fixture
+van cũ IRRZONE/IRRSOIL và mới VFZONE/VFSOIL. Không sửa FK production hoặc reset
+DB để chạy qua. Full cuối300/300, không skip.
+
+## V25: merge flash không thấy boot_app0.bin
+
+Cloud dùng cache /workspace/.platformio nhưng helper mặc định tìm trong home.
+Truyền --core-dir /workspace/.platformio cho tools/wokwi/merge_flash.py. Chỉ
+áp dụng đường dẫn này cho cloud đã xác nhận, Windows dùng cache của máy đó.
+
+## V25: GPIO đã đóng nhưng OPEN vẫn bị chặn
+
+Xem panel Phản hồi vị trí van. Công tắc phải CLOSED ổn định và không fault;
+GPIO hoặc ACK không thay cho đầu vào. Fault không tự xóa sau khi gạt đúng;
+CLOSE mới khi CLOSED ổn định mới xác nhận. Cả hai switch → CONFLICT; không
+switch → UNKNOWN. Không sửa DB để làm status mới.
+[Chương37](CHAPTER_37_VALVE_POSITION_FEEDBACK.md).

@@ -302,3 +302,28 @@ Quyền sử dụng bơm: claim chưa khép thì ON/reset bị chặn; OFF thủ
 bật lại; restart không tự resume. Không xóa volume hoặc sửa DB để ép nhả quyền.
 Sáu ca thử và bằng chứng cần ghi trong [chương36](CHAPTER_36_PUMP_OWNERSHIP.md);
 tất cả ca Windows/Wokwi của V24 hiện Chưa chạy. Queue chưa điều phối thật.
+
+
+## Cập nhật V25: hai công tắc vị trí VALVE01
+
+Update backend/frontend trước, rồi mới opt-in firmware vì backend cũ strict
+chưa nhận positionFeedback. Vào Điều khiển Actuator → Mở controller van mô
+phỏng; mở project Wokwi firmware/irrigation-node, không phải ENV01.
+Private config controller: IRRIGATION_POSITION_FEEDBACK_ENABLED1, giữ demo1/
+simulator1 và zone/cert riêng đã có; build app/FS/merge và restart simulator.
+Backend SMARTFARM_IRRIGATION_POSITION_FEEDBACK_REQUIRED=true để bắt buộc phản
+hồi trước OPEN. Mặc địnhfalse giữ demo cũ; config cũ thiếu macro mới mặc định0.
+Không thêm IAM/topic/cert cho V25.
+Lệnh Git Bash cho ca thử (Windows/Wokwi mới vẫn chưa nghiệm thu):
+
+```bash
+SMARTFARM_IRRIGATION_DEMO_ENABLED=true \
+SMARTFARM_IRRIGATION_POSITION_FEEDBACK_REQUIRED=true \
+bash tools/backend/run_backend_windows.sh
+```
+
+closedStop GPIO32/contact1GND, openStop GPIO33/contact3GND, activeLOW. Khi đi
+tới mở, nhả closedStop rồi tác động openStop trong3s, tránh cả hai cùng tác
+động. Fault cần CLOSED ổn định và CLOSE mới; restart không tự mở. Sáu ca
+[chương37](CHAPTER_37_VALVE_POSITION_FEEDBACK.md) đều Chưa chạy trên Windows/Wokwi.
+Không nối bơm chung trong các ca này; coordinator chưa làm.

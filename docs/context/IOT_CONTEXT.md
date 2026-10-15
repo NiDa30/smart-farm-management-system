@@ -638,3 +638,14 @@ timer/restart; OFF tự động phải thuộc run còn sở hữu, manual OFF �
 Capture-only transport, không AWS/GPIO; legacy mặc định chưa ownership, queue
 vẫn PREVIEW_ONLY, sáu ca live mới Chưa chạy. Không firmware/wire/IAM mới.
 [Chương36](../book/CHAPTER_36_PUMP_OWNERSHIP.md).
+
+
+## Bằng chứng 15/10/2026 — vị trí van V25
+
+IRRIGATION01 có hai end stop SIMULATOR độc lập GPIO32/33, debounce100ms/travel3s,
+fault cục bộ giữ đến CLOSED+CLOSE mới. V25 status lưu positionFeedback; API/UI
+tách GPIO/position/ACK, chặn OPEN khi required hoặc đã advertise mà chưa CLOSED
+không lỗi. Mặc định giữ legacy UNKNOWN. 300backend/13browser/4unit/native/Pio
+default+opt-in/FSmerge/lintbuild/full-app PostgreSQL restart đạt, không AWS/GPIO
+live; sáu ca mới Chưa chạy. Chưa pump/queue coordinator/global incidents, không
+coi feedback Wokwi là cơ khí/nước thật. [Chương37](../book/CHAPTER_37_VALVE_POSITION_FEEDBACK.md).

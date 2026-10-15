@@ -24,3 +24,4 @@ smartfarm:
     pump-fencing-enabled: ${SMARTFARM_PUMP_FENCING_ENABLED:false}
   irrigation:
     demo-enabled: ${SMARTFARM_IRRIGATION_DEMO_ENABLED:false}
+    position-feedback-required: ${SMARTFARM_IRRIGATION_POSITION_FEEDBACK_REQUIRED:false}

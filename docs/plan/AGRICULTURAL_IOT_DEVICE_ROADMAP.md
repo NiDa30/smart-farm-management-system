@@ -726,3 +726,16 @@ full-app local/restart đạt; sáu ca Windows/Wokwi mới Chưa chạy.
 Queue vẫn PREVIEW_ONLY, rule vẫn ENV01. Việc kế tiếp: gắn queue với owner,
 sequencing van–bơm có feedback/interlock, rồi mới rule từ vùng SOIL. Không
 coi coordinator A3 hoàn tất. [Chương36](../book/CHAPTER_36_PUMP_OWNERSHIP.md).
+
+
+## Cập nhật 15/10/2026 — A3 phản hồi vị trí van V25
+
+Bổ sung end stop CLOSED/OPEN độc lập ở IRRIGATION01, source SIMULATOR, GPIO32/33
+và guard debounce/travel/fault cục bộ. V25 parser/storage/policy/UI phân biệt
+GPIO/ACK với vị trí, không tự coi van đã mở hoặc nước đã đến. 300backend/13valve
+browser/4unit/native/default+opt-in firmware/FSmerge/lintbuild/full-app native
+PostgreSQL fresh→stale/restart đạt; sáu ca Windows/Wokwi mới Chưa chạy.
+Default legacy giữ nguyên. Đây là một điều kiện trước dispatch queue, chưa
+coordinator, chưa mapping nhiều van, local interlock xuyên van–bơm, flow proof
+hoặc rule SOIL. Global incident cho fault vị trí còn sau.
+[Chương37](../book/CHAPTER_37_VALVE_POSITION_FEEDBACK.md).

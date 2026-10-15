@@ -2,7 +2,8 @@
 
 Controller IRRIGATION01, actuator VALVE01, farm FARM001. Separate ESP32/client
 and certificate, not an alias of ENV01/PUMP01. SIMULATOR only; no pump output,
-no physical valve position feedback. Main node/channel inventory excludes this
+no physical valve position verification. Optional V25 simulated end stops
+are specified below; legacy defaults remain UNKNOWN. Main node/channel inventory excludes this
 fixed controller; reserved IDs cannot be registered as ENV/WATER/SOIL sensors.
 
 Topics: `smartfarm/FARM001/VALVE01/{command,ack,status}`, QoS1, retain=false.
@@ -72,3 +73,32 @@ of SMARTFARM_CONTROL_ENABLED. Firmware IRRIGATION_DEMO_ENABLED=0 by default;
 IRRIGATION_SIMULATOR must be1. IAM additions are rendered locally by
 [helper](../../../tools/aws/render_irrigation_policies.py); it never provisions
 or calls AWS. See [chapter32](../../../docs/book/CHAPTER_32_IRRIGATION_VALVE_DEMO.md).
+
+## Optional position extension V25 (2026-10-15)
+
+Command JSON is unchanged. Firmware opt-in IRRIGATION_POSITION_FEEDBACK_ENABLED=1
+adds positionFeedback to status/ACK: exact {version:1,enabled:true,state,fault}.
+state is UNKNOWN/OPEN/CLOSED/CONFLICT and must equal top-level feedbackState.
+fault is null or SWITCH_CONFLICT/OPEN_TIMEOUT/CLOSE_TIMEOUT/POSITION_LOST.
+CONFLICT requires SWITCH_CONFLICT. Non-null fault requires gpioState CLOSED
+and reason POSITION_FAULT; POSITION_FAULT without fault is invalid. GPIO may
+be CLOSED while independent position is OPEN, or OPEN while still traveling
+from CLOSED; these facts must not be conflated. Source remains SIMULATOR.
+
+Without the extension, feedbackState must be UNKNOWN and reason cannot be
+POSITION_FAULT. Default firmware omits extension. Old backend strict parsers
+reject opt-in extra fields; deploy backend before enabling new firmware.
+V25 status storage adds nullable positionFeedback in HTTP latest (null for
+legacy), plus snapshot.feedbackRequired. Backend policy
+SMARTFARM_IRRIGATION_POSITION_FEEDBACK_REQUIRED defaults false. If policy is
+true OR latest advertises feedback, OPEN and rebind require CLOSED position
+with no fault, in addition to existing GPIO/freshness/revision/ordinal gates.
+CLOSE stays available; its ACK still reports GPIO execution only.
+
+Same-boot status cannot drop capability. Same-boot fault clearing requires a
+new known CLOSE ordinal, not only a higher sequence. ACK does not overwrite
+current position. Freshness remains15s source/receipt, future2s. New boot may
+change capability, but required policy still refuses legacy OPEN.
+Local debounce100ms/travel3s/sticky clear behavior and live limits:
+[chapter37](../../../docs/book/CHAPTER_37_VALVE_POSITION_FEEDBACK.md).
+No queue/pump coordination or water-delivery proof is introduced.

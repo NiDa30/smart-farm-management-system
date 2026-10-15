@@ -8,7 +8,7 @@ class ValveModel {
  bool isOpen()const{return opened;}uint64_t lastOrdinal()const{return ordinal;}const char* reason()const{return why;}
  void close(const char* reason){opened=false;why=reason;}
  void tick(uint32_t now,bool link){if(opened&&!link)close("CONNECTION_LOST");else if(opened&&uint32_t(now-started)>=duration)close("TIMER_EXPIRED");}
- const char* apply(uint64_t rank,bool open,unsigned seconds,int64_t issued,int64_t expires,int64_t epoch,uint32_t now,bool bootMatches,bool enabled,bool link){
+ const char* apply(uint64_t rank,bool open,unsigned seconds,int64_t issued,int64_t expires,int64_t epoch,uint32_t now,bool bootMatches,bool enabled,bool link,bool positionReady=true){
   tick(now,link);
   if(open&&!bootMatches)return "BOOT_MISMATCH";
   if(epoch<1700000000)return "CLOCK_NOT_READY";
@@ -22,6 +22,7 @@ class ValveModel {
   if(!open){close("COMMAND_CLOSE");return nullptr;}
   if(!enabled||!link)return "DEMO_DISABLED";
   if(opened)return "BUSY";
+  if(!positionReady)return "POSITION_NOT_READY";
   opened=true;started=now;duration=seconds*1000;why="COMMAND_OPEN";return nullptr;
  }
 };

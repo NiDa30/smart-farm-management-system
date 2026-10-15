@@ -1,7 +1,8 @@
 # IRRIGATION01 / VALVE01 LED prototype
 
 Standalone ESP32 GPIO26 →330Ω→blue LED→GND, not the ENV01 board. Only a
-single timer-controlled GPIO; no pump, mechanical feedback or coordinator.
+single timer-controlled GPIO. V25 adds optional independent simulated end stops;
+no pump, physical valve verification or coordinator.
 Default output CLOSED and demo disabled. Physical hardware use is unsupported.
 See [chapter32](../../docs/book/CHAPTER_32_IRRIGATION_VALVE_DEMO.md) for Windows,
 AWS certificate/policy, private config, filesystem and Wokwi instructions.
@@ -29,3 +30,20 @@ checks used a separate /tmp build with empty FS, never private keys/live AWS.
 Native ValveModel/ValvePacket tests cover deadline, wrap, boot binding,
 ordinal/dedup, network stop, decoding and source/feedback labels. ESP timer
 adapter, MQTT reconnection and physical GPIO still need Wokwi/live acceptance.
+
+## Optional position feedback (V25)
+
+Set IRRIGATION_POSITION_FEEDBACK_ENABLED=1 in the ignored controller config;
+old configs without the macro default to0. New diagram adds closedStop GPIO32
+(center2 to GPIO, contact1 GND) and openStop GPIO33 (center2 to GPIO, contact3
+GND), INPUT_PULLUP/active LOW. Inputs are independent of GPIO26: only closed
+active=CLOSED, only open=OPEN, neither=UNKNOWN, both=CONFLICT.
+Debounce100ms; travel timeout3s; conflict/position-loss/timeout force GPIO LOW
+and latch a fault. Stable CLOSED plus a newly accepted CLOSE clears it; no
+auto resume. Repeated bouncing cannot extend the loss deadline indefinitely.
+Update backend first, then build app/FS/merge and restart Wokwi. Set backend
+SMARTFARM_IRRIGATION_POSITION_FEEDBACK_REQUIRED=true to reject old GPIO-only
+status as an OPEN precondition. Backend default false preserves LED-only demo.
+No IAM/topic/certificate change. See [chapter37](../../docs/book/CHAPTER_37_VALVE_POSITION_FEEDBACK.md)
+for six unrun live cases and limits; feedback is SIMULATOR, not physical
+mechanical/water-delivery acceptance. Never infer position from command ACK.

@@ -1,1 +1,96 @@
-{"version":1,"author":"Smart Farm","editor":"wokwi","parts":[{"type":"board-esp32-devkit-c-v4","id":"esp","top":0,"left":0,"attrs":{}},{"type":"wokwi-led","id":"valve","top":-10,"left":280,"attrs":{"color":"blue","label":"VALVE01 GPIO only"}},{"type":"wokwi-resistor","id":"r","top":80,"left":230,"attrs":{"value":"330"}}],"connections":[["esp:26","r:1","green",[]],["r:2","valve:A","green",[]],["valve:C","esp:GND.1","black",[]]],"dependencies":{}}
+{
+  "version": 1,
+  "author": "Smart Farm",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "valve",
+      "top": -10,
+      "left": 280,
+      "attrs": {
+        "color": "blue",
+        "label": "VALVE01 GPIO only"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r",
+      "top": 80,
+      "left": 230,
+      "attrs": {
+        "value": "330"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "closedStop",
+      "top": 170,
+      "left": 280,
+      "attrs": {
+        "label": "CLOSED end stop (GPIO32)"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "openStop",
+      "top": 240,
+      "left": 280,
+      "attrs": {
+        "label": "OPEN end stop (GPIO33)"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:26",
+      "r:1",
+      "green",
+      []
+    ],
+    [
+      "r:2",
+      "valve:A",
+      "green",
+      []
+    ],
+    [
+      "valve:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "closedStop:2",
+      "esp:32",
+      "orange",
+      []
+    ],
+    [
+      "closedStop:1",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "openStop:2",
+      "esp:33",
+      "purple",
+      []
+    ],
+    [
+      "openStop:3",
+      "esp:GND.1",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

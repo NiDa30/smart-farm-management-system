@@ -19,7 +19,14 @@ class IrrigationDemoTest {
   pumps=jdbc.queryForObject("SELECT COUNT(*) FROM pump_command",Long.class);runs=jdbc.queryForObject("SELECT COUNT(*) FROM watering_run",Long.class);
   when(transport.irrigationConnected()).thenReturn(true);bind();reportStatus(1,0,"CLOSED",boot);
  }
- @AfterEach void after(){assertEquals(pumps,jdbc.queryForObject("SELECT COUNT(*) FROM pump_command",Long.class));assertEquals(runs,jdbc.queryForObject("SELECT COUNT(*) FROM watering_run",Long.class));}
+ @AfterEach void after(){assertEquals(pumps,jdbc.queryForObject("SELECT COUNT(*) FROM pump_command",Long.class));assertEquals(runs,jdbc.queryForObject("SELECT COUNT(*) FROM watering_run",Long.class));cleanupOwnFixture();}
+ void cleanupOwnFixture(){
+  jdbc.update("DELETE FROM irrigation_demo_command WHERE zone_id='IRRZONE'");
+  jdbc.update("DELETE FROM irrigation_demo_status WHERE zone_id='IRRZONE'");
+  jdbc.update("UPDATE irrigation_demo_binding SET zone_id=NULL,zone_revision=NULL WHERE zone_id='IRRZONE'");
+  jdbc.update("DELETE FROM irrigation_zone WHERE zone_id='IRRZONE'");
+  jdbc.update("DELETE FROM iot_node WHERE node_id='IRRSOIL'");
+ }
  void bind()throws Exception{service.bind(mapper.readTree("{\"zoneId\":\"IRRZONE\",\"zoneRevision\":1,\"revision\":1}"));}
  com.fasterxml.jackson.databind.node.ObjectNode packet(long seq,long last,String state,UUID b){return mapper.createObjectNode().put("schemaVersion",1).put("controllerId","IRRIGATION01").put("actuatorId","VALVE01").put("zoneId","IRRZONE").put("bootId",b.toString()).put("sequence",seq).put("timestamp",Instant.now().toString()).put("dataSource","SIMULATOR").put("feedbackState","UNKNOWN").put("gpioState",state).put("reason",state.equals("OPEN")?"COMMAND_OPEN":"COMMAND_CLOSE").put("demoEnabled",true).put("lastOrdinal",last);}
  void receive(String leaf,JsonNode p)throws Exception{service.receive("smartfarm/FARM001/VALVE01/"+leaf,mapper.writeValueAsBytes(p));}

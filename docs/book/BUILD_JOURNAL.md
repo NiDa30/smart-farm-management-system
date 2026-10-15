@@ -997,3 +997,21 @@ Không sửa production pool, không reset dữ liệu để vượt test.
 Sách [chương36](CHAPTER_36_PUMP_OWNERSHIP.md),
 [bàn giao](../implementation/LOCAL_PUMP_OWNERSHIP_REPORT.md). Queue vẫn diễn tập;
 sáu ca Windows/Wokwi mới Chưa chạy. Firmware/wire không đổi.
+
+
+## 15/10/2026 — V25 phản hồi vị trí VALVE01
+
+Trước khi nối van với bơm, thêm hai công tắc mô phỏng độc lập GPIO32/33,
+debounce100ms/travel3s/fault giữ và CLOSE ổn định để xóa. GPIO/ACK không được
+coi là vị trí. Packet extension opt-in, V25 status storage, policy required
+mặc địnhfalse; capability đã báo vẫn được kiểm tra. UI panel ở controller
+van, stale không được gọi CLOSED mới; chưa tạo global alert hoặc dispatch queue.
+
+300backend (14mới),13valve browser,4unit,native model/parser/encoder,public
+firmware default/opt-in,emptyFS/merge4MiB,lintbuild đạt. Full-app native→Java→
+PostgreSQL fresh và stale sau restart JVM giữ metadata/binding, command0.
+Full đầu lỗi FK fixture test van còn giữ zone/SOIL; sửa cleanup đúng ID rồi
+chạy lại300/300, không reset DB. Merge cần đúng --core-dir cache cloud.
+Không dùng private config/PEM. Sáu ca Windows/Wokwi mới Chưa chạy.
+[Chương37](CHAPTER_37_VALVE_POSITION_FEEDBACK.md),
+[bàn giao](../implementation/LOCAL_VALVE_POSITION_REPORT.md). Coordinator vẫn còn sau.

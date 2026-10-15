@@ -191,3 +191,14 @@ V23→24 giữ command/run/active reference; không dùng timer để nhả quy�
 Sáu ca Windows/AWS/Wokwi mới Chưa chạy. Chỉ profile fencing opt-in; legacy
 mặc định chưa ownership. Queue chưa dispatch, chưa sequencing van–bơm/lease
 tự hết hạn/HA scheduler. [Chương36](CHAPTER_36_PUMP_OWNERSHIP.md).
+
+
+## Phản hồi vị trí van V25 — 15/10/2026
+
+300backend skip0 (14mới),13valve browser,4unit,native/public firmware default
+và opt-in/emptyFS/merge/lintbuild đạt. Full-app encoder native→Java/PostgreSQL
+fresh CLOSED rồi stale qua restart thật, metadata/time/binding giữ nguyên;
+MQTT/control/valve-demofalse, command0. Migration V24→25 giữ status legacy
+UNKNOWN. Sáu ca Windows/AWS/Wokwi mới Chưa chạy. Chỉ công tắc mô phỏng, chưa
+van cơ khí/nước, global incident hoặc coordinator/dispatch queue.
+[Chương37](CHAPTER_37_VALVE_POSITION_FEEDBACK.md).
