@@ -978,3 +978,22 @@ lintbuild và full-app native/offline fixture trước-sau restart đạt. Queue
 V22→23 giữ4lượt; không AWS/Wokwi/GPIO,6ca Chưa chạy.
 [Chương35](CHAPTER_35_PUMP_HTTP_INTENT.md) ghi lỗi/cách sửa. Chưa ownership/
 lease hoặc dispatch queue.
+
+
+## 15/10/2026 — V24 quyền sử dụng PUMP01
+
+Lưu nguồn MANUAL/AUTOMATION/LEGACY, owner của OFF tự động và thời điểm khép
+claim trên command. Khóa PostgreSQL chung cho claim + manual hold hoặc
+tracking run; epoch/settings/calendar và mẫu đánh giá được kiểm tra lúc reserve.
+Worker cũ không được dùng OFF của run cũ để dừng lượt thủ công mới. Không
+nhả quyền vì timer/ACK/timeout/restart; cần status OFF mới bao phủ command.
+Run LEGACY chỉ có đường dừng khi có cả watering_run và active reference.
+
+286 backend (24 mới),15pump browser,5parserunit,lint/build đạt, không skip.
+Full-app local capture-only uncertain claim giữ qua restart JVM và navigation,
+không AWS/GPIO. Migration23→24 giữ claim/run. Full suite đầu lỗi quá nhiều
+connection; giới hạn Hikari ở cấu hình test4/idle1 rồi chạy lại đầy đủ đạt.
+Không sửa production pool, không reset dữ liệu để vượt test.
+Sách [chương36](CHAPTER_36_PUMP_OWNERSHIP.md),
+[bàn giao](../implementation/LOCAL_PUMP_OWNERSHIP_REPORT.md). Queue vẫn diễn tập;
+sáu ca Windows/Wokwi mới Chưa chạy. Firmware/wire không đổi.

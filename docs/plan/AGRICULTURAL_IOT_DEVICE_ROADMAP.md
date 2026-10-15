@@ -713,3 +713,16 @@ full-app native/offline fixture restart và bảo toàn4queue records đạt.6ca
 Windows/AWS/Wokwi Chưa chạy; legacy default không HTTP fence. Còn quyền sở
 hữu chung/manual-rule exclusion và sequence van-bơm trước dispatch queue;
 coordinator A3 chưa hoàn tất. [Chương35](../book/CHAPTER_35_PUMP_HTTP_INTENT.md).
+
+
+## Cập nhật 15/10/2026 — A3 nền quyền sử dụng bơm V24
+
+Sau HTTP intent V23 có claim bền vững MANUAL/AUTOMATION/LEGACY cho PUMP01
+protected profile, giữ qua timeout/restart và chỉ chuyển sau OFF proof.
+Manual hold hoặc rule tracking cùng giao dịch claim; epoch chặn quyết định
+cũ, OFF tự động gắn run-owner. Không phải lease hết hạn theo đồng hồ, chưa
+HA scheduler hoặc xác thực operator. 286backend/15browser/5unit/lintbuild và
+full-app local/restart đạt; sáu ca Windows/Wokwi mới Chưa chạy.
+Queue vẫn PREVIEW_ONLY, rule vẫn ENV01. Việc kế tiếp: gắn queue với owner,
+sequencing van–bơm có feedback/interlock, rồi mới rule từ vùng SOIL. Không
+coi coordinator A3 hoàn tất. [Chương36](../book/CHAPTER_36_PUMP_OWNERSHIP.md).

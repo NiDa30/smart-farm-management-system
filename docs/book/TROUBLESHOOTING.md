@@ -323,3 +323,20 @@ chứng minh request không thể tới sau. OFF mới đã lưu chặn ON cũ n
 xác nhận GPIO OFF. Khi MQTT offline, OFF vẫn có thể lưu failed và tăng
 phiên; history ghi MQTT_UNAVAILABLE. Đọc UUID cũ không tự gửi OFF khi mạng
 trở lại, cần yêu cầu mới. [Chương35](CHAPTER_35_PUMP_HTTP_INTENT.md).
+
+
+## V24: test full lỗi “too many clients already”
+
+Spring cache giữ nhiều context, mỗi Hikari pool mặc định10 connection. Context
+spy mới làm tổng kết nối vượt PostgreSQL test. Cấu hình riêng
+backend/src/test/resources/application.properties: maximum-pool-size4, minimum-idle1.
+Không tăng giới hạn production hay bỏ ca concurrency. Full suite sau sửa
+286/286, không skip. Xem [chương36](CHAPTER_36_PUMP_OWNERSHIP.md).
+
+## V24: đã timeout mà panel quyền sử dụng vẫn chặn bật
+
+Đúng hành vi khi thiếu OFF mới bao phủ ordinal. ACK OFF/timer/restart không
+đủ. Kiểm tra status mới, boot, ordinal, khóa và kết nối. Có thể gửi OFF thủ
+công khi backend cho điều khiển, chờ ACK/status; không sửa DB để ép nhả claim.
+Run từ bản cũ cần watering_run + active reference để gửi OFF tự động; LEGACY
+đơn lẻ không cấp quyền tự động. Queue vẫn PREVIEW_ONLY.

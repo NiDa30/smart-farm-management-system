@@ -627,3 +627,14 @@ OFF offline barrier, UI giữ ID/đối chiếu qua reload.262backend/11browser/
 lintbuild/full-app PostgreSQL restart đạt. Legacy mặc định chưa HTTP fence;
 queue vẫn PREVIEW_ONLY, ownership/lease/coordinator còn sau.6ca live Chưa chạy.
 [Chương35](../book/CHAPTER_35_PUMP_HTTP_INTENT.md).
+
+
+## Bằng chứng 15/10/2026 — quyền sử dụng bơm V24
+
+Protected PUMP01 lưu claim theo command, source/owner-parent/release, epoch
+quy tắc và tracking atomic dưới gate PostgreSQL. Không tự nhả claim bằng
+timer/restart; OFF tự động phải thuộc run còn sở hữu, manual OFF ưu tiên.
+286backend/15pump browser/5unit/lintbuild và full-app local process restart đạt.
+Capture-only transport, không AWS/GPIO; legacy mặc định chưa ownership, queue
+vẫn PREVIEW_ONLY, sáu ca live mới Chưa chạy. Không firmware/wire/IAM mới.
+[Chương36](../book/CHAPTER_36_PUMP_OWNERSHIP.md).

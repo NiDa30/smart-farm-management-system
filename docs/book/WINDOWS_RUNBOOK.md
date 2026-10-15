@@ -290,3 +290,15 @@ Web dùng UUID/context cho ON/reset và lưu mục chưa rõ qua reload cùng ta
 Đọc theo ID, không tự retry. OFF offline có thể đã lưu failed/barrier; phải
 đối chiếu lịch sử, không coi503 là chưa lưu ý định tắt.
 [Chương35](CHAPTER_35_PUMP_HTTP_INTENT.md) có6ca Windows Chưa chạy.
+
+
+## Cập nhật V24: quyền sử dụng PUMP01
+
+Pull và restart backend/frontend để migrate V24. Nếu V22 đã opt-in backend
+và firmware, không rebuild firmware hoặc sửa IAM vì V24. Không chạy lẫn
+binary backend cũ/mới trên cùng DB. Trong Điều khiển Actuator xem panel
+Quyền sử dụng bơm: claim chưa khép thì ON/reset bị chặn; OFF thủ công vẫn
+ưu tiên khi control đã bật. Rule đang bị manual hold phải được người dùng
+bật lại; restart không tự resume. Không xóa volume hoặc sửa DB để ép nhả quyền.
+Sáu ca thử và bằng chứng cần ghi trong [chương36](CHAPTER_36_PUMP_OWNERSHIP.md);
+tất cả ca Windows/Wokwi của V24 hiện Chưa chạy. Queue chưa điều phối thật.

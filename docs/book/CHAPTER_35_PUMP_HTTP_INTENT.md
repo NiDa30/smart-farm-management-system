@@ -2,6 +2,8 @@
 
 15/10/2026, giờ Việt Nam. Tiếp [MQTT fence V22](CHAPTER_34_PUMP_COMMAND_FENCING.md).
 
+> Cập nhật tiếp theo: [V24 quyền sử dụng bơm](CHAPTER_36_PUMP_OWNERSHIP.md) bổ sung loại trừ thủ công/tự động. Phần “chưa ownership” bên dưới ghi phạm vi tại mốc V23.
+
 ## Từ thứ tự MQTT đến ý định người dùng
 
 MQTT ordinal không chặn được một HTTP ON bị giữ trên đường đến server: nếu

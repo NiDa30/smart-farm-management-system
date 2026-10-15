@@ -15,3 +15,6 @@ export function parseReceipt(v:any,expected:PumpIntent):PumpReceipt{const c=v?.c
 }
 export const PENDING_KEY='smartfarm:PUMP01:http-intents:v1';
 export function loadIntents():PumpIntent[]{try{const v=JSON.parse(sessionStorage.getItem(PENDING_KEY)??'[]');return Array.isArray(v)&&v.length<=20&&v.every(validIntent)&&new Set(v.map(x=>x.requestId)).size===v.length?v:[];}catch{return [];}}
+
+export interface PumpOwnership {unresolvedCount:number;blocked:boolean;holder:{commandId:string;source:'LEGACY'|'MANUAL'|'AUTOMATION';reservedAt:string;releasable:boolean}|null}
+export function validOwnership(v:any):v is PumpOwnership {return !!v&&Number.isSafeInteger(v.unresolvedCount)&&v.unresolvedCount>=0&&typeof v.blocked==='boolean'&&(v.unresolvedCount===0?v.holder===null&&!v.blocked:!!v.holder&&uuid(v.holder.commandId)&&['LEGACY','MANUAL','AUTOMATION'].includes(v.holder.source)&&date(v.holder.reservedAt)&&typeof v.holder.releasable==='boolean'&&(v.holder.releasable||v.blocked)&&(v.unresolvedCount!==1||v.blocked!==v.holder.releasable));}

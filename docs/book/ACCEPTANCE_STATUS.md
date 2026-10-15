@@ -180,3 +180,14 @@ intent fence/lease hay coordinator. [Chương34](CHAPTER_34_PUMP_COMMAND_FENCING
 đối chiếu và restart process giữ record/tăng phiên. Queue migration giữ4lượt.
 6ca Windows/AWS/Wokwi Chưa chạy; legacy mặc định chưa HTTP fence; ownership/
 coordinator/dispatch queue chưa làm. [Chương35](CHAPTER_35_PUMP_HTTP_INTENT.md).
+
+
+## Quyền sử dụng bơm V24 — 15/10/2026
+
+286backend skip0 (24 ownership mới),15pump browser,5parserunit,lint/build đạt.
+Full-app React/backend/PostgreSQL riêng + restart JVM giữ claim MANUAL từ
+capture-only local transport; runtime MQTT/control/valve-demo false. Migration
+V23→24 giữ command/run/active reference; không dùng timer để nhả quyền.
+Sáu ca Windows/AWS/Wokwi mới Chưa chạy. Chỉ profile fencing opt-in; legacy
+mặc định chưa ownership. Queue chưa dispatch, chưa sequencing van–bơm/lease
+tự hết hạn/HA scheduler. [Chương36](CHAPTER_36_PUMP_OWNERSHIP.md).

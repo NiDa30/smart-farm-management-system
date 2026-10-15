@@ -15,23 +15,25 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
-/** MQTT boot/ordinal protection and versioned HTTP intent, not a pump ownership lease. */
+/** MQTT and HTTP fencing, with durable manual/automation ownership. No expiring lease. */
 @Service
 public class PumpCommandFencing {
  public record HttpIntent(UUID requestId,String action,Integer durationSeconds,UUID expectedBootId,Long intentRevision,Instant reviewedAt) {}
  public record Receipt(HttpIntent request,PumpService.Command command) {}
  public record Context(long revision,Instant asOf,UUID bootId,boolean ready) {}
- public record View(boolean required,boolean deviceEnabled,boolean compatible,boolean restartRequired,Long lastOrdinal,Context intent) {}
+ public record View(boolean required,boolean deviceEnabled,boolean compatible,boolean restartRequired,Long lastOrdinal,Context intent,PumpOwnership.View ownership) {}
  private record Device(UUID boot,String state,boolean locked,boolean fresh,Integer version,Long ordinal,boolean restart) {}
  private record Dispatch(UUID id,byte[] payload,boolean replay,boolean unavailable) {}
  private final JdbcTemplate jdbc;private final ObjectMapper mapper;private final ObjectProvider<CommandTransport> transports;
  private volatile boolean httpReady;
+ private final PumpOwnership ownership;
  private final TransactionTemplate tx;private final boolean required,controlEnabled;
  public PumpCommandFencing(JdbcTemplate jdbc,ObjectMapper mapper,ObjectProvider<CommandTransport> transports,PlatformTransactionManager manager,
-  @Value("${smartfarm.control.pump-fencing-enabled:false}") boolean required,@Value("${smartfarm.control.enabled:false}") boolean controlEnabled){this.jdbc=jdbc;this.mapper=mapper;this.transports=transports;this.tx=new TransactionTemplate(manager);this.required=required;this.controlEnabled=controlEnabled;}
+  @Value("${smartfarm.control.pump-fencing-enabled:false}") boolean required,@Value("${smartfarm.control.enabled:false}") boolean controlEnabled){this.jdbc=jdbc;this.ownership=new PumpOwnership(jdbc);this.mapper=mapper;this.transports=transports;this.tx=new TransactionTemplate(manager);this.required=required;this.controlEnabled=controlEnabled;}
  public boolean required(){return required;}
+ public <T> T ruleTransaction(java.util.function.Supplier<T> work){return tx.execute(t->{lock();return work.get();});}
  @org.springframework.transaction.annotation.Transactional(readOnly=true,isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
- public View view(){var d=device();boolean enabled=d!=null&&Integer.valueOf(1).equals(d.version());return new View(required,enabled,enabled==required,d!=null&&d.restart(),d==null?null:d.ordinal(),required?new Context(revision(),Instant.now(),d==null?null:d.boot(),httpReady):null);}
+ public View view(){var d=device();boolean enabled=d!=null&&Integer.valueOf(1).equals(d.version());return new View(required,enabled,enabled==required,d!=null&&d.restart(),d==null?null:d.ordinal(),required?new Context(revision(),Instant.now(),d==null?null:d.boot(),httpReady):null,required?ownership.view():null);}
  @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
  public void invalidateHttpOnStartup(){if(required){tx.executeWithoutResult(t->{lock();bump();});httpReady=true;}}
  private void lock(){jdbc.queryForObject("SELECT singleton FROM pump_dispatch_gate WHERE singleton=1 FOR UPDATE",Integer.class);}
@@ -43,16 +45,20 @@ public class PumpCommandFencing {
     ||(r.action().equals("ON")?r.durationSeconds()==null||r.durationSeconds()<1||r.durationSeconds()>3600:r.durationSeconds()!=null)||(!r.action().equals("OFF")&&r.expectedBootId()==null))throw bad(HttpStatus.BAD_REQUEST,"Invalid HTTP pump intent");
   return new HttpIntent(r.requestId(),r.action(),r.durationSeconds(),r.expectedBootId(),r.intentRevision(),r.reviewedAt().truncatedTo(ChronoUnit.MICROS));
  }
+ public PumpService.Command createAutomatic(PumpService.Request request,UUID owner,Consumer<UUID> reserve){
+  if(!Set.of("ON","OFF").contains(request.action())||(request.action().equals("ON")?(owner!=null||request.durationSeconds()==null||request.durationSeconds()<1||request.durationSeconds()>30):request.durationSeconds()!=null))throw bad(HttpStatus.BAD_REQUEST,"Invalid automatic request");
+  return dispatch(request,id->{},null,()->{},true,owner,reserve);
+ }
  public Receipt createHttp(HttpIntent input,Runnable manualHold){
   HttpIntent r=validated(input);
-  try{dispatch(new PumpService.Request(r.action(),r.durationSeconds()),id->{},r,manualHold);}catch(PumpService.UncertainPublish e){/* Saved identity permits GET reconciliation; never replay. */}
+  try{dispatch(new PumpService.Request(r.action(),r.durationSeconds()),id->{},r,manualHold,false,null,id->{});}catch(PumpService.UncertainPublish e){/* Saved identity permits GET reconciliation; never replay. */}
   return lookupHttp(r.requestId());
  }
  private Device device(){Instant now=Instant.now();return jdbc.query("SELECT * FROM pump_status WHERE singleton=1",(r,n)->new Device(r.getObject("boot_id",UUID.class),r.getString("reported_state"),r.getBoolean("safety_lockout"),
   r.getTimestamp("observed_at").toInstant().isAfter(now.minusSeconds(15))&&r.getTimestamp("received_at").toInstant().isAfter(now.minusSeconds(15))&&!r.getTimestamp("observed_at").toInstant().isAfter(now.plusSeconds(2))&&!r.getTimestamp("received_at").toInstant().isAfter(now.plusSeconds(2)),
   r.getObject("fence_version",Integer.class),r.getObject("last_fence_ordinal",Long.class),r.getBoolean("fence_restart_required"))).stream().findFirst().orElse(null);}
- public PumpService.Command create(PumpService.Request request,Consumer<UUID> beforePublish){return dispatch(request,beforePublish,null,()->{});}
- private PumpService.Command dispatch(PumpService.Request request,Consumer<UUID> beforePublish,HttpIntent http,Runnable manualHold){
+ public PumpService.Command create(PumpService.Request request,Consumer<UUID> beforePublish){return dispatch(request,beforePublish,null,()->{},false,null,id->{});}
+ private PumpService.Command dispatch(PumpService.Request request,Consumer<UUID> beforePublish,HttpIntent http,Runnable manualHold,boolean automatic,UUID owner,Consumer<UUID> reserve){
   if(http==null&&(!required||!controlEnabled))throw bad(HttpStatus.FORBIDDEN,"Fenced pump control is disabled");
   var transport=transports.getIfAvailable();
   Dispatch dispatch=tx.execute(t->{
@@ -73,6 +79,8 @@ public class PumpCommandFencing {
    jdbc.update("UPDATE pump_command SET state='TIMED_OUT' WHERE state IN ('PENDING','SENT','PUBLISH_UNCERTAIN') AND expires_at<CURRENT_TIMESTAMP-INTERVAL '5 seconds'");
    var d=device();boolean off=request.action().equals("OFF"),capable=d!=null&&Integer.valueOf(1).equals(d.version());
    if(http!=null&&!off&&(d==null||!d.boot().equals(http.expectedBootId())))throw bad(HttpStatus.CONFLICT,"Device boot changed; review again");
+   if(automatic&&off)ownership.requireRuleOwner(owner);
+   if(automatic&&!off&&jdbc.queryForObject("SELECT COUNT(*) FROM watering_rule WHERE singleton=1 AND enabled AND active_command IS NULL",Long.class)!=1)throw bad(HttpStatus.CONFLICT,"Automatic rule is paused or already running");
    if(!off){
     if(!capable||!d.fresh()||!d.state().equals("OFF"))throw bad(HttpStatus.CONFLICT,"Fresh fenced OFF device required");
     if(d.restart())throw bad(HttpStatus.CONFLICT,"Reboot device after unfenced emergency OFF");
@@ -81,11 +89,15 @@ public class PumpCommandFencing {
      throw bad(HttpStatus.CONFLICT,"Wait for device status covering all dispatched commands");
     if(jdbc.queryForObject("SELECT COUNT(*) FROM pump_command c JOIN pump_status s ON s.singleton=1 WHERE c.reported_state='ON' AND c.ack_boot_id=s.boot_id AND c.ack_sequence>=s.sequence",Long.class)>0)
      throw bad(HttpStatus.CONFLICT,"Wait for OFF status newer than ON acknowledgment");
+    ownership.requireAvailable();
    }
    UUID id=http==null?UUID.randomUUID():http.requestId();Instant issued=Instant.now().truncatedTo(ChronoUnit.SECONDS),expires=issued.plusSeconds(10);
    Long ordinal=capable?jdbc.queryForObject("SELECT nextval('pump_fence_ordinal_seq')",Long.class):null;
    UUID target=capable?d.boot():null;
    jdbc.update("INSERT INTO pump_command(command_id,action,duration_seconds,issued_at,expires_at,state,fence_ordinal,target_boot_id) VALUES(?,?,?,?,?,'PENDING',?,?)",id,request.action(),request.durationSeconds(),Timestamp.from(issued),Timestamp.from(expires),ordinal,target);
+   jdbc.update("UPDATE pump_command SET control_source=?,owner_command_id=? WHERE command_id=?",automatic?"AUTOMATION":"MANUAL",automatic&&off?owner:null,id);
+   if(automatic)reserve.accept(id); // tracking and generation check are atomic with claim
+   else jdbc.update("UPDATE watering_rule SET enabled=false,low_count=0,last_result='MANUAL_HOLD',execution_epoch=execution_epoch+1 WHERE singleton=1");
    if(http!=null){
     jdbc.update("UPDATE pump_command SET http_intent_revision=?,http_expected_boot=?,http_reviewed_at=? WHERE command_id=?",http.intentRevision(),http.expectedBootId(),Timestamp.from(http.reviewedAt()),id);
     manualHold.run(); // same DB transaction; duplicate reconciliation never pauses a newer rule
