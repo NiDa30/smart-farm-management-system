@@ -66,3 +66,20 @@ new boot; monitor faults need corrected inputs and reboot, no CLOSE/reset
 command is provided.
 [Vietnamese chapter39](../../docs/book/CHAPTER_39_CIRCUIT_VALVE_MONITOR.md) lists
 configuration, policy rendering and Windows/Wokwi cases still unrun.
+
+## Download a separate monitor project from the app
+
+Control → Circuit configuration can export a complete public project for a
+current SIMULATOR mapping with distinct controller/valve02–99 and one board
+per client. It captures circuit/zone revisions, enables MONITOR_ONLY/feedback,
+keeps DEMO_ENABLED0, labels the diagram and adds narrow status-only policies.
+Account ID only renders ARN, region fixed ap-southeast-1. No provisioning,
+endpoint, certificates/private keys, command subscriptions or ACKs are added.
+
+Unzip into a new directory, follow README_VI.md, use a separate certificate
+and private local config/data, then build/FS/merge that project. Do not
+overwrite a board with keys or interpret its always-OFF LED as a failed
+command. Redownload on mapping changes and boot anew. The original repo
+profile stays unchanged. [Chapter44](../../docs/book/CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md)
+has five unrun Windows/AWS/Wokwi cases; cloud checks build exported public
+projects and a native packet, not real simulator/GPIO or AWS provisioning.

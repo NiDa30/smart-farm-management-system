@@ -21,7 +21,22 @@
     <dependency><groupId>software.amazon.awssdk.iotdevicesdk</groupId><artifactId>aws-iot-device-sdk</artifactId><version>1.34.0</version></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
   </dependencies>
-  <build><plugins>
+  <build>
+    <resources>
+      <resource><directory>src/main/resources</directory><filtering>false</filtering></resource>
+      <!-- Explicit public inputs only. Never package private config, data, PEM or .pio. -->
+      <resource>
+        <directory>${project.basedir}/../firmware/irrigation-node</directory>
+        <targetPath>public-firmware/irrigation-monitor</targetPath><filtering>false</filtering>
+        <includes>
+          <include>src/main.cpp</include><include>include/ValveModel.h</include>
+          <include>include/ValveFeedback.h</include><include>include/ValveMonitor.h</include>
+          <include>include/ValvePacket.h</include><include>config/config.example.h</include>
+          <include>platformio.ini</include><include>diagram.json</include><include>wokwi.toml</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
     <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin>
     <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.5.0</version></plugin>
   </plugins></build>

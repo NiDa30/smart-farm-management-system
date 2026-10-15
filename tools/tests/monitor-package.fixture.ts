@@ -1,0 +1,2 @@
+// Actual small ZIP for transport fixtures; full firmware archive is tested against the backend.
+export const monitorPackageZip=Buffer.from('UEsDBBQAAAAIAASJT12wfcQbPwAAAD4AAAAMAAAAUkVBRE1FX1ZJLm1kc8usKCktSlVIyS/Py8lPTFHIz8uptFYoSk3MUShITM5OTE9VKEstykzLTE1RSExPzMwrLlFIAkqk5qXocQEAUEsBAhQDFAAAAAgABIlPXbB9xBs/AAAAPgAAAAwAAAAAAAAAAAAAAIABAAAAAFJFQURNRV9WSS5tZFBLBQYAAAAAAQABADoAAABpAAAAAAA=','base64');

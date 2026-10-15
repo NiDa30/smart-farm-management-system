@@ -92,8 +92,9 @@ rõ ràng trước khi mở rộng. Lộ trình này không tự đổi schema, 
 Phao hiện tại chỉ có nước/cạn; mất tín hiệu hở được coi là cạn. Chưa có phép
 đo flow/áp suất live, phần trăm bồn hoặc bằng chứng bơm vật lý chạy. V2 đã
 nhận/lưu được các loại measurement nước trong kiểm tra cloud, không đồng
-nghĩa đã lắp đồng hồ thật. NVS chưa làm; sau reboot
-chỉ đọc lại đầu vào, không bảo toàn latch RAM. Một status cũ không chứng minh
+nghĩa đã lắp đồng hồ thật. Mặc định khóa vẫn thuộc RAM; V31 đã thêm
+NVS journal opt-in, mọi boot OFF/khóa và không resume ON, chưa nghiệm thu
+retention/brownout thật (xem cập nhật V31 cuối tài liệu). Một status cũ không chứng minh
 bồn hiện đang có nước.
 
 ## 3. Danh mục 18 nhóm thiết bị trong ý tưởng
@@ -818,3 +819,15 @@ Sáu ca Windows/AWS/Wokwi/ESP32 Chưa chạy; chưa chứng minh flash retention
 Còn command nhiều van, proof theo circuit, interlock xuyên controller và
 coordinator/queue dispatch; A3 chưa hoàn tất.
 [Chương43](../book/CHAPTER_43_DURABLE_PUMP_SAFETY.md).
+
+## Cập nhật 15/10/2026 — chuẩn bị nhiều simulator từ nhánh
+
+Có gói project Wokwi monitor theo mapping, controller/valve02–99 riêng,
+circuit/zone revision, public source/diagram/config, status-only policy và
+manifest SHA. API chặn cấu hình cũ/shared client/source sai; GPIO giữ OFF.
+Không migration mới (vẫnV31), provisioning hoặc dispatch.416backend/42browser/
+6unit/5policy/12contract/public2project/native config→PostgreSQL→React/restart
+đạt; sửa JSON map ordering để core hash ổn định. Năm ca Windows/AWS/Wokwi
+Chưa chạy. Người dùng còn phải cấp endpoint/certificate riêng và chạy board.
+A3 còn command nhiều van, proof theo nhánh, interlock xuyên controller và
+coordinator/dispatch queue. [Chương44](../book/CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md).

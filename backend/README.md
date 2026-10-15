@@ -206,3 +206,19 @@ V31 adds nullable JSONB without backfill/enablement. Safety exposes a device
 report only, never flash attestation or an ON dispatch permission. ACK unchanged.
 [Chapter43](../docs/book/CHAPTER_43_DURABLE_PUMP_SAFETY.md),
 [handoff](../docs/implementation/LOCAL_DURABLE_PUMP_SAFETY_REPORT.md).
+
+## Per-circuit public Wokwi monitor package (schema remains V31)
+
+GET /api/v1/irrigation-circuits/{id}/monitor-package?accountId=ACCOUNT_ID&expectedRevision=N&expectedZoneRevision=N
+returns application/zip with no-store attachment and reviewed identity/revision
+headers. Requires current SIMULATOR mapping, distinct controller/client and
+controller/valve02–99. Region fixed ap-southeast-1. Read-only repeatable-read
+snapshot; no credential lookup, SDK, provisioning or dispatch.
+
+Maven embeds exactly9 explicit public firmware assets; never private config,
+PEM/data/.pio. ZIP15files adds per-circuit monitor config, status-only device
+policy/backend IAM addition,14file SHA-256 manifest and Vietnamese runbook.
+JSON map keys are sorted to keep policy bytes stable across JVM restarts;
+generation timestamps intentionally change. Full-app two downloads/native
+receiver/build/restart checked. [Chapter44](../docs/book/CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md),
+[handoff](../docs/implementation/LOCAL_CIRCUIT_MONITOR_PACKAGE_REPORT.md).

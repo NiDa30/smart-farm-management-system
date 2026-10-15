@@ -279,3 +279,15 @@ Tính năng default0, every-boot OFF/khóa, explicit boot-targeted reset; không
 resume. Sáu ca Windows/AWS/Wokwi/ESP32 trong [chương43](CHAPTER_43_DURABLE_PUMP_SAFETY.md)
 đều Chưa chạy. Chưa nghiệm thu NVS retention/IO thật/brownout/GPIO hoặc
 coordinator nhiều van. MQTT/AWS/control không được gọi trong cloud fixture.
+
+## Gói Wokwi theo nhánh — sau V31, schema không đổi
+
+416backend,26browser nhánh/16queue,6unit,5policy/12contract đạt,0skip. API
+JAR thực xuất2ZIP, SHA/policy parity, public firmware2board build, native
+config→receiver/PostgreSQL/React đúng van, restart clocks/history/stale và
+canonical JSON core hash đạt. Initial restart fail đã được sửa sort map
+keys và kiểm lại; artifact cũ giữ riêng. NoAWS/noMQTT/noGPIO, commands0.
+
+Đã có nút chuẩn bị project monitor riêng, không tự thêm thiết bị AWS hoặc
+chạy simulator. Năm ca Windows/AWS/Wokwi trong [chương44](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md)
+vẫn Chưa chạy; chưa command nhiều van/coordinator/dispatch queue.

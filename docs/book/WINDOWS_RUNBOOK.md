@@ -417,3 +417,16 @@ FARM_PUMP_DURABLE_SAFETY_ENABLED=1 và FARM_PUMP_FENCING_ENABLED=1, bật backen
 fence khớp rồi build app/FS/merge theo [chương43](CHAPTER_43_DURABLE_PUMP_SAFETY.md).
 Giữ các guard/config/key riêng. Every boot OFF/khóa, cần reset mới; không
 resume600giây cũ. Sáu ca live chưa chạy, chưa xác minh NVS giữ flash.
+
+## Tải project Wokwi riêng theo nhánh
+
+Pull/restart backend và frontend, schema vẫnV31. Vào Điều khiển Actuator →
+Cấu hình nhánh tưới, nhập Account ID12số (không access key), tải gói trên
+hàng nhánh CURRENT/SIMULATOR/controller/van02–99 với controller riêng.
+Giải nén project mới; README_VI.md trong gói chỉ cách copy private config,
+điền endpoint, chuẩn bị certificate riêng rồi build/appFSmerge. Không ghi
+đè board có key. Backend bật MONITOR_ENABLED và restart để lấy topic mới.
+
+GPIO/LED trong profile này luôn OFF; đổi switch độc lập32/33 để giám sát.
+Tải gói không tạo Thing/certificate hoặc bật bơm. Năm ca live Chưa chạy;
+xem [chương44](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md).

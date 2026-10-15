@@ -2,13 +2,17 @@ import React,{useEffect,useRef,useState} from 'react';
 import {parseZones,type ZoneSnapshot} from '../zones/zoneApi';
 import {parseNodes,type NodesSnapshot} from '../nodes/nodeApi';
 import {parseCircuit,parseCircuits,sameCircuit,circuitLabels,observedValveState,type CircuitConfig,type CircuitSnapshot} from './circuitApi';
+import {packageBlock,validPackageAccount,readMonitorPackage,monitorPackageFilename} from './monitorPackageApi';
 const API='/api/v1/irrigation-circuits';
 const blank=():CircuitConfig=>({circuitId:'',name:'',zoneId:'',zoneRevision:1,controllerId:'IRRIGATION01',valveId:'VALVE01',pumpId:'PUMP01',waterNodeId:'',lowChannelId:'',flowChannelId:'',expectedSource:'SIMULATOR',revision:1});
 export function IrrigationCircuitPanel({onBack,onQueue,onHistory}:{onBack?:()=>void;onQueue?:()=>void;onHistory?:()=>void}) {
  const [data,setData]=useState<CircuitSnapshot|null>(null),[zones,setZones]=useState<ZoneSnapshot|null>(null),[nodes,setNodes]=useState<NodesSnapshot|null>(null),[form,setForm]=useState(blank),[editing,setEditing]=useState(false);
  const [busy,setBusy]=useState(false),[epoch,setEpoch]=useState(0),[error,setError]=useState(''),[message,setMessage]=useState(''),[pending,setPending]=useState<{config:CircuitConfig;editing:boolean}|null>(null),[,redraw]=useState(0);
+ const [packageAccount,setPackageAccount]=useState(''),[packageBusy,setPackageBusy]=useState(false),[packageMessage,setPackageMessage]=useState(''),[packageError,setPackageError]=useState('');
+ const packageRequest=useRef<AbortController|null>(null),latestData=useRef<CircuitSnapshot|null>(null),packageFlight=useRef(false);
+ latestData.current=data;
  const mounted=useRef(true),flight=useRef(false),mutation=useRef<AbortController|null>(null),clock=useRef({floor:0,at:0,received:0});
- useEffect(()=>{mounted.current=true;const t=setInterval(()=>redraw(v=>v+1),500);return()=>{mounted.current=false;mutation.current?.abort();clearInterval(t);};},[]);
+ useEffect(()=>{mounted.current=true;const t=setInterval(()=>redraw(v=>v+1),500);return()=>{mounted.current=false;mutation.current?.abort();packageRequest.current?.abort();clearInterval(t);};},[]);
  useEffect(()=>{if(busy)return;let alive=true,running=false,current:AbortController|null=null;
   async function load(){if(running)return;running=true;const abort=new AbortController();current=abort;const start=performance.now(),timer=setTimeout(()=>abort.abort(),7000);try{
    const [a,b,c]=await Promise.all([fetch(API,{signal:abort.signal,cache:'no-store'}),fetch('/api/v1/irrigation-zones',{signal:abort.signal,cache:'no-store'}),fetch('/api/v1/nodes',{signal:abort.signal,cache:'no-store'})]);if(!a.ok||!b.ok||!c.ok)throw new Error();
@@ -18,6 +22,7 @@ export function IrrigationCircuitPanel({onBack,onQueue,onHistory}:{onBack?:()=>v
   void load();const t=setInterval(()=>void load(),2000);return()=>{alive=false;current?.abort();clearInterval(t);};
  },[busy,epoch]);
  const now=clock.current.floor+Math.max(0,performance.now()-clock.current.at),fresh=!!data&&!error&&performance.now()-clock.current.received<10000&&now-Date.parse(data.asOf)<10000;
+ const packageReady=useRef(false);packageReady.current=fresh&&!busy&&!pending;
  const selectedZone=zones?.zones.find(z=>z.config.zoneId===form.zoneId)?.config,water=nodes?.nodes.find(n=>n.nodeId===form.waterNodeId&&n.nodeType==='WATER');
  const effective={...form,zoneRevision:selectedZone?.revision??form.zoneRevision,expectedSource:selectedZone?.expectedSource??form.expectedSource};
  let valid=false;try{parseCircuit(effective);valid=!!selectedZone&&!!water?.channels.some(c=>c.channelId===form.lowChannelId&&c.metric==='WATER_PRESENT')&&!!water?.channels.some(c=>c.channelId===form.flowChannelId&&c.metric==='FLOW_RATE');}catch{}
@@ -29,7 +34,22 @@ export function IrrigationCircuitPanel({onBack,onQueue,onHistory}:{onBack?:()=>v
   }catch{if(mounted.current){setPending(attempt);setMessage('Chưa rõ kết quả lưu. Đối chiếu theo mã nhánh; không tự gửi lại.');}}finally{clearTimeout(timer);flight.current=false;if(mounted.current){setBusy(false);setEpoch(v=>v+1);}}
  }
  async function reconcile(){if(!pending||flight.current)return;flight.current=true;setBusy(true);const abort=new AbortController();mutation.current=abort;const timer=setTimeout(()=>abort.abort(),7000);try{const r=await fetch(API+'/'+encodeURIComponent(pending.config.circuitId),{signal:abort.signal,cache:'no-store'});if(!r.ok)throw new Error();const c=parseCircuit(await r.json());if(c.circuitId!==pending.config.circuitId)throw new Error();if(mounted.current){setForm(c);setEditing(true);setPending(null);setMessage(sameCircuit(c,pending.config)&&c.revision===(pending.editing?pending.config.revision+1:1)?'Đã đối chiếu cấu hình đã lưu. Không gửi lại yêu cầu.':'Cấu hình hiện tại khác yêu cầu. Đã đọc vào biểu mẫu để bạn xem lại; chưa gửi thay đổi.');}}catch{if(mounted.current)setMessage('Chưa đối chiếu được. Giữ mã nhánh để đọc lại, không tự gửi lại.');}finally{clearTimeout(timer);flight.current=false;if(mounted.current){setBusy(false);setEpoch(v=>v+1);}}}
- const locked=busy||!!pending;
+ const locked=busy||!!pending||packageBusy;
+ async function download(c:CircuitConfig){
+  if(packageFlight.current||locked||!fresh||!validPackageAccount(packageAccount))return;
+  const reviewed=data?.circuits.find(v=>v.config.circuitId===c.circuitId);if(!data||!reviewed||packageBlock(reviewed,data))return;
+  packageFlight.current=true;setPackageBusy(true);setPackageMessage('');setPackageError('');
+  const abort=new AbortController();packageRequest.current=abort;const timer=setTimeout(()=>abort.abort(),10000);
+  try{
+   const blob=await readMonitorPackage(c,packageAccount,abort.signal);
+   if(!mounted.current)return;
+   const current=latestData.current,v=current?.circuits.find(v=>v.config.circuitId===c.circuitId);
+   if(!packageReady.current||!current||!v||!sameCircuit(v.config,c)||v.config.revision!==c.revision||packageBlock(v,current))throw new Error('Cấu hình đã đổi hoặc không còn mới trong lúc tải. Đọc lại rồi tải gói mới.');
+   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=monitorPackageFilename(c);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+   setPackageMessage(`Đã tải gói ${c.circuitId} v${c.revision}. Giải nén vào project riêng theo README_VI.md; chưa provision hoặc xác nhận simulator chạy.`);
+  }catch(e){if(mounted.current)setPackageError(e instanceof Error&&e.name!=='AbortError'?e.message:'Tải gói quá hạn. Chưa tạo tài nguyên hoặc gửi lệnh thiết bị.');}
+  finally{clearTimeout(timer);packageFlight.current=false;if(mounted.current)setPackageBusy(false);}
+ }
  function edit(c:CircuitConfig){setForm(c);setEditing(true);setMessage('Đang sửa phiên bản '+c.revision+'.');}
  return <section aria-label="Cấu hình nhánh tưới" className="max-w-5xl mx-auto space-y-4">
   <div>{onBack&&<button className="underline mr-4" disabled={busy} onClick={onBack}>Quay lại điều khiển</button>}{onQueue&&<button className="underline" disabled={busy} onClick={onQueue}>Mở hàng chờ diễn tập</button>}</div>
@@ -51,7 +71,14 @@ export function IrrigationCircuitPanel({onBack,onQueue,onHistory}:{onBack?:()=>v
    <button className="border rounded p-2 disabled:opacity-40" type="submit" disabled={locked||!fresh||!valid}>{editing?'Lưu sửa nhánh':'Tạo nhánh'}</button>
   </form>
   {data&&<p>Giám sát van riêng: {data.valveMonitorEnabled?'Đã bật':'Đang tắt'}. Chỉ hiển thị phản hồi, không gửi lệnh mở van.</p>}
-  <ul className="space-y-3">{data?.circuits.map(v=><li key={v.config.circuitId} className="border p-4 rounded bg-white"><h2 className="font-bold">{v.config.name} · {v.config.circuitId} · v{v.config.revision}</h2><p>{v.config.zoneId} → {v.config.controllerId}/{v.config.valveId} · {v.config.pumpId} · {v.config.waterNodeId} ({v.config.expectedSource})</p><p>{circuitLabels[v.configurationState]}</p><p>Phao {v.config.lowChannelId}: {fresh&&now-Date.parse(data.asOf)<15000?circuitLabels[v.low.state]:'Cần đọc lại dữ liệu'} · Lưu lượng {v.config.flowChannelId}: {fresh?circuitLabels[v.flow.state]:'Cần đọc lại dữ liệu'}</p><p>Van: {observedValveState(v,now,fresh)}. Không suy ra nước đã đi qua nhánh.</p>{v.valveObservation&&<p className="text-sm">Quan sát riêng: {v.valveObservation.controllerId}/{v.valveObservation.actuatorId} · Mô phỏng · GPIO trong mẫu: Tắt{v.valveObservation.reason==='DEVICE_FAULT'?' · Thiết bị báo lỗi':''} · Báo lúc {new Date(v.valveObservation.observedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}{v.valveObservation.positionFeedback?.fault&&` · Lỗi lưu: ${v.valveObservation.positionFeedback.fault}`}</p>}<button className="underline" disabled={locked||!fresh} onClick={()=>edit(v.config)}>Sửa nhánh {v.config.circuitId}</button></li>)}</ul>
+  <section className="border rounded p-4 bg-sky-50 space-y-2" aria-label="Gói Wokwi theo nhánh">
+   <h2 className="font-semibold">Tạo project giám sát riêng cho mỗi nhánh</h2>
+   <p>Gói ZIP có firmware công khai, sơ đồ, mã nhánh/van và policy status-only. Region Singapore (ap-southeast-1). GPIO giữ tắt; bạn thêm endpoint và chứng chỉ riêng sau khi giải nén.</p>
+   <label>AWS Account ID cho policy<input aria-label="AWS Account ID cho gói Wokwi" inputMode="numeric" autoComplete="off" maxLength={12} className="border p-2 ml-2" value={packageAccount} disabled={packageBusy} onChange={e=>{setPackageAccount(e.target.value);setPackageMessage('');setPackageError('');}} placeholder="12 chữ số"/></label>
+   <p className="text-sm">Chỉ nhập Account ID, không nhập access key/secret key. Trường này không lưu vào cấu hình nhánh. Mỗi board có controller ID và chứng chỉ riêng; tải gói không tạo tài nguyên AWS.</p>
+   {packageMessage&&<p role="status">{packageMessage}</p>}{packageError&&<p role="alert">{packageError}</p>}
+  </section>
+  <ul className="space-y-3">{data?.circuits.map(v=><li key={v.config.circuitId} className="border p-4 rounded bg-white"><h2 className="font-bold">{v.config.name} · {v.config.circuitId} · v{v.config.revision}</h2><p>{v.config.zoneId} → {v.config.controllerId}/{v.config.valveId} · {v.config.pumpId} · {v.config.waterNodeId} ({v.config.expectedSource})</p><p>{circuitLabels[v.configurationState]}</p><p>Phao {v.config.lowChannelId}: {fresh&&now-Date.parse(data.asOf)<15000?circuitLabels[v.low.state]:'Cần đọc lại dữ liệu'} · Lưu lượng {v.config.flowChannelId}: {fresh?circuitLabels[v.flow.state]:'Cần đọc lại dữ liệu'}</p><p>Van: {observedValveState(v,now,fresh)}. Không suy ra nước đã đi qua nhánh.</p>{v.valveObservation&&<p className="text-sm">Quan sát riêng: {v.valveObservation.controllerId}/{v.valveObservation.actuatorId} · Mô phỏng · GPIO trong mẫu: Tắt{v.valveObservation.reason==='DEVICE_FAULT'?' · Thiết bị báo lỗi':''} · Báo lúc {new Date(v.valveObservation.observedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}{v.valveObservation.positionFeedback?.fault&&` · Lỗi lưu: ${v.valveObservation.positionFeedback.fault}`}</p>}<button className="underline" disabled={locked||!fresh} onClick={()=>edit(v.config)}>Sửa nhánh {v.config.circuitId}</button><div className="mt-2 space-y-1"><button className="border rounded px-3 py-2 disabled:opacity-40" disabled={locked||!fresh||!validPackageAccount(packageAccount)||!!packageBlock(v,data)} onClick={()=>void download(v.config)}>Tải gói Wokwi {v.config.circuitId}</button><p className="text-xs">{packageBlock(v,data)??'Project riêng theo phiên bản nhánh; cần endpoint/chứng chỉ riêng để kết nối.'}</p></div></li>)}</ul>
   <p className="text-sm">IRRIGATION01/VALVE01 giữ đường điều khiển demo cũ. Controller/van 02–99 có firmware giám sát riêng; cần khai báo đúng nhánh, chứng chỉ và bật nhận giám sát. Mỗi board giám sát hiện báo một van; các board phải dùng controller ID khác nhau. Số lưu lượng 0 khi nghỉ không tự coi là lỗi. Tín hiệu chỉ để khảo sát, chưa phải điều kiện cho phép vận hành.</p>
  </section>;
 }

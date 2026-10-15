@@ -1117,3 +1117,27 @@ lịch sử. Python hệ thống thiếu format checker, đổi về venv dự �
 Sáu ca live vẫn Chưa chạy: memory-store không chứng minh NVS/flash/brownout.
 Xem [chương43](CHAPTER_43_DURABLE_PUMP_SAFETY.md) và
 [bàn giao V31](../implementation/LOCAL_DURABLE_PUMP_SAFETY_REPORT.md).
+
+## 15/10/2026 — xuất project Wokwi theo nhánh sau V31
+
+Thêm API GET tải ZIP, field Account ID tạm và nút từng hàng trong Cấu hình
+nhánh tưới. Current/SIMULATOR, controller/van02–99, client ID riêng và
+reviewed circuit/zone revision; không đổi schemaV31. JAR có9template công
+khai theo allowlist; ZIP15file không key/endpoint, monitor1/demo0/feedback1,
+policy status-only, manifest14hash và README Windows. Không provision/dispatch.
+
+416backend (18mới),26browser nhánh/16queue/6unit/5policy/12contract/lintbuild
+đạt,0skip. Full-app tải hai gói, build hai project xuất ra, native encoder
+đọc config/include từ gói→receiver→PostgreSQL/React đúng van; van thứ hai
+trống. Restart giữ source/receipt/history, packet stale và export core hash
+ổn định. EmptyFSmerge4MiB và compiler reject monitor+demo rồi restored đạt.
+
+Lượt đầu2testfixture dùng loại node/metric không đúng DB, sửa fixture không
+nới constraint. Restart smoke phát hiện Map.of thay thứ tự JSON khiến
+checksum policy đổi; sort map keys, thêm test và chạy lại toàn bộ backend.
+Giữ artifact trước sửa riêng, baseline cuối ở /tmp/circuit-monitor-packages-final;
+không refresh observation để làm test qua. NVS V31 stored compatibility đạt.
+
+Năm ca Windows/AWS/Wokwi Chưa chạy; gói monitor không điều khiển02–99 hoặc
+coordinator. [Chương44](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md),
+[bàn giao](../implementation/LOCAL_CIRCUIT_MONITOR_PACKAGE_REPORT.md).

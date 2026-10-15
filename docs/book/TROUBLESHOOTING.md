@@ -460,3 +460,23 @@ thống thiếu rfc3339-validator; dùng venv theo requirements,12ca đạt.
 So sánh V30→V31 API có thêm durableSafety:null; chuẩn hóa chỉ null này,
 không đổi clocks/history. DB epoch rule tăng1 theo startup có sẵn, cần
 đối chiếu chính xác thay vì tuyên bố mọi byte đều không đổi.
+
+## Gói Wokwi theo nhánh bị chặn hoặc checksum policy đổi sau restart
+
+Nút cần Account ID12số, mapping hiện tại, nguồn SIMULATOR và ID02–99 riêng.
+Controller dùng chung cho hai nhánh không thể thành hai board monitor độc
+lập có cùng MQTT client ID; sửa mapping trước khi tải.409 cần đọc lại,
+không tự retry. Header identity/revision hoặc MIME/signature sai không được
+tải file. LED OFF là đúng trong monitor profile, không phải lỗi bật van.
+
+Restart smoke cloud phát hiện Map.of serialize key không ổn định giữaJVM;
+policy cùng quyền nhưng SHA khác. Đã sort map keys, thêm test và xác minh
+restart. generatedAt/README timestamp được đổi, firmware/config/policy phải
+giữ hash khi cùngJAR và mapping. Hai testfixture SQL đầu sai loại node và
+metric đã sửa về declaration hợp lệ; không đổi constraint DB để bỏ lỗi.
+[Chương44](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md).
+
+Khi restart rất nhanh, HTTP200 có thể đến từ backend cũ đang đóng rồi request
+tiếp theo gặp502 trước khi backend mới lên. Trong kiểm tra cloud đã xác nhận
+PID mới và log Started, sau đó gọi API chức năng và chạy lại smoke. Chỉ thấy
+port8080 mở không đủ chứng minh JVM mới sẵn sàng; không sửa timestamp để thử lại.
