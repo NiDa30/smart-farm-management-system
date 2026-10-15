@@ -14,6 +14,8 @@
 #include "PumpCommandFence.h"
 #include "FencedPumpPacket.h"
 #include "ValveProofInterlock.h"
+#include "PumpSafetyNvs.h"
+#include "PumpSafetyJournal.h"
 
 #if __has_include("config.local.h")
 #include "config.local.h"
@@ -81,6 +83,12 @@ static_assert(FARM_WOKWI_CLOCK_TOLERANCE_SECONDS >= 0 && FARM_WOKWI_CLOCK_TOLERA
 #endif
 static_assert(FARM_PUMP_FENCING_ENABLED==0||FARM_PUMP_FENCING_ENABLED==1,"Pump fence opt-in must be 0 or 1");
 
+#ifndef FARM_PUMP_DURABLE_SAFETY_ENABLED
+#define FARM_PUMP_DURABLE_SAFETY_ENABLED 0
+#endif
+static_assert(FARM_PUMP_DURABLE_SAFETY_ENABLED==0||FARM_PUMP_DURABLE_SAFETY_ENABLED==1,"Durable safety opt-in must be 0 or 1");
+static_assert(!FARM_PUMP_DURABLE_SAFETY_ENABLED||FARM_PUMP_FENCING_ENABLED,"Durable safety requires boot-targeted pump fencing");
+
 #ifndef FARM_VALVE_PROOF_ENABLED
 #define FARM_VALVE_PROOF_ENABLED 0
 #endif
@@ -100,6 +108,8 @@ static String ca, certificate, privateKey, uri, telemetryTopic, statusTopic;
 static char bootId[37];
 static RelaySafety relay;
 static PumpCommandFence pumpOrder;
+static PumpSafetyNvs safetyStore;
+static PumpSafetyJournal<PumpSafetyNvs> safetyJournal(safetyStore);
 static bool controlEnabled = false;
 static String commandTopic, pumpStatusTopic, ackTopic, activeCommand;
 struct CommandPacket { char payload[769]; bool retained; size_t size; };
@@ -201,9 +211,26 @@ static void applyRelayOutput() {
   if(!relay.isOn())valveProof.stop();
   sampleValveProofLocked();
   if(relay.isOn()&&connected&&!forcedOff){auto fault=valveProof.outputCheck();if(fault!=ValveProofInterlock::NONE){pendingValveFault=fault;forcedOff=true;}}
-  digitalWrite(FARM_RELAY_PIN, controlEnabled && connected && !forcedOff && valveProof.ready() && flowGuard.fault()==FlowInterlock::NONE && waterPresent() && relay.isOn()
+  digitalWrite(FARM_RELAY_PIN, controlEnabled && connected && !forcedOff && (!FARM_PUMP_DURABLE_SAFETY_ENABLED||safetyJournal.outputAllowed()) && valveProof.ready() && flowGuard.fault()==FlowInterlock::NONE && waterPresent() && relay.isOn()
     ? !FARM_RELAY_OFF_LEVEL : FARM_RELAY_OFF_LEVEL);
   portEXIT_CRITICAL(&relayMux);
+}
+// Only the Arduino loop owns journal IO. Cut output BEFORE any flash operation.
+// A healthy OFF may finish an armed record; fault/OFF never clears a lock.
+static bool settleDurableSafety(bool explicitReset=false){
+  if(!FARM_PUMP_DURABLE_SAFETY_ENABLED||!controlEnabled)return true;
+  if(!relay.isOn())applyRelayOutput();
+  if(relay.lockout())safetyJournal.lock();
+  else if(explicitReset&&!safetyJournal.reset(digitalRead(FARM_RELAY_PIN)==FARM_RELAY_OFF_LEVEL)){
+    relay.trip();stateReason="RESTART_LOCKOUT";
+  }
+  else if(!relay.isOn())safetyJournal.complete();
+  if(safetyJournal.state()==PumpSafetyJournal<PumpSafetyNvs>::STORAGE_FAULT){
+    relay.trip();stateReason="SAFETY_STORAGE_FAULT";activeCommand="";stopFlow();stopValveProof();esp_timer_stop(relayTimer);
+    portENTER_CRITICAL(&relayMux);forcedOff=true;digitalWrite(FARM_RELAY_PIN,FARM_RELAY_OFF_LEVEL);portEXIT_CRITICAL(&relayMux);
+    return false;
+  }
+  return true;
 }
 static uint32_t sequence = 0, lastSample = 0, lastHeartbeat = 0, lastWifiAttempt = 0;
 
@@ -242,13 +269,15 @@ static void publishStatus() {
 static void publishPumpStatus() {
   if (!controlEnabled || !connected) return;
   settleValveFault();
+  settleDurableSafety();
   JsonDocument doc;
   base(doc);
   portENTER_CRITICAL(&relayMux);ValveProofInterlock proof=valveProof;bool cut=forcedOff;portEXIT_CRITICAL(&relayMux);
-  const char* reason=proof.fault()!=ValveProofInterlock::NONE&&strcmp(stateReason,"WATER_LOW")?ValveProofInterlock::faultName(proof.fault()):stateReason;
+  const char* reason=proof.fault()!=ValveProofInterlock::NONE&&strcmp(stateReason,"WATER_LOW")&&strcmp(stateReason,"SAFETY_STORAGE_FAULT")?ValveProofInterlock::faultName(proof.fault()):stateReason;
   fillPumpStatus(doc,relay.isOn() && !cut?"ON":"OFF",relay.lockout()||proof.fault()!=ValveProofInterlock::NONE,reason,
     activeCommand.length()?activeCommand.c_str():nullptr);
   if(FARM_VALVE_PROOF_ENABLED)fillValveProof(doc,proof);
+  if(FARM_PUMP_DURABLE_SAFETY_ENABLED)fillDurableSafety(doc,safetyJournal);
   if(FARM_PUMP_FENCING_ENABLED)pumpFence::status(doc,pumpOrder.lastOrdinal(),pumpOrder.restartRequired());
   String payload; serializeJson(doc, payload);
   esp_mqtt_client_publish(client, pumpStatusTopic.c_str(), payload.c_str(), 0, 1, 0);
@@ -311,10 +340,24 @@ static void handleCommand(const CommandPacket &packet) {
     portENTER_CRITICAL(&relayMux);sampleValveProofLocked();auto proofError=valveProof.start();portEXIT_CRITICAL(&relayMux);
     if(proofError!=ValveProofInterlock::NONE){error=ValveProofInterlock::faultName(proofError);relay.fail(id,error);stateReason=error;}
   }
+  if(!error&&relay.isOn()&&!wasOn&&FARM_PUMP_DURABLE_SAFETY_ENABLED&&!safetyJournal.arm()){
+    error=safetyJournal.state()==PumpSafetyJournal<PumpSafetyNvs>::STORAGE_FAULT?"SAFETY_STORAGE_FAULT":"RESTART_LOCKOUT";
+    relay.fail(id,error);stateReason=error;
+  }
+  // Flash commit can block the loop. A command that expired during the write
+  // must not receive a fresh runtime window or ever energize the output.
+  if(!error&&on&&!wasOn&&FARM_PUMP_DURABLE_SAFETY_ENABLED){
+    bool timedOut=relay.tickSafety(millis(),connected);
+    if(time(nullptr)>=fencedCommand.expires||timedOut||!relay.isOn()){
+      error=connected?"EXPIRED":"CONNECTION_LOST";relay.fail(id,error);stateReason=connected?"TIMER_EXPIRED":"CONNECTION_LOST";
+    }
+  }
   if (!error && relay.isOn() && !wasOn) {
     esp_timer_stop(relayTimer);
     // Arm independent cutoff before energizing; never renew it on duplicate ON.
-    if (esp_timer_start_once(relayTimer, uint64_t(doc["durationSeconds"].as<unsigned>()) * 1000000) != ESP_OK) {
+    uint64_t cutoffMicros=FARM_PUMP_DURABLE_SAFETY_ENABLED?uint64_t(relay.remainingMillis(millis()))*1000:uint64_t(doc["durationSeconds"].as<unsigned>())*1000000;
+    if(!cutoffMicros){relay.fail(id,"EXPIRED");error="EXPIRED";stateReason="TIMER_EXPIRED";}
+    else if (esp_timer_start_once(relayTimer, cutoffMicros) != ESP_OK) {
       relay.fail(id,"DEVICE_FAULT"); error = "DEVICE_FAULT";
     } else {
       portENTER_CRITICAL(&relayMux);
@@ -356,6 +399,8 @@ static void handleCommand(const CommandPacket &packet) {
   if (!waterPresent()) stateReason = "WATER_LOW";
   applyRelayOutput();
   if(settleValveFault()&&(on||reset)){portENTER_CRITICAL(&relayMux);error=ValveProofInterlock::faultName(valveProof.fault());portEXIT_CRITICAL(&relayMux);}
+  if(!settleDurableSafety(!error&&reset&&!relay.lockout())){error="SAFETY_STORAGE_FAULT";relay.fail(id,error);}
+  if(!error&&reset&&relay.lockout())error="RESTART_LOCKOUT";
   if (error && (strcmp(error,"EXPIRED")==0 || strcmp(error,"CLOCK_SKEW")==0 || strcmp(error,"INVALID_LIFETIME")==0 || strcmp(error,"CLOCK_NOT_READY")==0)) {
     int64_t epoch=time(nullptr), issued=parseUtc(doc["issuedAt"] | ""), expires=parseUtc(doc["expiresAt"] | "");
     Serial.printf("COMMAND_TIME now=%lld issued=%lld expires=%lld age=%lld remaining=%lld\n",
@@ -475,6 +520,11 @@ void setup() {
   ackTopic = String("smartfarm/") + FARM_ID + "/PUMP01/ack";
   pumpStatusTopic = String("smartfarm/") + FARM_ID + "/PUMP01/status";
   Serial.println(controlEnabled ? "Wokwi relay control enabled" : "Relay control disabled");
+  if(FARM_PUMP_DURABLE_SAFETY_ENABLED&&controlEnabled){
+    safetyJournal.boot();relay.trip();forcedOff=true;
+    stateReason=safetyJournal.state()==PumpSafetyJournal<PumpSafetyNvs>::STORAGE_FAULT?"SAFETY_STORAGE_FAULT":"RESTART_LOCKOUT";
+    Serial.printf("DURABLE_SAFETY %s; relay OFF; new boot-targeted reset required\n",PumpSafetyJournal<PumpSafetyNvs>::name(safetyJournal.state()));
+  }
   if (FARM_WATER_INTERLOCK_ENABLED) pinMode(FARM_WATER_LEVEL_PIN, INPUT_PULLUP);
   if (FARM_WATER_INTERLOCK_ENABLED) Serial.printf("Water interlock enabled: GPIO%d closed=water, open=dry\n", FARM_WATER_LEVEL_PIN);
   else Serial.println("Water interlock disabled: set FARM_WATER_INTERLOCK_ENABLED=1 and rebuild");
@@ -526,6 +576,7 @@ void loop() {
   bool waterChanged = checkWaterSupply();
   stopped = stopped || (wasRunning && !relay.isOn());
   applyRelayOutput();
+  settleDurableSafety();
   if (!relay.isOn())stopValveProof();
   if (stopped||flowStopped||valveStopped) { stopFlow();activeCommand = ""; esp_timer_stop(relayTimer); publishPumpStatus(); Serial.printf("RELAY_OFF reason=%s\n",stateReason); }
   else if (waterChanged) publishPumpStatus();

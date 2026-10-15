@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
-import { parseSafety, reasonLabels, ruleLabels, safetyFreshness, type SafetySnapshot } from './safetyApi';
+import { parseSafety, durableSafetyLabels, reasonLabels, ruleLabels, safetyFreshness, type SafetySnapshot } from './safetyApi';
 const time=(value:string|null)=>value?new Date(value).toLocaleString('vi-VN'):'Chưa có';
 const freshnessLabels={EMPTY:'Chưa có dữ liệu',FRESH:'Dữ liệu mới (15 giây)',STALE:'Dữ liệu đã cũ',CLOCK_SKEW:'Lệch thời gian'};
 const mqttLabels={DISABLED:'Backend chưa bật MQTT',STARTING:'Backend đang kết nối MQTT',CONNECTED:'Backend đã kết nối MQTT',DISCONNECTED:'Backend mất kết nối MQTT',STOPPED:'Backend đã ngừng MQTT'};
@@ -41,6 +41,15 @@ export const SafetyPanel:React.FC<{navigate:(route:string)=>void}>=({navigate})=
       {error&&<p role="alert" className="text-rose-700">{error}</p>}
     </section>
     {snapshot&&<>
+      <section className="bg-white border rounded-xl p-4 space-y-2" aria-label="Khóa qua khởi động lại">
+        <h2 className="font-semibold">Khóa an toàn lưu trên thiết bị</h2>
+        {!snapshot.relay?.durableSafety?<p>Chưa có bản báo thiết bị hỗ trợ khóa NVS.</p>:<>
+          <p className="font-semibold">Bằng chứng hiện tại: {relayCurrent?durableSafetyLabels[snapshot.relay.durableSafety.state]:'Chưa xác định'}</p>
+          <p>Bản báo đã lưu: {snapshot.relay.durableSafety.state} · NVS · phiên bản {snapshot.relay.durableSafety.version}</p>
+          <p className="text-sm">Giờ nguồn: {time(snapshot.relay.observedAt)} · Backend nhận: {time(snapshot.relay.receivedAt)}</p>
+        </>}
+        <p className="text-sm text-slate-600">Khi bật tính năng này, mọi lần khởi động lại đều giữ OFF và yêu cầu reset khóa nhắm đúng phiên mới. Không khôi phục lệnh bật hoặc thời hạn cũ. Đây là bản báo firmware; chưa xác minh flash hay bơm vật lý. Mở lại mạng không tự mở khóa.</p>
+      </section>
       <section className="bg-white border rounded-xl p-4 space-y-2" aria-label="Liên động van tại bơm">
         <h2 className="font-semibold">Phản hồi van cục bộ tại PUMP01</h2>
         {!snapshot.relay?.valveInterlock?<p>Chưa có bằng chứng thiết bị báo hỗ trợ liên động van.</p>:<>

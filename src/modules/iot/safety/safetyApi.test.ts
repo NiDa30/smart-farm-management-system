@@ -53,3 +53,18 @@ test('flow fault observations must be OFF and locked, not an ON permission',()=>
 test('optional local valve metadata remains an explicitly reported simulator capability',()=>{const v:any=safetyFixture();assert.equal(parseSafety(v).relay!.valveInterlock,undefined);v.relay.valveInterlock={version:1,enabled:true,dataSource:'SIMULATOR',state:'OPEN',fault:null};assert.equal(parseSafety(v).relay!.valveInterlock!.state,'OPEN');for(const edit of [(p:any)=>p.dataSource='PHYSICAL',(p:any)=>p.enabled=false,(p:any)=>p.extra=1]){const copy=structuredClone(v);edit(copy.relay.valveInterlock);assert.throws(()=>parseSafety(copy));}});
 test('local valve faults require locked OFF and matching fault metadata',()=>{for(const cause of ['VALVE_NOT_OPEN','VALVE_PROOF_LOST','VALVE_SWITCH_CONFLICT']){const v:any=safetyFixture();v.relay.safetyLockout=true;v.relay.stateReason=cause;v.relay.valveInterlock={version:1,enabled:true,dataSource:'SIMULATOR',state:'OPEN',fault:cause};assert.equal(parseSafety(v).relay!.valveInterlock!.fault,cause);v.relay.reportedState='ON';assert.throws(()=>parseSafety(v));v.relay.reportedState='OFF';v.relay.safetyLockout=false;assert.throws(()=>parseSafety(v));}});
 test('ON cannot be represented as valid with closed or unknown proof, reset needs open proof',()=>{for(const state of ['CLOSED','UNKNOWN','CONFLICT']){const v:any=safetyFixture();v.relay.valveInterlock={version:1,enabled:true,dataSource:'SIMULATOR',state,fault:null};v.relay.reportedState='ON';assert.throws(()=>parseSafety(v));v.relay.reportedState='OFF';v.relay.stateReason='LOCKOUT_RESET';assert.throws(()=>parseSafety(v));}});
+
+test('durable journal is optional and faults require locked OFF reports',()=>{
+ for(const [state,reason] of [['LOCKED','RESTART_LOCKOUT'],['STORAGE_FAULT','SAFETY_STORAGE_FAULT']]){
+  const v:any=safetyFixture();v.relay.durableSafety={version:1,enabled:true,storage:'NVS',state};v.relay.stateReason=reason;v.relay.safetyLockout=true;
+  assert.equal(parseSafety(v).relay!.durableSafety!.state,state);v.relay.reportedState='ON';assert.throws(()=>parseSafety(v));v.relay.reportedState='OFF';v.relay.safetyLockout=false;assert.throws(()=>parseSafety(v));
+ }
+});
+test('durable reason cannot invent NVS and malformed capability is rejected',()=>{
+ const v:any=safetyFixture();v.relay.stateReason='RESTART_LOCKOUT';v.relay.safetyLockout=true;assert.throws(()=>parseSafety(v));
+ v.relay.durableSafety={version:1,enabled:true,storage:'NVS',state:'LOCKED'};
+ for(const edit of [(d:any)=>d.storage='RAM',(d:any)=>d.enabled=false,(d:any)=>d.version=2,(d:any)=>d.extra=true,(d:any)=>d.state='SAFE']){const copy=structuredClone(v);edit(copy.relay.durableSafety);assert.throws(()=>parseSafety(copy));}
+});
+test('READY is OFF without lock, ARMED is a journal rather than output proof',()=>{
+ const v:any=safetyFixture();v.relay.stateReason='LOCKOUT_RESET';v.relay.durableSafety={version:1,enabled:true,storage:'NVS',state:'READY'};assert.equal(parseSafety(v).relay!.reportedState,'OFF');v.relay.reportedState='ON';assert.throws(()=>parseSafety(v));v.relay.stateReason='COMMAND_ON';v.relay.durableSafety.state='ARMED';assert.equal(parseSafety(v).relay!.reportedState,'ON');v.relay.reportedState='OFF';assert.equal(parseSafety(v).relay!.durableSafety!.state,'ARMED');
+});

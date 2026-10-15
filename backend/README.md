@@ -193,3 +193,16 @@ Metadata is a device report, not a cloud ON permission or remote valve identity.
 Firmware checks local contacts; legacy requests can still be refused at edge.
 [Chapter42](../docs/book/CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md),
 [handoff](../docs/implementation/LOCAL_PUMP_VALVE_INTERLOCK_REPORT.md).
+
+## Optional durable pump safety report (V31)
+
+Status may add durableSafety {version:1,enabled:true,storage:NVS,state:READY|ARMED|LOCKED|STORAGE_FAULT};
+fence metadata is required. RESTART_LOCKOUT/STORAGE_FAULT reasons require
+corresponding locked OFF reports (storage reason code SAFETY_STORAGE_FAULT).
+Same boot cannot drop capability or clear a journal lock without a valid
+LOCKOUT_RESET/READY/OFF/unlocked report. New boot without capability becomes
+unknown. ARMED may be OFF while the device settles an independent cutoff.
+V31 adds nullable JSONB without backfill/enablement. Safety exposes a device
+report only, never flash attestation or an ON dispatch permission. ACK unchanged.
+[Chapter43](../docs/book/CHAPTER_43_DURABLE_PUMP_SAFETY.md),
+[handoff](../docs/implementation/LOCAL_DURABLE_PUMP_SAFETY_REPORT.md).

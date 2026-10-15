@@ -37,7 +37,7 @@ Restoring water does not resume ON or clear lockout. RESET is rejected with
 and Control / Safety / Event Log display it. This is a binary input, not a water
 percentage/flow measurement. Checking is in the Arduino loop and immediately
 before command output; there is no certified physical dry-run protection or
-persistent NVS lockout. Real hardware requires its own electrical interlocks.
+persistent NVS lockout by default (V31 adds an opt-in journal below). Real hardware requires its own electrical interlocks.
 
 For new installations only (do not overwrite existing private config):
 
@@ -80,8 +80,8 @@ For a physical board later: `pio run -t upload`, `pio run -t uploadfs`, `pio dev
 
 The existing root `wokwi/sketch.ino` remains the legacy HiveMQ example, and is not the AWS demo firmware. Build/run the authoritative `firmware/esp32` output instead; do not report legacy sketch results as AWS gate success. For Wokwi use the private diagram below plus the extension's supported ESP32 flash/filesystem image procedure. If LittleFS is unavailable/missing credentials, firmware fails closed (relay OFF). Configure endpoint; wait for time sync and MQTT TLS. Serial must show AWS MQTT connected and QoS1 PUBACK; Test Client must show actual schema packets.
 
-Remaining limitations: fixed10s Wi-Fi / SDK5s MQTT retry, no durable NVS state
-or event replay, and no automatic ON recovery. Existing AWS telemetry/manual
+Remaining limitations: fixed10s Wi-Fi / SDK5s MQTT retry, no event replay
+or automatic ON recovery. NVS safety is optional in V31, disabled by default. Existing AWS telemetry/manual
 control have user-provided evidence; the new relay-contact/float-switch demo
 still needs the Windows/Wokwi tests in chapter 21. Cloud firmware compilation,
 native safety tests, SQL ingestion and browser fixtures do not prove live GPIO.
@@ -122,9 +122,27 @@ conflict cuts GPIO in a separate25ms ESP timer and latches. A sampling gap>250ms
 is a proof-loss fault when the sampler resumes. Restoring contacts never resumes;
 reset requires healthy OPEN and other guards, and never energizes the relay.
 Fault metadata is additive on status only, declared SIMULATOR, not physical
-attestation or a per-circuit interlock. Latch remains RAM-only, no NVS. Existing
+attestation or a per-circuit interlock. Valve fault identity remains RAM-only; V31 optionally retains a generic safety lock. Existing
 boot/ordinal fencing is separate and must match backend when enabled.
 [Chapter42](../../docs/book/CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md) has Windows
 steps and six unrun live cases. Default/guard/guard+fence public cloud builds,
 including combined guard+flow+fence and a cancelled-watcher output check,
 native tests and empty-FS merge passed; no new AWS/Wokwi/GPIO live acceptance.
+
+## Durable pump safety journal (V31, opt-in)
+
+FARM_PUMP_DURABLE_SAFETY_ENABLED defaults0; opt-in requires pump fencing1
+and a matching backend. Dedicated Preferences NVS u32 record, commit plus
+readback before energizing. Every boot OFF/locked, including clean stops;
+only a new boot-targeted RESET_LOCKOUT with healthy guards can clear it.
+Never restores ON, duration or old commands. Errors/corrupt records fail
+closed, no automatic NVS erase. Flash only in loop with GPIO OFF, never in
+ISR/timer/mutex; no heartbeat writes. Independent cutoff uses remaining
+monotonic runtime after flash, and command expiry is rechecked.
+
+Status-only durableSafety report; no new topic/client/IAM. Default legacy
+behavior stays unchanged. Public build/native memory-store tests do not
+validate actual NVS retention, brownout or GPIO timing. Wokwi full flash
+reload may discard NVS; boot locking is not evidence of persistence.
+[Chapter43](../../docs/book/CHAPTER_43_DURABLE_PUMP_SAFETY.md) has six unrun
+Windows/AWS/Wokwi/ESP32 cases. Do not auto resume a physical pump.

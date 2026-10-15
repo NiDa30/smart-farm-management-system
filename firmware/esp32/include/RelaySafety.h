@@ -55,6 +55,10 @@ class RelaySafety {
     return false;
   }
   bool isOn() const { return running; }
+  uint32_t remainingMillis(uint32_t tick) const {
+    const uint32_t elapsed=uint32_t(tick-started);
+    return running&&elapsed<durationMs?durationMs-elapsed:0;
+  }
   bool lockout() const { return locked; }
   bool setWaterAvailable(bool available) {
     bool changed = available != waterAvailable;

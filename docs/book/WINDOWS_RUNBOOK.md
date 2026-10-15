@@ -407,3 +407,13 @@ hoặc đóng đều không cho bật. Khôi phục tiếp điểm không auto r
 không bật relay. Giữ phao/flow/fence đúng cấu hình đang dùng.
 Thẻ mới ở An toàn Fail-Safe & Edge chỉ trình bày bản báo; thiếu/cũ không được
 coi là guard đang hoạt động. Sáu ca Windows/AWS/Wokwi/GPIO đều Chưa chạy.
+
+## V31 — khóa NVS sau boot, opt-in
+
+Pull/restart backend áp V31, không xóa volume. Thẻ Khóa an toàn lưu trên
+thiết bị ở An toàn Fail-Safe & Edge chỉ đọc bản báo. Firmware cũ không có
+metadata được coi chưa biết, không tự bật NVS. Muốn thử: sửa macro riêng
+FARM_PUMP_DURABLE_SAFETY_ENABLED=1 và FARM_PUMP_FENCING_ENABLED=1, bật backend
+fence khớp rồi build app/FS/merge theo [chương43](CHAPTER_43_DURABLE_PUMP_SAFETY.md).
+Giữ các guard/config/key riêng. Every boot OFF/khóa, cần reset mới; không
+resume600giây cũ. Sáu ca live chưa chạy, chưa xác minh NVS giữ flash.

@@ -445,3 +445,18 @@ Smoke Event Log tìm reason trực tiếp trong bảng sẽ không thấy; bấm
 đúng device event. Đã sửa selector, giữ nguyên fault/source/receipt rồi chạy
 stored sau restart đạt. Không xóa evidence hoặc tạo timestamp mới chỉ để qua
 fresh assertion. [Chương42](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md).
+
+## NVS safety opt-in V31: reboot vẫn khóa và lỗi lưu trữ
+
+RESTART_LOCKOUT sau mọi boot là chủ ý, kể cả lần trước dừng sạch. Đợi bản
+báo OFF mới, kiểm tra phao/flow/van và reset đúng boot; không phát lại lệnh
+cũ, không tự khôi phục thời hạn. STORAGE_FAULT cần kiểm tra IO/kiểu record;
+reset chỉ thành công khi ghi/readback xác minh. Không xóa toàn NVS hoặc
+tắt guard để ép chạy. Simulator nạp flash mới có thể mất record, nhưng boot
+vẫn khóa; LED OFF không chứng minh retention. [Chương43](CHAPTER_43_DURABLE_PUMP_SAFETY.md).
+
+Lượt cloud gặp format-check test không reject timestamp vì chạy Python hệ
+thống thiếu rfc3339-validator; dùng venv theo requirements,12ca đạt.
+So sánh V30→V31 API có thêm durableSafety:null; chuẩn hóa chỉ null này,
+không đổi clocks/history. DB epoch rule tăng1 theo startup có sẵn, cần
+đối chiếu chính xác thay vì tuyên bố mọi byte đều không đổi.

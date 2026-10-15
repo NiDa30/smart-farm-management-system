@@ -16,7 +16,12 @@ with sync_playwright() as p:
  else:
   assert proof['fault']=='VALVE_PROOF_LOST' and relay['safetyLockout'];evidence={'relay':relay,'history':s['stateHistory']}
   if phase=='fault':assert not saved.exists() and age<15;saved.write_text(json.dumps(evidence,ensure_ascii=False,indent=2))
-  else:assert age>=15 and evidence==json.loads(saved.read_text()),'Restart must preserve proof, clocks and history without treating them as current'
+  else:
+   # V31 adds an optional null capability to old pump API rows; no backfill.
+   expected=json.loads(saved.read_text());actual=json.loads(json.dumps(evidence))
+   for value in [expected,actual]:
+    if value['relay'].get('durableSafety') is None:value['relay'].pop('durableSafety',None)
+   assert age>=15 and actual==expected,'Restart must preserve proof, clocks and history without treating them as current'
  def guard(route):
   r=route.request
   if urlparse(r.url).netloc!=u.netloc:external.append(r.url);route.abort();return

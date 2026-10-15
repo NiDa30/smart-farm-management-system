@@ -96,3 +96,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Lịch sử bản tin van và CSV](CHAPTER_41_VALVE_HISTORY.md)
 
 - [Liên động phản hồi van tại board bơm](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md)
+
+- [Khóa an toàn qua reboot và nhật ký NVS](CHAPTER_43_DURABLE_PUMP_SAFETY.md): opt-in, commit/readback trước ON, boot luôn OFF/khóa; chưa nghiệm thu flash thật.

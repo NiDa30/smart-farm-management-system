@@ -52,6 +52,7 @@ public class PumpService {
     }
     public record StateChange(long id, Instant observedAt, Instant receivedAt, String reportedState,
         boolean safetyLockout, String changeType, String stateReason) {}
+    public PumpDurableSafety storedDurableSafety(String value){if(value==null)return null;try{return mapper.readValue(value,PumpDurableSafety.class);}catch(Exception e){throw new IllegalStateException("Invalid stored durable safety",e);}}
     public PumpValveInterlock storedValveInterlock(String value){if(value==null)return null;try{return mapper.readValue(value,PumpValveInterlock.class);}catch(Exception e){throw new IllegalStateException("Invalid stored valve interlock",e);}}
     public List<StateChange> stateHistory() {
         return jdbc.query("SELECT * FROM pump_state_history ORDER BY id DESC LIMIT 50", (rs,n) ->
@@ -126,29 +127,33 @@ public class PumpService {
             if (!Set.of("ON","OFF").contains(state) || !node.path("safetyLockout").isBoolean()) throw new IllegalArgumentException();
             String reason=null;
             if (node.has("stateReason")) {
-                if (!node.path("stateReason").isTextual() || !Set.of("BOOT","COMMAND_ON","COMMAND_OFF","LOCKOUT_RESET","TIMER_EXPIRED","CONNECTION_LOST","DEVICE_FAULT","WATER_LOW","FLOW_LOW","FLOW_SENSOR_FAULT","VALVE_NOT_OPEN","VALVE_PROOF_LOST","VALVE_SWITCH_CONFLICT").contains(node.path("stateReason").asText())) throw new IllegalArgumentException();
+                if (!node.path("stateReason").isTextual() || !Set.of("BOOT","COMMAND_ON","COMMAND_OFF","LOCKOUT_RESET","TIMER_EXPIRED","CONNECTION_LOST","DEVICE_FAULT","WATER_LOW","FLOW_LOW","FLOW_SENSOR_FAULT","VALVE_NOT_OPEN","VALVE_PROOF_LOST","VALVE_SWITCH_CONFLICT","RESTART_LOCKOUT","SAFETY_STORAGE_FAULT").contains(node.path("stateReason").asText())) throw new IllegalArgumentException();
                 reason=node.path("stateReason").asText();
-                if(Set.of("FLOW_LOW","FLOW_SENSOR_FAULT").contains(reason)
+                if(Set.of("FLOW_LOW","FLOW_SENSOR_FAULT","RESTART_LOCKOUT","SAFETY_STORAGE_FAULT").contains(reason)
                     &&(!state.equals("OFF")||!node.path("safetyLockout").booleanValue()))throw new IllegalArgumentException();
             }
             boolean statusTopic=topic.equals("smartfarm/FARM001/PUMP01/status");
             PumpValveInterlock proof=node.has("valveInterlock")?PumpValveInterlock.parse(node.get("valveInterlock"),state,node.path("safetyLockout").booleanValue(),reason):null;
             if(proof!=null&&!statusTopic||statusTopic&&PumpValveInterlock.FAULTS.contains(reason==null?"":reason)&&proof==null)throw new IllegalArgumentException();
             Long fenceOrdinal=fencing.validate(node,statusTopic,boot);
+            PumpDurableSafety durable=node.has("durableSafety")?PumpDurableSafety.parse(node.get("durableSafety"),state,node.path("safetyLockout").booleanValue(),reason):null;
+            if(durable!=null&&(!statusTopic||fenceOrdinal==null)||statusTopic&&PumpDurableSafety.REASONS.contains(reason==null?"":reason)&&durable==null)throw new IllegalArgumentException();
             if (statusTopic) {
                 if (!node.path("connection").asText().equals("ONLINE") || timestamp.isBefore(Instant.now().minusSeconds(15))) throw new IllegalArgumentException();
                 jdbc.update("""
-                    INSERT INTO pump_status(singleton,boot_id,sequence,observed_at,reported_state,safety_lockout,state_reason,fence_version,last_fence_ordinal,fence_restart_required,valve_interlock) VALUES(1,?,?,?,?,?,?,?,?,?,?::jsonb)
+                    INSERT INTO pump_status(singleton,boot_id,sequence,observed_at,reported_state,safety_lockout,state_reason,fence_version,last_fence_ordinal,fence_restart_required,valve_interlock,durable_safety) VALUES(1,?,?,?,?,?,?,?,?,?,?::jsonb,?::jsonb)
                     ON CONFLICT(singleton) DO UPDATE SET boot_id=EXCLUDED.boot_id,sequence=EXCLUDED.sequence,
                     observed_at=EXCLUDED.observed_at,received_at=CURRENT_TIMESTAMP,reported_state=EXCLUDED.reported_state,safety_lockout=EXCLUDED.safety_lockout,state_reason=EXCLUDED.state_reason,
-                    fence_version=EXCLUDED.fence_version,last_fence_ordinal=EXCLUDED.last_fence_ordinal,fence_restart_required=EXCLUDED.fence_restart_required,valve_interlock=EXCLUDED.valve_interlock
+                    fence_version=EXCLUDED.fence_version,last_fence_ordinal=EXCLUDED.last_fence_ordinal,fence_restart_required=EXCLUDED.fence_restart_required,valve_interlock=EXCLUDED.valve_interlock,durable_safety=EXCLUDED.durable_safety
                     WHERE (EXCLUDED.boot_id = pump_status.boot_id AND EXCLUDED.observed_at >= pump_status.observed_at AND EXCLUDED.sequence > pump_status.sequence
                         AND (pump_status.fence_version IS NULL OR (EXCLUDED.fence_version=1 AND EXCLUDED.last_fence_ordinal>=pump_status.last_fence_ordinal
                           AND (NOT pump_status.fence_restart_required OR EXCLUDED.fence_restart_required)))
+                        AND (pump_status.durable_safety IS NULL OR EXCLUDED.durable_safety IS NOT NULL)
+                        AND (pump_status.durable_safety->>'state' NOT IN ('LOCKED','STORAGE_FAULT') OR pump_status.durable_safety IS NULL OR EXCLUDED.durable_safety->>'state' IN ('LOCKED','STORAGE_FAULT') OR (EXCLUDED.state_reason='LOCKOUT_RESET' AND NOT EXCLUDED.safety_lockout AND EXCLUDED.durable_safety->>'state'='READY'))
                         AND (pump_status.valve_interlock IS NULL OR EXCLUDED.valve_interlock IS NOT NULL)
                         AND (pump_status.valve_interlock->>'fault' IS NULL OR EXCLUDED.valve_interlock->>'fault' IS NOT NULL OR (EXCLUDED.state_reason='LOCKOUT_RESET' AND NOT EXCLUDED.safety_lockout AND EXCLUDED.valve_interlock->>'state'='OPEN')))
                        OR (EXCLUDED.boot_id <> pump_status.boot_id AND EXCLUDED.observed_at > pump_status.observed_at)
-                    """,boot,node.path("sequence").asLong(),Timestamp.from(timestamp),state,node.path("safetyLockout").asBoolean(),reason,fenceOrdinal==null?null:1,fenceOrdinal,node.path("commandFence").path("restartRequired").asBoolean(false),proof==null?null:mapper.writeValueAsString(proof));
+                    """,boot,node.path("sequence").asLong(),Timestamp.from(timestamp),state,node.path("safetyLockout").asBoolean(),reason,fenceOrdinal==null?null:1,fenceOrdinal,node.path("commandFence").path("restartRequired").asBoolean(false),proof==null?null:mapper.writeValueAsString(proof),durable==null?null:mapper.writeValueAsString(durable));
             } else if (topic.equals("smartfarm/FARM001/PUMP01/ack")) {
                 if (!node.path("commandId").asText().matches("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")) throw new IllegalArgumentException();
                 UUID command=UUID.fromString(node.path("commandId").asText());

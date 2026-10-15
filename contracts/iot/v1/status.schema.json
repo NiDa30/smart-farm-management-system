@@ -63,7 +63,12 @@
         "DEVICE_FAULT",
         "WATER_LOW",
         "FLOW_LOW",
-        "FLOW_SENSOR_FAULT"
+        "FLOW_SENSOR_FAULT",
+        "VALVE_NOT_OPEN",
+        "VALVE_PROOF_LOST",
+        "VALVE_SWITCH_CONFLICT",
+        "RESTART_LOCKOUT",
+        "SAFETY_STORAGE_FAULT"
       ]
     },
     "commandFence": {
@@ -86,6 +91,75 @@
         "version",
         "lastOrdinal",
         "restartRequired"
+      ]
+    },
+    "valveInterlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "enabled": {
+          "const": true
+        },
+        "dataSource": {
+          "const": "SIMULATOR"
+        },
+        "state": {
+          "enum": [
+            "UNKNOWN",
+            "CLOSED",
+            "OPEN",
+            "CONFLICT"
+          ]
+        },
+        "fault": {
+          "enum": [
+            null,
+            "VALVE_NOT_OPEN",
+            "VALVE_PROOF_LOST",
+            "VALVE_SWITCH_CONFLICT"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "enabled",
+        "dataSource",
+        "state",
+        "fault"
+      ]
+    },
+    "durableSafety": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "enabled": {
+          "const": true
+        },
+        "storage": {
+          "const": "NVS"
+        },
+        "state": {
+          "enum": [
+            "READY",
+            "ARMED",
+            "LOCKED",
+            "STORAGE_FAULT"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "enabled",
+        "storage",
+        "state"
       ]
     }
   },
@@ -234,6 +308,472 @@
         "required": [
           "reportedState"
         ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "valveInterlock"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deviceId": {
+            "const": "PUMP01"
+          },
+          "connection": {
+            "const": "ONLINE"
+          }
+        },
+        "required": [
+          "reportedState",
+          "safetyLockout"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "durableSafety"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deviceId": {
+            "const": "PUMP01"
+          },
+          "connection": {
+            "const": "ONLINE"
+          }
+        },
+        "required": [
+          "reportedState",
+          "safetyLockout",
+          "commandFence"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stateReason": {
+            "const": "VALVE_NOT_OPEN"
+          }
+        },
+        "required": [
+          "stateReason"
+        ]
+      },
+      "then": {
+        "required": [
+          "valveInterlock"
+        ],
+        "properties": {
+          "valveInterlock": {
+            "properties": {
+              "fault": {
+                "const": "VALVE_NOT_OPEN"
+              }
+            }
+          },
+          "reportedState": {
+            "const": "OFF"
+          },
+          "safetyLockout": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stateReason": {
+            "const": "VALVE_PROOF_LOST"
+          }
+        },
+        "required": [
+          "stateReason"
+        ]
+      },
+      "then": {
+        "required": [
+          "valveInterlock"
+        ],
+        "properties": {
+          "valveInterlock": {
+            "properties": {
+              "fault": {
+                "const": "VALVE_PROOF_LOST"
+              }
+            }
+          },
+          "reportedState": {
+            "const": "OFF"
+          },
+          "safetyLockout": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stateReason": {
+            "const": "VALVE_SWITCH_CONFLICT"
+          }
+        },
+        "required": [
+          "stateReason"
+        ]
+      },
+      "then": {
+        "required": [
+          "valveInterlock"
+        ],
+        "properties": {
+          "valveInterlock": {
+            "properties": {
+              "fault": {
+                "const": "VALVE_SWITCH_CONFLICT"
+              }
+            }
+          },
+          "reportedState": {
+            "const": "OFF"
+          },
+          "safetyLockout": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "valveInterlock",
+          "reportedState"
+        ],
+        "properties": {
+          "reportedState": {
+            "const": "ON"
+          }
+        }
+      },
+      "then": {
+        "allOf": [
+          {
+            "required": [
+              "valveInterlock"
+            ],
+            "properties": {
+              "valveInterlock": {
+                "properties": {
+                  "state": {
+                    "const": "OPEN"
+                  },
+                  "fault": {
+                    "const": null
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "safetyLockout": {
+                "const": false
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "valveInterlock"
+        ],
+        "properties": {
+          "valveInterlock": {
+            "properties": {
+              "fault": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "fault"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "reportedState": {
+            "const": "OFF"
+          },
+          "safetyLockout": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "valveInterlock",
+          "stateReason"
+        ],
+        "properties": {
+          "stateReason": {
+            "const": "LOCKOUT_RESET"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "valveInterlock"
+        ],
+        "properties": {
+          "valveInterlock": {
+            "properties": {
+              "state": {
+                "const": "OPEN"
+              },
+              "fault": {
+                "const": null
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stateReason": {
+            "const": "RESTART_LOCKOUT"
+          }
+        },
+        "required": [
+          "stateReason"
+        ]
+      },
+      "then": {
+        "required": [
+          "durableSafety"
+        ],
+        "properties": {
+          "durableSafety": {
+            "properties": {
+              "state": {
+                "const": "LOCKED"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "stateReason": {
+            "const": "SAFETY_STORAGE_FAULT"
+          }
+        },
+        "required": [
+          "stateReason"
+        ]
+      },
+      "then": {
+        "required": [
+          "durableSafety"
+        ],
+        "properties": {
+          "durableSafety": {
+            "properties": {
+              "state": {
+                "const": "STORAGE_FAULT"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "durableSafety"
+        ],
+        "properties": {
+          "durableSafety": {
+            "properties": {
+              "state": {
+                "const": "LOCKED"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "reportedState": {
+            "const": "OFF"
+          },
+          "safetyLockout": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "durableSafety"
+        ],
+        "properties": {
+          "durableSafety": {
+            "properties": {
+              "state": {
+                "const": "STORAGE_FAULT"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "reportedState": {
+            "const": "OFF"
+          },
+          "safetyLockout": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "durableSafety"
+        ],
+        "properties": {
+          "durableSafety": {
+            "properties": {
+              "state": {
+                "const": "READY"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "safetyLockout": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "durableSafety"
+        ],
+        "properties": {
+          "durableSafety": {
+            "properties": {
+              "state": {
+                "const": "ARMED"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "safetyLockout": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "durableSafety"
+        ],
+        "properties": {
+          "durableSafety": {
+            "properties": {
+              "state": {
+                "const": "READY"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "reportedState": {
+            "const": "OFF"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "durableSafety",
+          "reportedState"
+        ],
+        "properties": {
+          "reportedState": {
+            "const": "ON"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "durableSafety"
+        ],
+        "properties": {
+          "durableSafety": {
+            "properties": {
+              "state": {
+                "const": "ARMED"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "durableSafety",
+          "stateReason"
+        ],
+        "properties": {
+          "stateReason": {
+            "const": "LOCKOUT_RESET"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "durableSafety"
+        ],
+        "properties": {
+          "durableSafety": {
+            "properties": {
+              "state": {
+                "const": "READY"
+              }
+            }
+          }
+        }
       }
     }
   ]

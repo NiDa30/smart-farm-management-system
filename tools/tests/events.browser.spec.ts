@@ -98,3 +98,7 @@ test('valve fault lifecycle keeps source times and has no invented command or ru
  const detail=page.getByRole('region',{name:'Chi tiết sự kiện'});await expect(detail).toContainText('Thời gian thiết bị: Không được lưu');
  await expect(detail).not.toContainText('Run ID: 7');await expect(detail).not.toContainText('ab6cfc5e-18ff-4a01-852b-03604df6b52f');
 });
+
+for(const [reason,label] of [['RESTART_LOCKOUT','Khóa sau khởi động lại'],['SAFETY_STORAGE_FAULT','Lỗi đọc/ghi khóa NVS']])test(`device event translates ${reason} without invented commands`,async({page})=>{
+ const state=await fixtures(page);state.items=[{...event('device:2'),category:'DEVICE',type:'DEVICE_STATE',action:null,state:'OFF',reason,sourceAt:at,commandId:null,runId:null}];await page.goto('/');await page.getByRole('button',{name:'Chi tiết device:2',exact:true}).click();const detail=page.getByRole('region',{name:'Chi tiết sự kiện'});await expect(detail).toContainText(label);await expect(detail).not.toContainText('Run ID: 7');
+});

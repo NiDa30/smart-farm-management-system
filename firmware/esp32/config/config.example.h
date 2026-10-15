@@ -45,3 +45,8 @@
 // Open proof must settle 100ms; loss while running cuts OFF and latches.
 #define FARM_VALVE_PROOF_ENABLED 0
 #define FARM_VALVE_PROOF_SIMULATOR 1
+
+// Optional NVS safety journal. Requires pump fencing on device AND backend.
+// Every boot stays OFF/locked until a new boot-targeted RESET_LOCKOUT succeeds.
+// Never restores an old ON or timer. No NVS erase on failure.
+#define FARM_PUMP_DURABLE_SAFETY_ENABLED 0

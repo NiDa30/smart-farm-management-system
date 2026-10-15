@@ -265,3 +265,17 @@ phát lại/refresh packet cũ. V29 rows giữ nguyên, commands/run/queue mới
 Sáu ca Windows/AWS/Wokwi/GPIO mới Chưa chạy. Guard chỉ opt-in công tắc mô phỏng
 tại board bơm; không proof nhánh/remote valve, NVS hoặc coordinator/dispatch.
 [Chương42](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md).
+
+## NVS safety journal V31 — 15/10/2026
+
+398backend,22Safety/13EventLog/15Pump browser,12unit/12contract và native
+17nhóm/19biến thể journal đạt, khôngskip. Relay/flow/13valve hồi quy đạt.
+Public default/NVS+fence/all-guards, expected reject unfenced rồi restored,
+emptyFSmerge/lintbuild đạt. Full-app native memory report boot/fault mới,
+receiver/PostgreSQL/React và restart JVM giữ clocks/history, không refresh.
+Nâng V30→31 giữ37bảng ngoài epoch rule+1 đúng startup; NVS mới null.
+
+Tính năng default0, every-boot OFF/khóa, explicit boot-targeted reset; không
+resume. Sáu ca Windows/AWS/Wokwi/ESP32 trong [chương43](CHAPTER_43_DURABLE_PUMP_SAFETY.md)
+đều Chưa chạy. Chưa nghiệm thu NVS retention/IO thật/brownout/GPIO hoặc
+coordinator nhiều van. MQTT/AWS/control không được gọi trong cloud fixture.

@@ -1094,3 +1094,26 @@ giữ fault/clock cũ, sửa selector, rerun stored đạt. Không reseed để 
 Sáu ca Windows/Wokwi mới Chưa chạy; latch RAM/NVS và coordinator còn sau.
 [Chương42](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md),
 [bàn giao](../implementation/LOCAL_PUMP_VALVE_INTERLOCK_REPORT.md).
+
+## 15/10/2026 — V31 khóa an toàn bền qua reboot
+
+Thêm journal NVS opt-in cho ENV01/PUMP01, default/fallback0; cần fence1.
+Boot luôn OFF/khóa; ghi/readback trước ON, reset có điều kiện, không resume
+lệnh/timer. Flash IO ở loop khi đầu ra OFF, không ở ISR/timer/mutex; kiểm
+tra expiry và thời gian còn lại sau commit. V31 metadata JSONB nullable,
+Safety phân biệt mới/cũ/thiếu, Control/Event Log dịch reason. Schema status
+đồng bộ cả proof V30. Không đổi private config, IAM hoặc topic.
+
+398 backend/50browser/12unit/12contract đạt,0skip; native17nhóm/19biến thể
+journal và relay/flow/13valve hồi quy đạt. Ba public profile firmware,
+expected reject thiếu fence, restored build/emptyFSmerge/lintbuild đạt.
+Full-app native memory model boot/fault mới→PostgreSQL/React/Event Log, JVM
+restart giữ clocks/latch report và hiện cũ.37bảng V30 giữ nguyên ngoài
+execution_epoch rule tăng1 đúng startup; cap NVS null, không backfill.
+
+So sánh ban đầu fail do API thêm null và rule epoch tăng đúng thiết kế;
+chuẩn hóa duy nhất null mới, assert chính xác epoch+1, không bỏ kiểm tra
+lịch sử. Python hệ thống thiếu format checker, đổi về venv dự án đạt12ca.
+Sáu ca live vẫn Chưa chạy: memory-store không chứng minh NVS/flash/brownout.
+Xem [chương43](CHAPTER_43_DURABLE_PUMP_SAFETY.md) và
+[bàn giao V31](../implementation/LOCAL_DURABLE_PUMP_SAFETY_REPORT.md).

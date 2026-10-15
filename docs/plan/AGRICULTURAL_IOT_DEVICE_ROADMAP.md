@@ -805,3 +805,16 @@ Sáu ca Windows/AWS/Wokwi/GPIO mới Chưa chạy. Đây mới một đường c
 phỏng tại bơm, chưa biết nhánh/valveId, chưa interlock xuyên controller, NVS,
 command nhiều van hoặc coordinator/dispatch queue. A3 chưa hoàn tất.
 [Chương42](../book/CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md).
+
+## Cập nhật 15/10/2026 — nhật ký khóa bơm V31
+
+ENV01/PUMP01 có NVS journal opt-in/default0, bắt buộc fence1. Mọi boot
+OFF/khóa, commit/readback trước ON, chỉ reset đúng boot mở khóa; không
+resume lệnh/timer. V31 metadata/UI chỉ báo khả năng thiết bị khai báo.
+398backend/50browser/12unit/12contract/native17nhóm-19biến thể/public build/
+emptyFSmerge/lintbuild/full-app memory model→PostgreSQL→React/JVM restart
+đạt;37bảng V30 giữ ngoài epoch rule+1 đúng startup. Không AWS/dispatch.
+Sáu ca Windows/AWS/Wokwi/ESP32 Chưa chạy; chưa chứng minh flash retention.
+Còn command nhiều van, proof theo circuit, interlock xuyên controller và
+coordinator/queue dispatch; A3 chưa hoàn tất.
+[Chương43](../book/CHAPTER_43_DURABLE_PUMP_SAFETY.md).

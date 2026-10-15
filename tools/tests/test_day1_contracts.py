@@ -71,6 +71,33 @@ class ContractsTest(unittest.TestCase):
             value.update(reportedState='OFF', safetyLockout=False)
             with self.assertRaises(ValidationError): self.validate('status', value)
 
+    def test_native_local_guard_and_journal_packets_match_status_contract(self):
+        for filename in ['pump-valve-proof-packets.json', 'pump-durable-safety-packets.json']:
+            for packet in json.loads((ROOT / 'backend/src/test/resources' / filename).read_text()):
+                with self.subTest(filename=filename, sequence=packet['sequence']): self.validate('status', packet)
+
+    def test_durable_journal_faults_need_capability_fence_and_locked_off(self):
+        source = json.loads((ROOT / 'backend/src/test/resources/pump-durable-safety-packets.json').read_text())[1]
+        for mutate in [lambda p: p.pop('durableSafety'), lambda p: p.pop('commandFence'),
+                       lambda p: p.update(reportedState='ON'), lambda p: p.update(safetyLockout=False),
+                       lambda p: p['durableSafety'].update(storage='RAM'), lambda p: p['durableSafety'].update(state='READY')]:
+            value = json.loads(json.dumps(source)); mutate(value)
+            with self.assertRaises(ValidationError): self.validate('status', value)
+
+    def test_journal_ready_reset_and_pending_cutoff_are_distinct(self):
+        value = json.loads((ROOT / 'backend/src/test/resources/pump-durable-safety-packets.json').read_text())[0]
+        value.update(stateReason='LOCKOUT_RESET', safetyLockout=False)
+        value['durableSafety']['state'] = 'READY'; self.validate('status', value)
+        value['durableSafety']['state'] = 'LOCKED'
+        with self.assertRaises(ValidationError): self.validate('status', value)
+        value.update(stateReason='COMMAND_ON'); value['durableSafety']['state'] = 'ARMED'; self.validate('status', value)
+
+    def test_valve_fault_cannot_lose_proof_or_claim_open_output(self):
+        source = json.loads((ROOT / 'backend/src/test/resources/pump-valve-proof-packets.json').read_text())[2]
+        for mutate in [lambda p: p.pop('valveInterlock'), lambda p: p.update(reportedState='ON'),
+                       lambda p: p.update(safetyLockout=False), lambda p: p['valveInterlock'].update(fault=None)]:
+            value = json.loads(json.dumps(source)); mutate(value)
+            with self.assertRaises(ValidationError): self.validate('status', value)
     def test_device_policy_cannot_publish_command_or_cross_farm(self):
         spec = importlib.util.spec_from_file_location("provision", ROOT / "tools/aws/provision_day1.py")
         module = importlib.util.module_from_spec(spec)

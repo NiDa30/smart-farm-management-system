@@ -83,3 +83,5 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 41. [Lịch sử van](CHAPTER_41_VALVE_HISTORY.md) — snapshot cấu hình từng bản tin, hai đồng hồ, phân trang ổn định và CSV.
 
 42. [Liên động van tại bơm](CHAPTER_42_LOCAL_VALVE_PUMP_INTERLOCK.md) — hai tiếp điểm độc lập, guard timer, latch/reset và metadata mô phỏng; chưa coordinator.
+
+43. [Nhật ký khóa qua reboot](CHAPTER_43_DURABLE_PUMP_SAFETY.md) — NVS trước ON, storage fault, reset đúng boot và giới hạn không resume.
