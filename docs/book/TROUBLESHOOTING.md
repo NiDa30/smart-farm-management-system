@@ -273,3 +273,22 @@ Khi rà code đã chặn inputdate rỗng trước toISOString và đổi so sco
 chuỗi sang instant vì JavaZ/JS.000Z. Browser16/unit5 có ca tương ứng, không có
 lượt fail trong đợt này. Không gán các lỗi tiềm ẩn này thành lỗi AWS thực tế.
 UI mới cần restart backend có /water-volume; không xóa DB/cert để chữa404.
+
+## Van mô phỏng chưa mở hoặc migration V20 xung đột — 15/10/2026
+
+Xem [chương32](CHAPTER_32_IRRIGATION_VALVE_DEMO.md): controller/cert riêng,
+zone đúng binding và SIMULATOR, backend/firmware cùng opt-in, SUBACK thành công,
+status CLOSED còn mới, đúng boot/revision và theo kịp mọi lệnh. OPEN mới phải
+qua mốc chặn sau CLOSE. SENT/ACK không thay status hiện tại hoặc chứng minh
+vị trí van cơ khí. HTTP/broker không rõ thì GET ID; không tạo OPEN mới để retry.
+
+V20 dành riêng IRRIGATION01/VALVE01. Nếu đã dùng các ID đó cho monitor/sensor,
+migration dừng vì xung đột, không tự xóa hoặc đổi danh tính. Lượt cloud có lỗi
+compile helper che matcher status, native indentation dưới -Werror và driver
+Python dùng cú pháp JS. Đã sửa code/driver, giữ nguyên kiểm tra nghiêm ngặt;
+cuối212 backend/9 browser/2 unit/full-app đạt. Không gọi những lỗi này là AWS.
+
+Nếu API lặp lại cùng asOf, polling không được đặt lại tuổi số đo. Lượt kiểm
+tra cuối phát hiện ca expiry8pass/1fail; UI đã dùng mốc server cộng monotonic
+không lùi qua polling, cuối9/9 đạt. Ledger mới hơn status hoặc HTTP chưa rõ
+không giữ khẳng định CLOSED từ trước lệnh. Không tăng thời hạn mẫu để chữa.

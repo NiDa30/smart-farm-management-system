@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def node_id(value):
-    if not re.fullmatch(r'[A-Z][A-Z0-9_-]{1,31}', value or '') or value in ('ENV01', 'PUMP01'):
+    if not re.fullmatch(r'[A-Z][A-Z0-9_-]{1,31}', value or '') or value in ('ENV01', 'PUMP01', 'IRRIGATION01', 'VALVE01'):
         raise ValueError('Use a separate monitor-node ID, not ENV01/PUMP01')
     return value
 

@@ -19,7 +19,7 @@ import software.amazon.awssdk.iot.AwsIotMqttConnectionBuilder;
 
 @Component
 @ConditionalOnProperty(name = "smartfarm.mqtt.enabled", havingValue = "true")
-public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn.smartfarm.iot.control.CommandTransport {
+public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn.smartfarm.iot.control.CommandTransport, vn.smartfarm.iot.irrigation.IrrigationTransport {
     private static final Logger LOG = LoggerFactory.getLogger(TelemetryIngestion.class);
     private static final String TOPIC = "smartfarm/FARM001/+/telemetry";
     private final vn.smartfarm.iot.nodes.TelemetryRouter router;
@@ -28,6 +28,14 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
         new ArrayBlockingQueue<>(128), runnable -> new Thread(runnable, "telemetry-storage"));
     private final vn.smartfarm.iot.control.PumpService pump;
     private final boolean controlsEnabled;
+    private final boolean irrigationEnabled;
+    private final vn.smartfarm.iot.irrigation.IrrigationDemo irrigation;
+    private volatile boolean irrigationReady;
+    @Override public boolean irrigationConnected(){return irrigationReady && connection!=null;}
+    @Override public void publishIrrigation(byte[] payload)throws Exception {
+        if(!irrigationConnected())throw new IllegalStateException("Irrigation unavailable");
+        connection.publish(new software.amazon.awssdk.crt.mqtt.MqttMessage("smartfarm/FARM001/VALVE01/command",payload,QualityOfService.AT_LEAST_ONCE,false)).get(10,TimeUnit.SECONDS);
+    }
     private final ThreadPoolExecutor controlWorker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(32), runnable -> new Thread(runnable, "pump-control"));
     private MqttClientConnection connection;
@@ -41,8 +49,10 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
 
     public TelemetryIngestion(vn.smartfarm.iot.nodes.TelemetryRouter router, vn.smartfarm.iot.control.PumpService pump,
         vn.smartfarm.iot.monitoring.MqttHealth health,
+        vn.smartfarm.iot.irrigation.IrrigationDemo irrigation,
+        @org.springframework.beans.factory.annotation.Value("${smartfarm.irrigation.demo-enabled:false}") boolean irrigationEnabled,
         @org.springframework.beans.factory.annotation.Value("${smartfarm.control.enabled:false}") boolean controlsEnabled) {
-        this.health=health; this.router = router; this.pump=pump; this.controlsEnabled=controlsEnabled;
+        this.irrigation=irrigation;this.irrigationEnabled=irrigationEnabled;this.health=health; this.router = router; this.pump=pump; this.controlsEnabled=controlsEnabled;
     }
 
     @Override
@@ -56,14 +66,14 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                 .withCleanSession(true).withWebsockets(true).withWebsocketSigningRegion(region)
                 .withProtocolOperationTimeoutMs(10000)
                 .withConnectionEventCallbacks(new software.amazon.awssdk.crt.mqtt.MqttClientConnectionEvents() {
-                    public void onConnectionInterrupted(int error) { health.disconnected(); controlReady=false; LOG.warn("MQTT interrupted; command dispatch disabled"); }
+                    public void onConnectionInterrupted(int error) { health.disconnected(); irrigationReady=false; controlReady=false; LOG.warn("MQTT interrupted; command dispatch disabled"); }
                     public void onConnectionResumed(boolean present) {
                         if (!initialized || stopping) return;
-                        if (present) { health.connected(); controlReady=controlsEnabled; return; }
+                        if (present) { health.connected(); controlReady=controlsEnabled; irrigationReady=irrigationEnabled; return; }
                         health.reconnecting();
                         try { controlWorker.execute(() -> {
                             try { subscribeStreams(); }
-                            catch (Exception error) { controlReady=false; LOG.error("MQTT resubscribe failed; commands disabled until recovery/restart"); }
+                            catch (Exception error) { controlReady=false; irrigationReady=false; LOG.error("MQTT resubscribe failed; commands disabled until recovery/restart"); }
                         }); } catch (RejectedExecutionException error) { controlReady=false; }
                     }
                 });
@@ -110,6 +120,15 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                 }); } catch (RejectedExecutionException error) { LOG.error("Pump queue full; status/ACK not persisted"); }
             }).get(10,TimeUnit.SECONDS);
         }
+        if(irrigationEnabled)for(String topic:new String[]{"smartfarm/FARM001/VALVE01/status","smartfarm/FARM001/VALVE01/ack"}){
+            connection.subscribe(topic,QualityOfService.AT_LEAST_ONCE,message->{
+                if(message.getRetain()||message.getPayload().length>4096)return;
+                byte[] copy=Arrays.copyOf(message.getPayload(),message.getPayload().length);
+                try{controlWorker.execute(()->{try{irrigation.receive(message.getTopic(),copy);health.messageProcessed();}catch(RuntimeException e){LOG.warn("Irrigation message rejected or not persisted");}});}
+                catch(RejectedExecutionException e){LOG.error("Irrigation queue full; ACK/status not persisted");}
+            }).get(10,TimeUnit.SECONDS);
+        }
+        irrigationReady=irrigationEnabled;
         health.subscriptionsReady(healthVersion);
         controlReady=controlsEnabled;
         LOG.info("MQTT_TELEMETRY_SUBSCRIBED {}; Wokwi control enabled={}", TOPIC, controlsEnabled);
@@ -131,7 +150,7 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     }
     @Override
     public void destroy() throws Exception {
-        stopping=true; controlReady=false; health.stopped();
+        stopping=true; irrigationReady=false; controlReady=false; health.stopped();
         try {
             if (connection != null) {
                 try { connection.disconnect().get(5, TimeUnit.SECONDS); }

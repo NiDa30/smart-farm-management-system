@@ -1,0 +1,1 @@
+import React from 'react';import {createRoot} from 'react-dom/client';import {ValveDemoPanel} from '../../../../src/modules/iot/irrigation/ValveDemoPanel';createRoot(document.getElementById('root')!).render(<ValveDemoPanel/>);

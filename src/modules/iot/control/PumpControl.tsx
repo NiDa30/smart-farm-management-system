@@ -5,7 +5,7 @@ interface PumpStatus { deviceId: 'PUMP01'; reportedState: 'ON' | 'OFF' | 'UNKNOW
 interface Command { commandId: string; action: string; durationSeconds: number | null; issuedAt: string; state: string; reportedState: string | null; errorCode: string | null }
 interface StateChange { id: number; observedAt: string; reportedState: string; safetyLockout: boolean; changeType: string; stateReason?: string | null }
 const API = '/api/v1/actuators/PUMP01';
-export const PumpControl: React.FC = () => {
+export const PumpControl: React.FC<{onValveDemo?:()=>void}> = ({onValveDemo}) => {
   const [status, setStatus] = useState<PumpStatus | null>(null);
   const [commands, setCommands] = useState<Command[]>([]);
   const [stateHistory, setStateHistory] = useState<StateChange[]>([]);
@@ -65,6 +65,7 @@ export const PumpControl: React.FC = () => {
   const reasons: Record<string,string> = { BOOT: 'Khởi động thiết bị', COMMAND_ON: 'Nhận lệnh bật', COMMAND_OFF: 'Tắt thủ công', LOCKOUT_RESET: 'Reset khóa', TIMER_EXPIRED: 'Hết thời gian hẹn', CONNECTION_LOST: 'Mất kết nối khi đang bật', DEVICE_FAULT: 'Lỗi thiết bị', WATER_LOW: 'Bồn cạn nước hoặc đứt dây phao', FLOW_LOW: 'Thiếu lưu lượng tại bộ điều khiển (thiết bị báo)', FLOW_SENSOR_FAULT: 'Tín hiệu lưu lượng tại bộ điều khiển lỗi (thiết bị báo)' };
   const labels: Record<string,string> = { PENDING: 'Đang gửi', SENT: 'Đã gửi, chờ ACK', EXECUTED: 'Thiết bị đã ACK', FAILED: 'Thiết bị từ chối', TIMED_OUT: 'Quá hạn ACK', PUBLISH_UNCERTAIN: 'Chưa xác nhận gửi' };
   return <div className="max-w-5xl mx-auto space-y-5">
+    {onValveDemo&&<button className="underline" onClick={onValveDemo}>Mở controller van mô phỏng</button>}
     <header><h1 className="text-xl font-bold flex gap-2 items-center"><Power className="w-5 h-5 text-emerald-600" /> Điều khiển PUMP01</h1><p className="text-sm text-slate-500 mt-1">Demo GPIO26 trên Wokwi · FARM001 / ENV01</p></header>
     <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 text-sm">Mô phỏng Wokwi với relay và LED tải. ACK xác nhận GPIO đã áp dụng, không chứng minh bơm vật lý đang chạy.</div>
     <section className="bg-white border rounded-xl p-5 space-y-4">

@@ -28,3 +28,9 @@ firmware/soil-node/.pio/
 firmware/soil-node/config/config.local.h
 firmware/soil-node/data/*
 !firmware/soil-node/data/.gitkeep
+
+# Private irrigation LED-controller demo
+firmware/irrigation-node/.pio/
+firmware/irrigation-node/config/config.local.h
+firmware/irrigation-node/data/*
+!firmware/irrigation-node/data/.gitkeep

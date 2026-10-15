@@ -253,3 +253,13 @@ flash/provision lại chỉ để thêm API này. Nếu chỉ ENV01 hoặc regis
 FLOW, không có ước tính; không lấy timer relay thay số đo. Đọc coverage và
 nhóm hiệu chuẩn, không xem phần chưa có dữ liệu là0lít. Tab Điện chưa có kWh.
 Xem [chương31](CHAPTER_31_WATER_VOLUME.md),5ca live mới vẫn Chưa chạy.
+
+## Controller van LED riêng — 15/10/2026
+
+Pull/restart backend/frontend để V20 chạy, giữ DB và certificate. Mở Điều khiển
+Actuator → Mở controller van mô phỏng; tạo vùng SIMULATOR và lưu binding.
+Đây là board IRRIGATION01 riêng: cần cert/policy riêng, config.local.h đúng
+zone, IRRIGATION_DEMO_ENABLED1/SIMULATOR1, build/buildfs/merge và diagram mới.
+Backend dùng SMARTFARM_IRRIGATION_DEMO_ENABLED=true độc lập cờ PUMP01.
+Helper render_irrigation_policies.py chỉ render, không provision AWS. Làm theo
+[chương32](CHAPTER_32_IRRIGATION_VALVE_DEMO.md); sáu ca live mới Chưa chạy.

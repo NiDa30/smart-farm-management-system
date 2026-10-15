@@ -74,3 +74,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Tổng quan nông nghiệp: đất, nước và vùng tưới](CHAPTER_30_AGRICULTURE_OVERVIEW.md)
 
 - [Ước tính lượng nước FLOW và độ phủ dữ liệu](CHAPTER_31_WATER_VOLUME.md)
+
+- [Controller riêng cho một van mô phỏng](CHAPTER_32_IRRIGATION_VALVE_DEMO.md)

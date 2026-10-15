@@ -669,3 +669,14 @@ backend/16browser/5unit/lintbuild và full-app GET-only với lịch sử giữ 
 Không migration/firmware/IAM mới;5ca Windows/AWS/Wokwi Chưa chạy. Xem
 [chương31](../book/CHAPTER_31_WATER_VOLUME.md). Chưa công tơ tích lũy, chi phí,
 chia volume cho cây/zone, leak detection hoặc coordinator/van A3.
+
+## Cập nhật 15/10/2026 — A3 controller một van LED
+
+Có IRRIGATION01/VALVE01 riêng, V20 binding vùng SIMULATOR/ledger/status,
+manual OPEN1–30s/CLOSE, mốc chặn HTTP theo thời điểm yêu cầu, ordinal và boot
+cho MQTT. Timer độc lập, mặc định tắt; chưa pump binding, feedback vật lý,
+rule SOIL hoặc coordinator. UI ở Điều khiển Actuator, firmware/diagram riêng,
+helper chỉ render policy.212 backend/9 browser/2 unit/native/public ESP32/
+buildfs/merge/full-app đạt; sáu ca AWS/Wokwi mới Chưa chạy. Đọc
+[chương32](../book/CHAPTER_32_IRRIGATION_VALVE_DEMO.md). A3 mới có prototype
+đầu ra một van; chưa điều phối bơm hoặc mở rộng bốn dãy.

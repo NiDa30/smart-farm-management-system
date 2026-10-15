@@ -68,6 +68,12 @@ no extrapolation; màn Nước & Điện bỏ tổng giả, Điện chưa có đ
 hoặc firmware mới.194backend/16browser/5unit/full-app lịch sử giữ lại đạt,
 MQTT/controlfalse; Windows/AWS/Wokwi mới chưa chạy. Chưa coordinator A3.
 
+15/10/2026 A3 có [controller van LED](../book/CHAPTER_32_IRRIGATION_VALVE_DEMO.md):
+IRRIGATION01/VALVE01 riêng, V20 binding/ledger/status, HTTP/MQTT fences và
+manual timer1–30s. Cờ mặc định false; chưa pump/coordinator/rule SOIL hoặc
+feedback van thật.212 backend/9 browser/2 unit/native/build/full-app cloud đạt;
+sáu ca live chưa chạy. Hai ID được dành riêng, không gán làm ENV/WATER/SOIL.
+
 Các mục HiveMQ, browser MQTT/WebSockets, SLA<1s, topic/JSON mẫu và Production
 Ready bên dưới là đặc tả lịch sử hoặc mục tiêu, không phải mô tả runtime mới.
 Đối chiếu [hợp đồng đang dùng](../../contracts/iot/v1/README.md),

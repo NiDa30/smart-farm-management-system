@@ -54,6 +54,7 @@ import { IoTDashboard } from './modules/iot/dashboard/IoTDashboard';
 import { DeviceMonitor } from './modules/iot/devices/DeviceMonitor';
 import { SensorRealtime } from './modules/iot/realtime/SensorRealtime';
 import { HistoricalData } from './modules/iot/history/HistoricalData';
+import { ValveDemoPanel } from './modules/iot/irrigation/ValveDemoPanel';
 import { PumpControl } from './modules/iot/control/PumpControl';
 import { DigitalTwinView } from './modules/iot/digital-twin/DigitalTwinView';
 import { AutomationManager } from './modules/iot/automation/AutomationManager';
@@ -92,7 +93,7 @@ import { ReportBuilder } from './modules/analytics/reports/ReportBuilder';
 import { ReportsPreview } from './modules/reports/ReportsPreview';
 
 const AppContent: React.FC = () => {
-  const { currentRoute, feedbackToast } = useApp();
+  const { currentRoute, feedbackToast, navigate } = useApp();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Router Dispatcher
@@ -267,8 +268,9 @@ const AppContent: React.FC = () => {
     if (currentRoute.startsWith('/iot/history')) {
       return <HistoricalData />;
     }
+    if (currentRoute==='/iot/control/valve-demo')return <ValveDemoPanel onBack={()=>navigate('/iot/control')}/>;
     if (currentRoute.startsWith('/iot/control')) {
-      return <PumpControl />;
+      return <PumpControl onValveDemo={()=>navigate('/iot/control/valve-demo')}/>;
     }
     if (currentRoute.startsWith('/iot/digital-twin')) {
       return <DigitalTwinView />;

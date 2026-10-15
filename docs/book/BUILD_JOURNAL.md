@@ -920,3 +920,29 @@ Sau điều chỉnh IAM, lệnh CLI attach-policy không lỗi. Lần chạy scr
   command0/run0, MQTT/controlfalse.5ca Windows/AWS/Wokwi chưa chạy; năng lượng/
   chi phí/coordinator/volume thực địa chưa nghiệm thu.
 - [Chương31](CHAPTER_31_WATER_VOLUME.md), [bàn giao](../implementation/LOCAL_WATER_VOLUME_REPORT.md).
+
+## 15/10/2026 — controller van mô phỏng A3 (giờ Việt Nam)
+
+- V20 thêm IRRIGATION01/VALVE01 cố định, binding vùng SIMULATOR, ledger/status,
+  API và transport riêng. Cờ mặc định tắt; không đổi ENV01/PUMP01. Tracking
+  commit trước publish, request UUID idempotent, GET ID ngoài preview20.
+- OPEN1–30s cần boot/CLOSED mới và status theo kịp mọi ordinal. HTTP có thời
+  điểm yêu cầu và mốc chặn CLOSE+2s; MQTT có ordinal và boot để chặn OPEN muộn.
+  Không tự mở khi reboot/reconnect; ACK và status được giữ riêng.
+- Firmware/diagram ESP32 riêng với LED26, timer25ms và kiểm tra lỗi queue,
+  TTL/JSON. Chỉ SIMULATOR, feedback UNKNOWN. Helper chỉ render policy, không
+  provision AWS. Controller này chưa điều khiển bơm chung hoặc van thực tế.
+- 212 backend,9 browser,2 unit,3 Python policy+17 WATER+7 SOIL đạt, skip0.
+  Native/public ESP32 mặc định và opt-in/buildfs/merge4MiB/lint/build đạt.
+- Lỗi đã sửa: helper test status che matcher (đổi reportStatus), native
+  indentation dưới -Werror, driver Python dùng cú pháp JS (đổi exact=False).
+  Browser cuối còn phát hiện expiry bị kéo dài qua polling asOf cũ (8/1);
+  sửa đồng hồ monotonic không lùi và rerun9/9. Giữ lượt fail trong báo cáo;
+  full-app cuối đạt với GET-only và các cờ false.
+- V20 được sửa trước phát hành: chỉ dựng lại các bảng/constraint V20 mới tạo
+  trong telemetry_test. Upgrade V19→V20 trên fixture agriculture giữ4packet/
+  12readings/zone1/alerts và command0/run0. Runtime irrigation_demo_smoke nhận
+  native packet đã chỉnh giờ, binding ZONE01 revision2, status CLOSED, không lệnh.
+- [Chương32](CHAPTER_32_IRRIGATION_VALVE_DEMO.md),
+  [bàn giao](../implementation/LOCAL_IRRIGATION_VALVE_REPORT.md).
+  Sáu ca AWS/Wokwi mới Chưa chạy; coordinator/van thật/rule SOIL/NVS còn sau.

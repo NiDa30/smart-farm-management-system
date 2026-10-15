@@ -1,0 +1,20 @@
+export interface Binding {zoneId:string|null;zoneRevision:number|null;revision:number;closeFenceAt:string|null}
+export interface ValveStatus {zoneId:string;bootId:string;sequence:number;observedAt:string;receivedAt:string;gpioState:'OPEN'|'CLOSED';reason:string;demoEnabled:boolean;lastOrdinal:number}
+export interface ValveCommand {commandId:string;ordinal:number;zoneId:string;bindingRevision:number;bootId:string;action:'OPEN'|'CLOSE';durationSeconds:number|null;requestedAt:string;issuedAt:string;expiresAt:string;state:'PENDING'|'SENT'|'PUBLISH_UNCERTAIN'|'EXECUTED'|'REJECTED';errorCode:string|null}
+export interface ValveSnapshot {controllerId:'IRRIGATION01';actuatorId:'VALVE01';asOf:string;demoEnabled:boolean;connected:boolean;readyToOpen:boolean;binding:Binding;latest:ValveStatus|null;commands:ValveCommand[]}
+export interface ValveRequest {requestId:string;action:'OPEN'|'CLOSE';durationSeconds:number|null;expectedBootId:string|null;bindingRevision:number;requestedAt:string}
+const code=(v:unknown):v is string=>typeof v==='string'&&/^[A-Z][A-Z0-9_-]{1,31}$/.test(v);
+const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(v);
+const integer=(v:unknown,min=0):v is number=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=min;
+const date=(v:unknown):v is string=>typeof v==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v));
+export function parseCommand(value:unknown):ValveCommand {const c=value as ValveCommand;
+ if(!c||!uuid(c.commandId)||!integer(c.ordinal,1)||!code(c.zoneId)||!integer(c.bindingRevision,1)||!uuid(c.bootId)||!['OPEN','CLOSE'].includes(c.action)||(c.action==='OPEN'? !integer(c.durationSeconds,1)||c.durationSeconds>30:c.durationSeconds!==null)||!date(c.requestedAt)||!date(c.issuedAt)||!date(c.expiresAt)||Date.parse(c.expiresAt)<=Date.parse(c.issuedAt)||Date.parse(c.expiresAt)-Date.parse(c.issuedAt)>15000||!['PENDING','SENT','PUBLISH_UNCERTAIN','EXECUTED','REJECTED'].includes(c.state)||!(c.errorCode===null||typeof c.errorCode==='string'&&/^[A-Z_]{2,40}$/.test(c.errorCode)))throw new Error('Lệnh van không hợp lệ.');if((c.state==='REJECTED')!==(c.errorCode!==null))throw new Error('ACK không hợp lệ.');return c;
+}
+export function parseValve(value:unknown):ValveSnapshot {const v=value as ValveSnapshot,b=v?.binding,s=v?.latest;
+ if(!v||v.controllerId!=='IRRIGATION01'||v.actuatorId!=='VALVE01'||!date(v.asOf)||typeof v.demoEnabled!=='boolean'||typeof v.connected!=='boolean'||typeof v.readyToOpen!=='boolean'||!b||!integer(b.revision,1)||!(b.zoneId===null&&b.zoneRevision===null||code(b.zoneId)&&integer(b.zoneRevision,1))||!(b.closeFenceAt===null||date(b.closeFenceAt))||!Array.isArray(v.commands)||v.commands.length>20)throw new Error('Phản hồi van không hợp lệ.');
+ if(s!==null&&(!s||!code(s.zoneId)||!uuid(s.bootId)||!integer(s.sequence)||!date(s.observedAt)||!date(s.receivedAt)||!['OPEN','CLOSED'].includes(s.gpioState)||typeof s.demoEnabled!=='boolean'||!integer(s.lastOrdinal)||!['BOOT','COMMAND_OPEN','COMMAND_CLOSE','TIMER_EXPIRED','CONNECTION_LOST','DEVICE_FAULT'].includes(s.reason)))throw new Error('Trạng thái van không hợp lệ.');
+ v.commands.forEach(parseCommand);if(new Set(v.commands.map(c=>c.commandId)).size!==v.commands.length||v.commands.some((c,i)=>i>0&&c.ordinal>=v.commands[i-1].ordinal))throw new Error('Thứ tự lệnh không hợp lệ.');
+ if(v.readyToOpen&&(!v.demoEnabled||!v.connected||!s||!s.demoEnabled||s.gpioState!=='CLOSED'||b.zoneId!==s.zoneId||!freshValve(s,Date.parse(v.asOf))||b.closeFenceAt!==null&&Date.parse(b.closeFenceAt)>=Date.parse(v.asOf)))throw new Error('Chưa đủ điều kiện mở.');return v;
+}
+export function freshValve(s:ValveStatus|null,now:number){return !!s&&Math.min(Date.parse(s.observedAt),Date.parse(s.receivedAt))>now-15000&&Math.max(Date.parse(s.observedAt),Date.parse(s.receivedAt))<=now+2000;}
+export const commandLabels={PENDING:'Đã lưu, đang gửi',SENT:'Đã gửi, chờ ACK',PUBLISH_UNCERTAIN:'Chưa xác nhận publish',EXECUTED:'Thiết bị đã ACK GPIO',REJECTED:'Thiết bị từ chối'};

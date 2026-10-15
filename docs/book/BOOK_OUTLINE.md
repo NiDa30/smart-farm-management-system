@@ -63,3 +63,6 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 
 31. [Ước tính lượng nước FLOW](CHAPTER_31_WATER_VOLUME.md) — hình thang,
     coverage/gap/source/calibration và bỏ số tiêu thụ mẫu khỏi màn Nước & Điện.
+
+32. [Một controller van riêng](CHAPTER_32_IRRIGATION_VALVE_DEMO.md) — binding,
+    boot/request/ordinal fences, ACK/status, LED timer độc lập và ranh giới pump.
