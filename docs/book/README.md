@@ -86,3 +86,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Quyền sử dụng bơm giữa thủ công và tự động](CHAPTER_36_PUMP_OWNERSHIP.md)
 
 - [Phản hồi vị trí van bằng hai công tắc độc lập](CHAPTER_37_VALVE_POSITION_FEEDBACK.md)
+
+- [Nhánh tưới: vùng, van dự kiến và trạm nước](CHAPTER_38_IRRIGATION_CIRCUITS.md)

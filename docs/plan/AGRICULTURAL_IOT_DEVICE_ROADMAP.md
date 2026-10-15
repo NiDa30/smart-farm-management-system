@@ -739,3 +739,17 @@ Default legacy giữ nguyên. Đây là một điều kiện trước dispatch q
 coordinator, chưa mapping nhiều van, local interlock xuyên van–bơm, flow proof
 hoặc rule SOIL. Global incident cho fault vị trí còn sau.
 [Chương37](../book/CHAPTER_37_VALVE_POSITION_FEEDBACK.md).
+
+
+## Cập nhật 15/10/2026 — A3 cấu hình nhánh V26
+
+Đã có registry nhánh: vùng/revision → controller/van dự kiến → PUMP01 và
+WATER/kênh phao-flow. Vùng/van độc quyền, controller/trạm dùng chung;
+optimistic revision và kiểm tra identity/source/kênh. Hàng chờ lưu snapshot
+nhánh đã duyệt, invalidates/interrupts khi mapping đổi hoặc mới được thêm;
+không tự chuyển đích, vẫn PREVIEW_ONLY. 315backend/11browser nhánh/16queue
+browser/lintbuild/full-app PostgreSQL+restart thật đạt, command/run0.
+5ca Windows mới Chưa chạy, firmware không đổi.
+Đây là cấu hình nhiều nhánh, chưa provision/giữ chỗ registry, giao thức nhiều
+van, coordinator/flow proof/interlock xuyên van–bơm hoặc tự tưới vùng SOIL.
+Không đánh dấu A3 hoàn tất. [Chương38](../book/CHAPTER_38_IRRIGATION_CIRCUITS.md).

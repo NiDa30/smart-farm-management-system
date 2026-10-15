@@ -161,3 +161,12 @@ Năm ca Windows tại máy người dùng vẫn **Chưa chạy**:
 | HTTP mất phản hồi | đọc theo ID, không tự POST lại | Chưa chạy |
 
 Không có ca AWS/Wokwi/GPIO mới được thực hiện hoặc tuyên bố đạt trong chương này.
+
+
+## Bổ sung V26 — bản chụp nhánh
+
+Hàng chờ vẫn PREVIEW_ONLY. Khi vùng đã có nhánh cấu hình, POST tạo lượt phải
+gửi thêm circuitId/circuitRevision đã duyệt; backend chụp toàn bộ nhánh.
+Đổi nhánh hoặc thêm nhánh sau lượt chưa ánh xạ làm lượt cũ mất hiệu lực,
+không tự chuyển van/trạm. Lượt trước V26 giữ circuit_snapshot null.
+Xem [chương38](CHAPTER_38_IRRIGATION_CIRCUITS.md) cho contract và bằng chứng.

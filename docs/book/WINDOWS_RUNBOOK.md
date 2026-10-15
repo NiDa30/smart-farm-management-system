@@ -327,3 +327,24 @@ tới mở, nhả closedStop rồi tác động openStop trong3s, tránh cả ha
 động. Fault cần CLOSED ổn định và CLOSE mới; restart không tự mở. Sáu ca
 [chương37](CHAPTER_37_VALVE_POSITION_FEEDBACK.md) đều Chưa chạy trên Windows/Wokwi.
 Không nối bơm chung trong các ca này; coordinator chưa làm.
+
+
+## V26 — cấu hình nhánh theo vùng và trạm nước
+
+Trong terminal Git Bash ở gốc repository:
+
+```bash
+git pull --ff-only origin feat/day1-iot-foundation
+```
+
+Dừng backend hiện tại bằng Ctrl+C, rồi chạy lại bằng lệnh backend đã dùng
+ở phiên trước để giữ đúng các cờ opt-in. Flyway áp migration V26 tự động;
+không xóa volume PostgreSQL. Không cần thay private config/IAM hoặc build
+firmware cho phần này. Frontend chạy npm run dev trong terminal riêng.
+
+Vào Điều khiển Actuator → Cấu hình nhánh tưới. Chọn vùng và WATER node đã
+khai báo, phao WATER_PRESENT và flow FLOW_RATE. Mỗi vùng/van dùng một lần;
+trạm và controller dùng chung được. Nếu đã có ánh xạ, hàng chờ sẽ gửi phiên
+bản nhánh đang xem; sửa cấu hình làm lượt cũ mất hiệu lực, không chuyển đích.
+Đây vẫn là cấu hình/diễn tập, chưa nhiều van trên Wokwi hoặc điều phối bơm.
+[Năm ca Windows chưa chạy và giới hạn](CHAPTER_38_IRRIGATION_CIRCUITS.md).

@@ -362,3 +362,20 @@ GPIO hoặc ACK không thay cho đầu vào. Fault không tự xóa sau khi gạ
 CLOSE mới khi CLOSED ổn định mới xác nhận. Cả hai switch → CONFLICT; không
 switch → UNKNOWN. Không sửa DB để làm status mới.
 [Chương37](CHAPTER_37_VALVE_POSITION_FEEDBACK.md).
+
+
+## V26: tạo nhánh hoặc tạo lượt trả409
+
+Trong Điều khiển Actuator → Cấu hình nhánh tưới, đọc lại cấu hình hiện tại.
+Kiểm tra một vùng/mã van chỉ thuộc một nhánh; vùng/revision/source phải khớp.
+Mã controller/van là dự kiến và không được trùng node/sensor/actuator khác.
+Vùng đã có nhánh thì tạo lượt chờ cần circuitId/circuitRevision đã duyệt;
+client cũ chỉ gửi zone sẽ bị từ chối. Không tự retry sau mất phản hồi.
+Lượt cũ báo CIRCUIT_CHANGED phải giữ nguyên bản chụp, tạo lượt mới sau khi
+duyệt lại; không sửa record cũ để đổi van. [Chương38](CHAPTER_38_IRRIGATION_CIRCUITS.md).
+
+## V26: van mới hiển thị chưa kết nối
+
+Lưu nhánh chỉ tạo cấu hình. Firmware/transport hiện hữu chỉ hỗ trợ demo
+IRRIGATION01/VALVE01, không dùng phản hồi đó cho VALVE02/03. Thêm nhánh
+không tạo Thing/cert, không bổ sung wiring/simulator hoặc bật bơm.

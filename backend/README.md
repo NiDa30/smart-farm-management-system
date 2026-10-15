@@ -112,3 +112,18 @@ or publishes. WateringRule checks both current/source time and requests OFF
 outside windows. Runs snapshot calendar metadata before dispatch; legacy null.
 Backend must run and restart still pauses the rule. See [chapter20](../docs/book/CHAPTER_20_AGRICULTURAL_IRRIGATION_CALENDAR.md)
 and the [handoff](../docs/implementation/IRRIGATION_CALENDAR_REPORT.md).
+
+
+## Irrigation circuit planning (V26)
+
+GET/POST `/api/v1/irrigation-circuits`, GET/PUT `/{id}` configure zone revision,
+planned controller/valve, PUMP01, WATER level/flow channels and expected source.
+One circuit per zone/valve, shared controller/water station allowed. PUT uses
+optimistic revision. This is CONFIGURATION_ONLY, dispatchAvailable=false; IDs
+are not provisioned/reserved in inventory. Later collisions invalidate health.
+
+Preview queue captures immutable circuit_snapshot; mapped zones require the
+reviewed circuitId/circuitRevision pair. Changes interrupt/invalidate rather
+than retarget requests. Legacy rows remain null. See
+[chapter38](../docs/book/CHAPTER_38_IRRIGATION_CIRCUITS.md) and
+[handoff](../docs/implementation/LOCAL_IRRIGATION_CIRCUITS_REPORT.md).

@@ -1015,3 +1015,17 @@ chạy lại300/300, không reset DB. Merge cần đúng --core-dir cache cloud.
 Không dùng private config/PEM. Sáu ca Windows/Wokwi mới Chưa chạy.
 [Chương37](CHAPTER_37_VALVE_POSITION_FEEDBACK.md),
 [bàn giao](../implementation/LOCAL_VALVE_POSITION_REPORT.md). Coordinator vẫn còn sau.
+
+
+## 15/10/2026 — V26 cấu hình nhiều nhánh tưới
+
+Thêm nhánh gắn vùng/revision, controller/van dự kiến, PUMP01 và trạm nước/kênh
+phao-flow. Vùng/van độc quyền; controller/trạm được dùng chung. UI tạo/sửa
+và đối chiếu mất phản hồi; không tạo AWS hoặc dispatch. Hàng chờ giữ snapshot
+nhánh đã duyệt, thay đổi làm invalidated/interrupted, không tự chuyển đích.
+315backend (15mới)/11browser nhánh/16queue browser/lintbuild đạt. Full-app
+PostgreSQL/restart thật giữ2nhánh và snapshot3lượt, command/run0;5ca Windows
+mới Chưa chạy. Đợt test đầu thấy binding singleton fixture bị suite cũ
+TRUNCATE CASCADE; thêm setup nếu thiếu, không sửa/reset DB demo.
+[Chương38](CHAPTER_38_IRRIGATION_CIRCUITS.md),
+[bàn giao](../implementation/LOCAL_IRRIGATION_CIRCUITS_REPORT.md).

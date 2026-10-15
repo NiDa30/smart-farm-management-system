@@ -18,7 +18,7 @@ import vn.smartfarm.iot.nodes.WaterTelemetry;
 /** Persisted FIFO rehearsal, deliberately without a command transport or pump lease. */
 @Service
 public class IrrigationQueue {
- public record Item(UUID requestId,long ticket,String zoneId,int zoneRevision,JsonNode zoneSnapshot,int durationSeconds,
+ public record Item(UUID requestId,long ticket,String zoneId,int zoneRevision,JsonNode zoneSnapshot,JsonNode circuitSnapshot,int durationSeconds,
    Instant requestedAt,Instant enqueuedAt,Instant expiresAt,String state,Instant startedAt,Instant plannedEndAt,Instant finishedAt,String reason) {}
  public record Snapshot(String mode,Instant asOf,long revision,int capacity,int waitTtlSeconds,Item active,List<Item> waiting,List<Item> history) {}
  private final JdbcTemplate jdbc;private final ObjectMapper mapper;private final TransactionTemplate tx;
@@ -33,20 +33,24 @@ public class IrrigationQueue {
  public Item lookup(UUID id){return items("WHERE request_id=?",id).stream().findFirst().orElseThrow(()->bad(HttpStatus.NOT_FOUND,"Queue request not found"));}
 
  public Item enqueue(JsonNode input){
-  WaterTelemetry.fields(input,Set.of("requestId","zoneId","zoneRevision","durationSeconds","requestedAt"));
+  boolean mapped=input.has("circuitId")||input.has("circuitRevision");
+  WaterTelemetry.fields(input,mapped?Set.of("requestId","zoneId","zoneRevision","durationSeconds","requestedAt","circuitId","circuitRevision"):Set.of("requestId","zoneId","zoneRevision","durationSeconds","requestedAt"));
+  String circuitId=mapped?WaterTelemetry.code(WaterTelemetry.text(input,"circuitId")):null;int circuitRevision=mapped?(int)integer(input,"circuitRevision",Integer.MAX_VALUE):0;
   UUID id=uuid(input,"requestId");String zone=WaterTelemetry.code(WaterTelemetry.text(input,"zoneId"));
   int zoneRevision=(int)integer(input,"zoneRevision",Integer.MAX_VALUE),duration=(int)integer(input,"durationSeconds",30);
   Instant requested=Instant.parse(WaterTelemetry.text(input,"requestedAt"));
   return tx.execute(t->{lock();var old=items("WHERE request_id=?",id);if(!old.isEmpty()){
-   var item=old.getFirst();if(!item.zoneId().equals(zone)||item.zoneRevision()!=zoneRevision||item.durationSeconds()!=duration)throw bad(HttpStatus.CONFLICT,"Request ID already used with different input");return item;
+   var item=old.getFirst();if(!item.zoneId().equals(zone)||item.zoneRevision()!=zoneRevision||item.durationSeconds()!=duration||!Objects.equals(item.circuitSnapshot()==null?null:item.circuitSnapshot().path("circuitId").asText(),circuitId)||(item.circuitSnapshot()==null?0:item.circuitSnapshot().path("revision").asInt())!=circuitRevision)throw bad(HttpStatus.CONFLICT,"Request ID already used with different input");return item;
   }
    Instant now=Instant.now();if(requested.isBefore(now.minusSeconds(10))||requested.isAfter(now.plusSeconds(2)))throw bad(HttpStatus.CONFLICT,"Request clock is stale; reload");
    JsonNode config=zoneConfig(zone);if(config==null||config.path("revision").asInt()!=zoneRevision||!config.path("expectedSource").asText().equals("SIMULATOR"))throw bad(HttpStatus.CONFLICT,"Current simulator zone revision required");
+   JsonNode circuit=IrrigationCircuits.forQueue(jdbc,mapper,zone);
+   if(circuit==null?mapped:!mapped||!circuit.path("circuitId").asText().equals(circuitId)||circuit.path("revision").asInt()!=circuitRevision||!IrrigationCircuits.currentSnapshot(jdbc,mapper,zone,circuit))throw bad(HttpStatus.CONFLICT,"Review the current circuit mapping before enqueueing");
    if(jdbc.queryForObject("SELECT COUNT(*) FROM irrigation_queue_request WHERE state IN ('QUEUED','REHEARSING')",Integer.class)>=50)throw bad(HttpStatus.CONFLICT,"Queue capacity reached");
    jdbc.update("""
-    INSERT INTO irrigation_queue_request(request_id,zone_id,zone_revision,zone_snapshot,duration_seconds,requested_at,enqueued_at,expires_at,state,reason)
-    VALUES(?,?,?,?::jsonb,?,?,?,?, 'QUEUED','WAITING')
-    """,id,zone,zoneRevision,config.toString(),duration,Timestamp.from(requested),Timestamp.from(now),Timestamp.from(now.plusSeconds(300)));
+    INSERT INTO irrigation_queue_request(request_id,zone_id,zone_revision,zone_snapshot,circuit_snapshot,duration_seconds,requested_at,enqueued_at,expires_at,state,reason)
+    VALUES(?,?,?,?::jsonb,?::jsonb,?,?,?,?, 'QUEUED','WAITING')
+    """,id,zone,zoneRevision,config.toString(),circuit==null?null:circuit.toString(),duration,Timestamp.from(requested),Timestamp.from(now),Timestamp.from(now.plusSeconds(300)));
    changed();return lookup(id);
   });
  }
@@ -54,7 +58,7 @@ public class IrrigationQueue {
  public Item rehearse(UUID id,long expectedRevision){return tx.execute(t->{lock();var item=lookup(id);
   if(!item.state().equals("QUEUED"))return item; // duplicate/delayed click cannot start a different item
   checkRevision(expectedRevision);Instant now=Instant.now();
-  if(!item.expiresAt().isAfter(now)||!currentZone(item))throw bad(HttpStatus.CONFLICT,"Request expired or zone changed; reload");
+  if(!item.expiresAt().isAfter(now)||!currentZone(item)||!currentCircuit(item))throw bad(HttpStatus.CONFLICT,"Request expired or configuration changed; reload");
   if(!items("WHERE state='REHEARSING'").isEmpty())throw bad(HttpStatus.CONFLICT,"Another rehearsal owns the preview slot");
   var first=items("WHERE state='QUEUED' ORDER BY ticket LIMIT 1").getFirst();
   if(!first.requestId().equals(id))throw bad(HttpStatus.CONFLICT,"Only the first waiting request may rehearse");
@@ -74,20 +78,22 @@ public class IrrigationQueue {
  void maintainAt(Instant now){tx.executeWithoutResult(t->{lock();boolean edited=false;
   for(var item:items("WHERE state IN ('QUEUED','REHEARSING') ORDER BY ticket")){
    if(!currentZone(item)){finish(item,item.state().equals("QUEUED")?"INVALIDATED":"INTERRUPTED","ZONE_CHANGED",now);edited=true;}
+   else if(!currentCircuit(item)){finish(item,item.state().equals("QUEUED")?"INVALIDATED":"INTERRUPTED","CIRCUIT_CHANGED",now);edited=true;}
    else if(item.state().equals("QUEUED")&&!item.expiresAt().isAfter(now)){finish(item,"EXPIRED","WAIT_EXPIRED",now);edited=true;}
    else if(item.state().equals("REHEARSING")&&!item.plannedEndAt().isAfter(now)){finish(item,"REHEARSED","PREVIEW_FINISHED",now);edited=true;}
   }if(edited)changed();
  });}
  private void finish(Item item,String state,String reason,Instant now){jdbc.update("UPDATE irrigation_queue_request SET state=?,reason=?,finished_at=? WHERE request_id=?",state,reason,Timestamp.from(now),item.requestId());}
  private boolean currentZone(Item item){var config=zoneConfig(item.zoneId());return config!=null&&config.path("revision").asInt()==item.zoneRevision()&&config.path("expectedSource").asText().equals("SIMULATOR");}
+ private boolean currentCircuit(Item item){return IrrigationCircuits.currentSnapshot(jdbc,mapper,item.zoneId(),item.circuitSnapshot());}
  private JsonNode zoneConfig(String id){return jdbc.query("SELECT * FROM irrigation_zone WHERE zone_id=? FOR SHARE",(rs,n)->{
   var c=mapper.createObjectNode().put("zoneId",id).put("name",rs.getString("name")).put("areaId",rs.getString("area_id")).put("soilNodeId",rs.getString("soil_node_id")).put("expectedSource",rs.getString("expected_source")).put("dryThreshold",rs.getInt("dry_threshold")).put("wetThreshold",rs.getInt("wet_threshold")).put("revision",rs.getInt("revision"));
   c.set("channelIds",mapper.valueToTree(jdbc.query("SELECT channel_id FROM irrigation_zone_channel WHERE zone_id=? ORDER BY position",(r,i)->r.getString(1),id)));return (JsonNode)c;
  },id).stream().findFirst().orElse(null);}
- private List<Item> items(String suffix,Object...args){return jdbc.query("SELECT * FROM irrigation_queue_request "+suffix,(rs,n)->new Item(rs.getObject("request_id",UUID.class),rs.getLong("ticket"),rs.getString("zone_id"),rs.getInt("zone_revision"),json(rs.getString("zone_snapshot")),rs.getInt("duration_seconds"),stamp(rs,"requested_at"),stamp(rs,"enqueued_at"),stamp(rs,"expires_at"),rs.getString("state"),stamp(rs,"started_at"),stamp(rs,"planned_end_at"),stamp(rs,"finished_at"),rs.getString("reason")),args);}
- private JsonNode json(String value){try{return mapper.readTree(value);}catch(Exception e){throw new IllegalStateException("Invalid stored zone snapshot",e);}}
+ private List<Item> items(String suffix,Object...args){return jdbc.query("SELECT * FROM irrigation_queue_request "+suffix,(rs,n)->new Item(rs.getObject("request_id",UUID.class),rs.getLong("ticket"),rs.getString("zone_id"),rs.getInt("zone_revision"),json(rs.getString("zone_snapshot")),json(rs.getString("circuit_snapshot")),rs.getInt("duration_seconds"),stamp(rs,"requested_at"),stamp(rs,"enqueued_at"),stamp(rs,"expires_at"),rs.getString("state"),stamp(rs,"started_at"),stamp(rs,"planned_end_at"),stamp(rs,"finished_at"),rs.getString("reason")),args);}
+ private JsonNode json(String value){if(value==null)return null;try{return mapper.readTree(value);}catch(Exception e){throw new IllegalStateException("Invalid stored configuration snapshot",e);}}
  private static Instant stamp(ResultSet rs,String name)throws SQLException{Timestamp t=rs.getTimestamp(name);return t==null?null:t.toInstant();}
- private void lock(){jdbc.queryForObject("SELECT revision FROM irrigation_queue_state WHERE singleton=1 FOR UPDATE",Long.class);}
+ private void lock(){jdbc.queryForObject("SELECT revision FROM irrigation_queue_state WHERE singleton=1 FOR UPDATE",Long.class);jdbc.queryForObject("SELECT revision FROM irrigation_circuit_state WHERE singleton=1 FOR SHARE",Long.class);}
  private long revision(){return jdbc.queryForObject("SELECT revision FROM irrigation_queue_state WHERE singleton=1",Long.class);}
  private void checkRevision(long expected){if(revision()!=expected)throw bad(HttpStatus.CONFLICT,"Queue changed; reload before continuing");}
  private void changed(){jdbc.update("UPDATE irrigation_queue_state SET revision=revision+1 WHERE singleton=1");}

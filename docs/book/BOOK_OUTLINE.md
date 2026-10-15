@@ -73,3 +73,5 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 36. [Quyền sử dụng bơm](CHAPTER_36_PUMP_OWNERSHIP.md) — claim bền vững, epoch quy tắc, chuyển quyền có bằng chứng OFF.
 
 37. [Phản hồi vị trí van](CHAPTER_37_VALVE_POSITION_FEEDBACK.md) — hai end stop độc lập, debounce/travel/fault, GPIO khác vị trí và nước.
+
+38. [Nhánh tưới và bản chụp hàng chờ](CHAPTER_38_IRRIGATION_CIRCUITS.md) — ánh xạ nhiều nhánh, revision, độc quyền và cấu hình chưa dispatch.

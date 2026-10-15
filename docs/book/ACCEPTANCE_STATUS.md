@@ -202,3 +202,15 @@ MQTT/control/valve-demofalse, command0. Migration V24→25 giữ status legacy
 UNKNOWN. Sáu ca Windows/AWS/Wokwi mới Chưa chạy. Chỉ công tắc mô phỏng, chưa
 van cơ khí/nước, global incident hoặc coordinator/dispatch queue.
 [Chương37](CHAPTER_37_VALVE_POSITION_FEEDBACK.md).
+
+
+## Nhánh tưới V26 — 15/10/2026
+
+315backend skip0 (15mới),11browser cấu hình,16queue browser (4mới),lint/build
+đạt. Migration V25→26 giữ lượt cũ/circuit_snapshot null. Full-app HTTP/UI/
+PostgreSQL riêng tạo2nhánh chung controller/trạm, bản chụp hàng chờ giữ qua
+restart JVM thật; active INTERRUPTED/BACKEND_RESTARTED, không resume/dispatch.
+MQTT/control/valve-demo false, command/run0. Firmware không đổi;5ca Windows
+mới Chưa chạy. Cấu hình dự kiến chưa provision/giữ chỗ registry, chưa multi-
+valve transport/coordinator/flow proof hoặc tự tưới SOIL.
+[Chương38](CHAPTER_38_IRRIGATION_CIRCUITS.md).

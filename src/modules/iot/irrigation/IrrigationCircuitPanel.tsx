@@ -1,0 +1,55 @@
+import React,{useEffect,useRef,useState} from 'react';
+import {parseZones,type ZoneSnapshot} from '../zones/zoneApi';
+import {parseNodes,type NodesSnapshot} from '../nodes/nodeApi';
+import {parseCircuit,parseCircuits,sameCircuit,circuitLabels,type CircuitConfig,type CircuitSnapshot} from './circuitApi';
+const API='/api/v1/irrigation-circuits';
+const blank=():CircuitConfig=>({circuitId:'',name:'',zoneId:'',zoneRevision:1,controllerId:'IRRIGATION01',valveId:'VALVE01',pumpId:'PUMP01',waterNodeId:'',lowChannelId:'',flowChannelId:'',expectedSource:'SIMULATOR',revision:1});
+export function IrrigationCircuitPanel({onBack,onQueue}:{onBack?:()=>void;onQueue?:()=>void}) {
+ const [data,setData]=useState<CircuitSnapshot|null>(null),[zones,setZones]=useState<ZoneSnapshot|null>(null),[nodes,setNodes]=useState<NodesSnapshot|null>(null),[form,setForm]=useState(blank),[editing,setEditing]=useState(false);
+ const [busy,setBusy]=useState(false),[epoch,setEpoch]=useState(0),[error,setError]=useState(''),[message,setMessage]=useState(''),[pending,setPending]=useState<{config:CircuitConfig;editing:boolean}|null>(null),[,redraw]=useState(0);
+ const mounted=useRef(true),flight=useRef(false),mutation=useRef<AbortController|null>(null),clock=useRef({floor:0,at:0,received:0});
+ useEffect(()=>{mounted.current=true;const t=setInterval(()=>redraw(v=>v+1),500);return()=>{mounted.current=false;mutation.current?.abort();clearInterval(t);};},[]);
+ useEffect(()=>{if(busy)return;let alive=true,running=false,current:AbortController|null=null;
+  async function load(){if(running)return;running=true;const abort=new AbortController();current=abort;const start=performance.now(),timer=setTimeout(()=>abort.abort(),7000);try{
+   const [a,b,c]=await Promise.all([fetch(API,{signal:abort.signal,cache:'no-store'}),fetch('/api/v1/irrigation-zones',{signal:abort.signal,cache:'no-store'}),fetch('/api/v1/nodes',{signal:abort.signal,cache:'no-store'})]);if(!a.ok||!b.ok||!c.ok)throw new Error();
+   const d=parseCircuits(await a.json()),z=parseZones(await b.json()),n=parseNodes(await c.json());if(!alive||flight.current)return;const now=performance.now(),old=clock.current;
+   clock.current={floor:Math.max(Date.parse(d.asOf)+now-start,old.floor+Math.max(0,now-old.at)),at:now,received:now};setData(d);setZones(z);setNodes(n);setError('');
+  }catch{if(alive)setError('Không đọc được cấu hình nhánh. Dữ liệu hiển thị có thể cũ; chưa cho phép lưu.');}finally{clearTimeout(timer);running=false;}}
+  void load();const t=setInterval(()=>void load(),2000);return()=>{alive=false;current?.abort();clearInterval(t);};
+ },[busy,epoch]);
+ const now=clock.current.floor+Math.max(0,performance.now()-clock.current.at),fresh=!!data&&!error&&performance.now()-clock.current.received<10000&&now-Date.parse(data.asOf)<10000;
+ const selectedZone=zones?.zones.find(z=>z.config.zoneId===form.zoneId)?.config,water=nodes?.nodes.find(n=>n.nodeId===form.waterNodeId&&n.nodeType==='WATER');
+ const effective={...form,zoneRevision:selectedZone?.revision??form.zoneRevision,expectedSource:selectedZone?.expectedSource??form.expectedSource};
+ let valid=false;try{parseCircuit(effective);valid=!!selectedZone&&!!water?.channels.some(c=>c.channelId===form.lowChannelId&&c.metric==='WATER_PRESENT')&&!!water?.channels.some(c=>c.channelId===form.flowChannelId&&c.metric==='FLOW_RATE');}catch{}
+ async function save(){if(flight.current||!valid)return;flight.current=true;setBusy(true);setMessage('');clock.current.received=Number.NEGATIVE_INFINITY;const attempt={config:effective,editing},abort=new AbortController();mutation.current=abort;const timer=setTimeout(()=>abort.abort(),7000);
+  try{const {revision,...create}=attempt.config,r=await fetch(API+(editing?'/'+encodeURIComponent(form.circuitId):''),{method:editing?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(editing?attempt.config:create),signal:abort.signal});
+   if([400,404,409].includes(r.status)){if(mounted.current)setMessage('Chưa lưu. Kiểm tra mã van, vùng độc quyền và phiên bản; đọc cấu hình mới nhất trước khi sửa lại.');return;}
+   if(r.status!==(editing?200:201))throw new Error();const saved=parseCircuit(await r.json());if(!sameCircuit(saved,attempt.config)||saved.revision!==(editing?revision+1:1))throw new Error();
+   if(mounted.current){setForm(saved);setEditing(true);setMessage('Đã lưu cấu hình nhánh. Chưa provision hoặc gửi lệnh thiết bị.');}
+  }catch{if(mounted.current){setPending(attempt);setMessage('Chưa rõ kết quả lưu. Đối chiếu theo mã nhánh; không tự gửi lại.');}}finally{clearTimeout(timer);flight.current=false;if(mounted.current){setBusy(false);setEpoch(v=>v+1);}}
+ }
+ async function reconcile(){if(!pending||flight.current)return;flight.current=true;setBusy(true);const abort=new AbortController();mutation.current=abort;const timer=setTimeout(()=>abort.abort(),7000);try{const r=await fetch(API+'/'+encodeURIComponent(pending.config.circuitId),{signal:abort.signal,cache:'no-store'});if(!r.ok)throw new Error();const c=parseCircuit(await r.json());if(c.circuitId!==pending.config.circuitId)throw new Error();if(mounted.current){setForm(c);setEditing(true);setPending(null);setMessage(sameCircuit(c,pending.config)&&c.revision===(pending.editing?pending.config.revision+1:1)?'Đã đối chiếu cấu hình đã lưu. Không gửi lại yêu cầu.':'Cấu hình hiện tại khác yêu cầu. Đã đọc vào biểu mẫu để bạn xem lại; chưa gửi thay đổi.');}}catch{if(mounted.current)setMessage('Chưa đối chiếu được. Giữ mã nhánh để đọc lại, không tự gửi lại.');}finally{clearTimeout(timer);flight.current=false;if(mounted.current){setBusy(false);setEpoch(v=>v+1);}}}
+ const locked=busy||!!pending;
+ function edit(c:CircuitConfig){setForm(c);setEditing(true);setMessage('Đang sửa phiên bản '+c.revision+'.');}
+ return <section aria-label="Cấu hình nhánh tưới" className="max-w-5xl mx-auto space-y-4">
+  <div>{onBack&&<button className="underline mr-4" disabled={busy} onClick={onBack}>Quay lại điều khiển</button>}{onQueue&&<button className="underline" disabled={busy} onClick={onQueue}>Mở hàng chờ diễn tập</button>}</div>
+  <h1 className="text-xl font-bold">Nhánh tưới theo vùng và trạm nước</h1>
+  <p className="bg-amber-50 p-3 rounded">Cấu hình nhiều nhánh, dùng chung PUMP01 hoặc trạm nước. Mỗi vùng và mã van chỉ thuộc một nhánh. Mã controller/van mới là dự kiến; chưa tạo thiết bị AWS, chưa có điều khiển nhiều van. Hàng chờ vẫn chỉ diễn tập.</p>
+  {error&&<p role="alert">{error}</p>}{data&&!fresh&&!error&&<p role="alert">Dữ liệu cấu hình đã cũ. Đọc lại trước khi lưu.</p>}{message&&<p role="status">{message}</p>}
+  {pending&&<p>Nhánh cần đối chiếu: {pending.config.circuitId} <button className="underline" disabled={busy} onClick={()=>void reconcile()}>Đối chiếu theo mã nhánh</button></p>}
+  <button className="underline mr-4" disabled={locked} onClick={()=>{setForm(blank());setEditing(false);setMessage('');}}>Thêm nhánh mới</button><button className="underline" disabled={busy} onClick={()=>setEpoch(v=>v+1)}>Đọc lại cấu hình nhánh</button>
+  <form className="border rounded p-4 bg-white grid gap-3" onSubmit={e=>{e.preventDefault();void save();}}>
+   <label>Mã nhánh<input aria-label="Mã nhánh" className="border p-2 ml-2" value={form.circuitId} disabled={locked||editing} onChange={e=>setForm({...form,circuitId:e.target.value})}/></label>
+   <label>Tên nhánh<input aria-label="Tên nhánh" className="border p-2 ml-2" value={form.name} maxLength={80} disabled={locked} onChange={e=>setForm({...form,name:e.target.value})}/></label>
+   <label>Vùng tưới<select aria-label="Vùng của nhánh" className="border p-2 ml-2" value={form.zoneId} disabled={locked} onChange={e=>setForm({...form,zoneId:e.target.value})}><option value="">Chọn vùng</option>{zones?.zones.map(z=><option value={z.config.zoneId} key={z.config.zoneId}>{z.config.name} · {z.config.zoneId} · v{z.config.revision} · {z.config.expectedSource}</option>)}</select></label>
+   {(['controllerId','valveId'] as const).map((key,i)=><label key={key}>{i?'Mã van dự kiến':'Mã controller dự kiến'}<input aria-label={i?'Mã van dự kiến':'Mã controller dự kiến'} className="border p-2 ml-2" value={form[key]} disabled={locked} onChange={e=>setForm({...form,[key]:e.target.value})}/></label>)}
+   <p>Bơm chung: PUMP01 · Không cấp quyền điều khiển khi lưu.</p>
+   <label>Trạm nước<select aria-label="Trạm nước của nhánh" className="border p-2 ml-2" value={form.waterNodeId} disabled={locked} onChange={e=>setForm({...form,waterNodeId:e.target.value,lowChannelId:'',flowChannelId:''})}><option value="">Chọn trạm</option>{nodes?.nodes.filter(n=>n.nodeType==='WATER').map(n=><option key={n.nodeId} value={n.nodeId}>{n.name} · {n.nodeId}</option>)}</select></label>
+   {(['lowChannelId','flowChannelId'] as const).map((key,i)=><label key={key}>{i?'Kênh lưu lượng':'Kênh phao có nước'}<select aria-label={i?'Kênh lưu lượng của nhánh':'Kênh phao của nhánh'} className="border p-2 ml-2" value={form[key]} disabled={locked} onChange={e=>setForm({...form,[key]:e.target.value})}><option value="">Chọn kênh</option>{water?.channels.filter(c=>c.metric===(i?'FLOW_RATE':'WATER_PRESENT')).map(c=><option key={c.channelId} value={c.channelId}>{c.channelId}</option>)}</select></label>)}
+   <p>Nguồn theo vùng: {effective.expectedSource} · phiên bản vùng {effective.zoneRevision}{editing?' · phiên bản nhánh '+form.revision:''}</p>
+   <button className="border rounded p-2 disabled:opacity-40" type="submit" disabled={locked||!fresh||!valid}>{editing?'Lưu sửa nhánh':'Tạo nhánh'}</button>
+  </form>
+  <ul className="space-y-3">{data?.circuits.map(v=><li key={v.config.circuitId} className="border p-4 rounded bg-white"><h2 className="font-bold">{v.config.name} · {v.config.circuitId} · v{v.config.revision}</h2><p>{v.config.zoneId} → {v.config.controllerId}/{v.config.valveId} · {v.config.pumpId} · {v.config.waterNodeId} ({v.config.expectedSource})</p><p>{circuitLabels[v.configurationState]}</p><p>Phao {v.config.lowChannelId}: {fresh&&now-Date.parse(data.asOf)<15000?circuitLabels[v.low.state]:'Cần đọc lại dữ liệu'} · Lưu lượng {v.config.flowChannelId}: {fresh?circuitLabels[v.flow.state]:'Cần đọc lại dữ liệu'}</p><p>Van: {fresh?circuitLabels[v.valveState]:'Cần đọc lại dữ liệu'}. Không suy ra nước đã đi qua nhánh.</p><button className="underline" disabled={locked||!fresh} onClick={()=>edit(v.config)}>Sửa nhánh {v.config.circuitId}</button></li>)}</ul>
+  <p className="text-sm">Chỉ IRRIGATION01/VALVE01 có nguồn phản hồi demo hiện tại. Số lưu lượng 0 khi nghỉ không tự coi là lỗi. Tín hiệu chỉ để khảo sát, chưa phải điều kiện cho phép vận hành.</p>
+ </section>;
+}
