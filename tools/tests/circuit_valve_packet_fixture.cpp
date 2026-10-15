@@ -1,0 +1,8 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include "ValveMonitor.h"
+const char* boot="87000000-0000-4000-8000-000000000001";
+std::string utcNow(){time_t epoch=time(nullptr);struct tm tm;gmtime_r(&epoch,&tm);char text[21];strftime(text,sizeof(text),"%Y-%m-%dT%H:%M:%SZ",&tm);return text;}
+void emit(ValveModel& model,ValveFeedback& feedback,uint64_t sequence,const valve::Command* c=nullptr){JsonDocument d;auto at=utcNow();if(!valve::circuitPacket(d,"IRRIGATION08","VALVE08","CC1",1,1,"CCZONE1",boot,sequence,at.c_str(),model.isOpen(),model.reason(),true,model.lastOrdinal(),&feedback))exit(2);if(c){d["commandId"]=c->id;d["ordinal"]=c->ordinal;d["action"]=c->open?"OPEN":"CLOSE";d["result"]="EXECUTED";d["errorCode"]=nullptr;}serializeJson(d,std::cout);std::cout<<'\n';}
+int main(int argc,char** argv){setenv("TZ","UTC0",1);tzset();ValveModel model;ValveFeedback feedback(true);feedback.sample(0,true,false,false);feedback.sample(100,true,false,false);if(argc==1){emit(model,feedback,0);return 0;}if(argc!=2)return 2;std::ifstream input(argv[1]);std::stringstream text;text<<input.rdbuf();valve::Command c;if(!valve::decodeCircuit(text.str().c_str(),"IRRIGATION08","VALVE08","CC1",1,1,"CCZONE1",c)||!c.open||c.seconds!=5)return 2;if(valve::applyCircuit(model,c,boot,time(nullptr),100,true,true,feedback.canOpen()))return 3;feedback.sample(101,false,true,true);feedback.sample(201,false,true,true);emit(model,feedback,1,&c);emit(model,feedback,2);model.tick(5100,true);feedback.sample(5100,true,false,false);feedback.sample(5200,true,false,false);emit(model,feedback,3);return model.isOpen()?4:0;}

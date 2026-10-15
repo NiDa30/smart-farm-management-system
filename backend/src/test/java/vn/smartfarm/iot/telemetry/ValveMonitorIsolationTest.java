@@ -9,7 +9,7 @@ import static org.mockito.Mockito.*;
 class ValveMonitorIsolationTest {
  @Test void blockedMonitorWriteDoesNotBlockPumpStatus()throws Exception{
   var monitor=mock(CircuitValveMonitor.class);var pump=mock(vn.smartfarm.iot.control.PumpService.class);var connection=mock(MqttClientConnection.class);
-  var ingestion=new TelemetryIngestion(mock(vn.smartfarm.iot.nodes.TelemetryRouter.class),pump,mock(vn.smartfarm.iot.monitoring.MqttHealth.class),mock(IrrigationDemo.class),monitor,false,true);
+  var ingestion=new TelemetryIngestion(mock(vn.smartfarm.iot.nodes.TelemetryRouter.class),pump,mock(vn.smartfarm.iot.monitoring.MqttHealth.class),mock(IrrigationDemo.class),monitor,mock(CircuitValveControl.class),false,true);
   var callbacks=new HashMap<String,Consumer<MqttMessage>>();when(monitor.topics()).thenReturn(List.of("smartfarm/FARM001/VALVE02/status"));
   when(connection.subscribe(anyString(),any(QualityOfService.class),org.mockito.ArgumentMatchers.<Consumer<MqttMessage>>any())).thenAnswer(a->{callbacks.put(a.getArgument(0),a.getArgument(2));return CompletableFuture.completedFuture(1);});
   when(connection.disconnect()).thenReturn(CompletableFuture.completedFuture(null));

@@ -447,3 +447,19 @@ không gửi key hoặc xóa folder khi lỗi. Công cụ không copy vào proje
 IAM backend hay chạy simulator. Sau apply vẫn cần data/config riêng,
 build/buildfs/merge, backend IAM đọc status và restart subscribe như chương44.
 Đổi switch để kiểm tra status, GPIO monitor luônOFF. Chưa điều khiển van02–99.
+
+## V32 — LED van02–99 theo nhánh, opt-in
+
+Pull/restart backend áp V32, giữ volume. Tải lại project từ backend mới,
+không dùng ZIP cũ trước profile CIRCUIT_LED_DEMO. Mỗi board một controller
+riêng; dừng monitor cùng client trước chuyển, giữ certificate/key local.
+Sửa đúng macro circuit1/monitor0/demo1/feedback1 và đầy đủ IDs/revisions;
+render --circuit-demo, gắn đúng object IoT policy và IAM bổ sung /demo/.
+Không sửa tool monitor để nới quyền. Build/buildfs/merge project riêng.
+
+Terminal Git Bash backend mới: bật SMARTFARM_IRRIGATION_CIRCUIT_DEMO_ENABLED,
+đọc [chương46](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md) để chạy đúng script/
+flags. Vào Điều khiển Actuator → Cấu hình nhánh tưới → Điều khiển LED mã
+nhánh. Đợi GPIO/vị trí CLOSED mới; mở5s, đổi switch OPEN trong3s, khi đóng
+đổi về CLOSED. Không nối van/bơm thật, chưa coordinator. Sáu ca AWS/Wokwi
+mới Chưa chạy; code/test cloud không thay bằng chứng live của máy bạn.

@@ -35,6 +35,11 @@
 #ifndef IRRIGATION_ZONE_REVISION
 #define IRRIGATION_ZONE_REVISION 1
 #endif
+#ifndef IRRIGATION_CIRCUIT_CONTROL_ENABLED
+#define IRRIGATION_CIRCUIT_CONTROL_ENABLED 0
+#endif
+static_assert(IRRIGATION_CIRCUIT_CONTROL_ENABLED==0||IRRIGATION_CIRCUIT_CONTROL_ENABLED==1,"Circuit control opt-in must be 0 or 1");
+static_assert(!IRRIGATION_CIRCUIT_CONTROL_ENABLED||(!IRRIGATION_MONITOR_ONLY&&IRRIGATION_DEMO_ENABLED==1&&IRRIGATION_POSITION_FEEDBACK_ENABLED==1),"Circuit LED control requires demo and independent feedback; monitor stays read-only");
 static_assert(IRRIGATION_MONITOR_ONLY==0||IRRIGATION_MONITOR_ONLY==1,"Monitor opt-in must be 0 or 1");
 static_assert(!IRRIGATION_MONITOR_ONLY||IRRIGATION_DEMO_ENABLED==0,"Monitor cannot enable output control");
 static_assert(IRRIGATION_POSITION_FEEDBACK_ENABLED==0||IRRIGATION_POSITION_FEEDBACK_ENABLED==1,"Feedback opt-in must be 0 or 1");
@@ -47,7 +52,8 @@ static esp_timer_handle_t timer;static esp_mqtt_client_handle_t client=nullptr;
 static String ca,cert,key,uri;static char boot[37];static uint64_t sequence=0;
 struct Message {char text[1024];};static QueueHandle_t queue;
 static uint32_t lastStatus=0,lastWifi=0,lastMqtt=0;
-static String statusTopic=String("smartfarm/FARM001/")+IRRIGATION_VALVE_ID+"/status";static const char* ackTopic="smartfarm/FARM001/VALVE01/ack";
+static String statusTopic=String("smartfarm/FARM001/")+IRRIGATION_VALVE_ID+(IRRIGATION_CIRCUIT_CONTROL_ENABLED?"/demo/status":"/status");static String ackTopic=String("smartfarm/FARM001/")+IRRIGATION_VALVE_ID+(IRRIGATION_CIRCUIT_CONTROL_ENABLED?"/demo/ack":"/ack");
+static String commandTopic=String("smartfarm/FARM001/")+IRRIGATION_VALVE_ID+(IRRIGATION_CIRCUIT_CONTROL_ENABLED?"/demo/command":"/command");
 static void safety(void*){portENTER_CRITICAL(&mux);if(fault)model.close("DEVICE_FAULT");else model.tick(millis(),connected&&subscribed);
  const char* before=position.state();const char* error=position.fault();position.sample(millis(),digitalRead(32)==LOW,digitalRead(33)==LOW,model.isOpen());
  if(strcmp(before,position.state())||error!=position.fault())feedbackChanged=true;
@@ -60,32 +66,33 @@ static void publish(const valve::Command* command=nullptr,const char* error=null
  bool open;uint64_t rank;const char* reason;ValveFeedback observed;portENTER_CRITICAL(&mux);open=model.isOpen()&&!fault;rank=model.lastOrdinal();reason=model.reason();observed=position;portEXIT_CRITICAL(&mux);
  JsonDocument d;String at=utc();
  if(IRRIGATION_MONITOR_ONLY){if(command||!valve::monitorPacket(d,IRRIGATION_CONTROLLER_ID,IRRIGATION_VALVE_ID,IRRIGATION_CIRCUIT_ID,IRRIGATION_CIRCUIT_REVISION,IRRIGATION_ZONE_REVISION,IRRIGATION_ZONE_ID,boot,sequence++,at.c_str(),reason,&observed))return;}
+ else if(IRRIGATION_CIRCUIT_CONTROL_ENABLED){if(!valve::circuitPacket(d,IRRIGATION_CONTROLLER_ID,IRRIGATION_VALVE_ID,IRRIGATION_CIRCUIT_ID,IRRIGATION_CIRCUIT_REVISION,IRRIGATION_ZONE_REVISION,IRRIGATION_ZONE_ID,boot,sequence++,at.c_str(),open,reason,allowed&&!fault&&subscribed,rank,&observed))return;}
  else valve::packet(d,IRRIGATION_ZONE_ID,boot,sequence++,at.c_str(),open,reason,allowed&&!fault&&subscribed,rank,&observed);
  if(command){d["commandId"]=command->id;d["ordinal"]=command->ordinal;d["action"]=command->open?"OPEN":"CLOSE";d["result"]=error?"REJECTED":"EXECUTED";if(error)d["errorCode"]=error;else d["errorCode"]=nullptr;}
- String text;serializeJson(d,text);esp_mqtt_client_publish(client,command?ackTopic:statusTopic.c_str(),text.c_str(),0,1,0);
+ String text;serializeJson(d,text);esp_mqtt_client_publish(client,command?ackTopic.c_str():statusTopic.c_str(),text.c_str(),0,1,0);
 }
 static void mqtt(void*,esp_event_base_t,int32_t id,void* data){
  auto e=static_cast<esp_mqtt_event_handle_t>(data);
- if(id==MQTT_EVENT_CONNECTED){subscribed=false;connected=true;if(!IRRIGATION_MONITOR_ONLY)esp_mqtt_client_subscribe(client,"smartfarm/FARM001/VALVE01/command",1);}
+ if(id==MQTT_EVENT_CONNECTED){subscribed=false;connected=true;if(!IRRIGATION_MONITOR_ONLY)esp_mqtt_client_subscribe(client,commandTopic.c_str(),1);}
  else if(id==MQTT_EVENT_SUBSCRIBED){if(!IRRIGATION_MONITOR_ONLY)subscribed=true;}
  else if(id==MQTT_EVENT_DISCONNECTED||id==MQTT_EVENT_ERROR){subscribed=false;connected=false;safety(nullptr);}
  else if(id==MQTT_EVENT_DATA){
   if(IRRIGATION_MONITOR_ONLY)return;
   if(e->retain||e->current_data_offset||e->data_len!=e->total_data_len||e->data_len<=0||e->data_len>1023)return;
-  const char* topic="smartfarm/FARM001/VALVE01/command";if(e->topic_len!=(int)strlen(topic)||strncmp(e->topic,topic,e->topic_len))return;
+  const char* topic=commandTopic.c_str();if(e->topic_len!=(int)strlen(topic)||strncmp(e->topic,topic,e->topic_len))return;
   Message m;memcpy(m.text,e->data,e->data_len);m.text[e->data_len]=0;if(!queue||xQueueSend(queue,&m,0)!=pdTRUE){fault=true;safety(nullptr);}
  }
 }
 static bool startMqtt(){
  if(!valve::code(IRRIGATION_ZONE_ID)||!strlen(IRRIGATION_AWS_ENDPOINT))return false;
- if(IRRIGATION_MONITOR_ONLY){if(!valve::monitorIdentity(IRRIGATION_CONTROLLER_ID,IRRIGATION_VALVE_ID,IRRIGATION_CIRCUIT_ID,IRRIGATION_CIRCUIT_REVISION,IRRIGATION_ZONE_REVISION))return false;}
+ if(IRRIGATION_MONITOR_ONLY||IRRIGATION_CIRCUIT_CONTROL_ENABLED){if(!valve::monitorIdentity(IRRIGATION_CONTROLLER_ID,IRRIGATION_VALVE_ID,IRRIGATION_CIRCUIT_ID,IRRIGATION_CIRCUIT_REVISION,IRRIGATION_ZONE_REVISION))return false;}
  else if(strcmp(IRRIGATION_CONTROLLER_ID,"IRRIGATION01")||strcmp(IRRIGATION_VALVE_ID,"VALVE01"))return false;
  ca=pem("/AmazonRootCA1.pem");cert=pem("/device.pem.crt");key=pem("/private.pem.key");if(ca.isEmpty()||cert.isEmpty()||key.isEmpty())return false;
  uri=String("mqtts://")+IRRIGATION_AWS_ENDPOINT+":8883";esp_mqtt_client_config_t c={};c.uri=uri.c_str();c.client_id=IRRIGATION_CONTROLLER_ID;c.cert_pem=ca.c_str();c.client_cert_pem=cert.c_str();c.client_key_pem=key.c_str();c.keepalive=10;c.network_timeout_ms=5000;c.buffer_size=2048;c.reconnect_timeout_ms=5000;
  client=esp_mqtt_client_init(&c);if(!client)return false;esp_mqtt_client_register_event(client,MQTT_EVENT_ANY,mqtt,nullptr);if(esp_mqtt_client_start(client)==ESP_OK)return true;esp_mqtt_client_destroy(client);client=nullptr;return false;
 }
 void setup(){
- digitalWrite(26,LOW);pinMode(26,OUTPUT);Serial.begin(115200);Serial.printf("%s / %s; %s; GPIO CLOSED; no pump\n",IRRIGATION_CONTROLLER_ID,IRRIGATION_VALVE_ID,IRRIGATION_MONITOR_ONLY?"MONITOR ONLY":"LED demo");
+ digitalWrite(26,LOW);pinMode(26,OUTPUT);Serial.begin(115200);Serial.printf("%s / %s; %s; GPIO CLOSED; no pump\n",IRRIGATION_CONTROLLER_ID,IRRIGATION_VALVE_ID,IRRIGATION_MONITOR_ONLY?"MONITOR ONLY":IRRIGATION_CIRCUIT_CONTROL_ENABLED?"CIRCUIT LED DEMO":"LED demo");
  if(IRRIGATION_POSITION_FEEDBACK_ENABLED){pinMode(32,INPUT_PULLUP);pinMode(33,INPUT_PULLUP);Serial.println("Independent simulated end stops: CLOSED GPIO32, OPEN GPIO33; active LOW");}
  allowed=!IRRIGATION_MONITOR_ONLY&&IRRIGATION_DEMO_ENABLED==1&&valve::code(IRRIGATION_ZONE_ID);queue=xQueueCreate(8,sizeof(Message));if(!queue){fault=true;allowed=false;}
  esp_timer_create_args_t args={};args.callback=safety;args.name="valve-safety";if(esp_timer_create(&args,&timer)!=ESP_OK||esp_timer_start_periodic(timer,25000)!=ESP_OK){fault=true;allowed=false;}
@@ -95,8 +102,8 @@ void setup(){
 void loop(){
  uint32_t now=millis();safety(nullptr);
  Message m;while(queue&&xQueueReceive(queue,&m,0)==pdTRUE){
-  valve::Command c;if(!valve::decode(m.text,IRRIGATION_ZONE_ID,c)){Serial.println("VALVE command rejected: contract");continue;}
-  const char* error;portENTER_CRITICAL(&mux);error=model.apply(c.ordinal,c.open,c.seconds,c.issued,c.expires,time(nullptr),millis(),strcmp(c.boot,boot)==0,allowed&&!fault&&subscribed,connected&&subscribed,position.canOpen());if(!error&&!c.open)position.acknowledgeClose();if(position.fault())model.close("POSITION_FAULT");digitalWrite(26,allowed&&connected&&subscribed&&!fault&&model.isOpen()?HIGH:LOW);portEXIT_CRITICAL(&mux);
+  valve::Command c;if(!(IRRIGATION_CIRCUIT_CONTROL_ENABLED?valve::decodeCircuit(m.text,IRRIGATION_CONTROLLER_ID,IRRIGATION_VALVE_ID,IRRIGATION_CIRCUIT_ID,IRRIGATION_CIRCUIT_REVISION,IRRIGATION_ZONE_REVISION,IRRIGATION_ZONE_ID,c):valve::decode(m.text,IRRIGATION_ZONE_ID,c))){Serial.println("VALVE command rejected: contract");continue;}
+  const char* error;portENTER_CRITICAL(&mux);error=IRRIGATION_CIRCUIT_CONTROL_ENABLED?valve::applyCircuit(model,c,boot,time(nullptr),millis(),allowed&&!fault&&subscribed,connected&&subscribed,position.canOpen()):model.apply(c.ordinal,c.open,c.seconds,c.issued,c.expires,time(nullptr),millis(),strcmp(c.boot,boot)==0,allowed&&!fault&&subscribed,connected&&subscribed,position.canOpen());if(!error&&!c.open)position.acknowledgeClose();if(position.fault())model.close("POSITION_FAULT");digitalWrite(26,allowed&&connected&&subscribed&&!fault&&model.isOpen()?HIGH:LOW);portEXIT_CRITICAL(&mux);
   if(!error||strcmp(error,"STALE_COMMAND"))publish(&c,error);publish();Serial.printf("VALVE_COMMAND action=%s result=%s\n",c.open?"OPEN":"CLOSE",error?error:"EXECUTED");
  }
  if(WiFi.status()!=WL_CONNECTED){connected=false;if(now-lastWifi>=10000){lastWifi=now;WiFi.reconnect();}}

@@ -847,3 +847,21 @@ hai gói thật plan lặp đạt; chưa AWS/Wokwi thực tế. Năm ca live Ch�
 [bàn giao](../implementation/LOCAL_CIRCUIT_MONITOR_PROVISIONING_REPORT.md).
 Đây là giảm bước đăng ký board, chưa command02–99, proof theo nhánh,
 coordinator hoặc dispatch queue; A3 vẫn chưa hoàn tất.
+
+## Cập nhật 16/10/2026 — A3 điều khiển LED theo nhánh V32
+
+CIRCUIT_LED_DEMO riêng cho02–99/SIMULATOR/board riêng: API/UI OPEN1–30s,
+CLOSE, ledger và status/boot/fence, topic /demo/ exact và worker riêng.
+Commit trước publish, UUID HTTP/revision/boot, status CLOSED còn mới và
+position độc lập, ACK không thay status; không replay khi restart. Sửa
+nhánh/vùng/shared controller dùng chung gate và cần CLOSED mới sau lệnh.
+Monitor/provisioning vẫn status-only, profile control mặc định tắt và policy
+phải cấp riêng. Không chạm PUMP01 hoặc chạy AWS/GPIO trong cloud.
+
+439backend/35browser/4unit/33provisioning/7policy,4native programs và3firmware
+profiles/lintbuild đạt; native command→ACK/OPEN/timer CLOSED→DB/full-app/
+restart/nâng monitor V31→V32 đạt. Sáu ca live Chưa chạy.
+[Chương46](../book/CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md),
+[bàn giao](../implementation/LOCAL_CIRCUIT_VALVE_CONTROL_REPORT.md).
+A3 còn proof theo nhánh, quyền bơm/coordinator/flow proof và dispatch queue;
+LED độc lập cùng mở không chứng minh nhiều van an toàn trên bơm chung.

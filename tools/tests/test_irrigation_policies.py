@@ -23,4 +23,12 @@ class PoliciesTest(unittest.TestCase):
   for controller,valve in [('IRRIGATION01','VALVE02'),('IRRIGATION02','VALVE01'),('IRRIGATION00','VALVE02'),('IRRIGATION02','VALVE100'),('IRRIGATION02','VALVE*')]:
    with self.assertRaises(ValueError):policies('ap-southeast-1','123456789012',controller,valve,True)
   with self.assertRaises(ValueError):policies('ap-southeast-1','123456789012','IRRIGATION02','VALVE02')
+ def test_circuit_demo_uses_separate_exact_topics(self):
+  p=policies('ap-southeast-1','123456789012','IRRIGATION08','VALVE08',circuit_demo=True);s=str(p)
+  self.assertNotIn('*',s);self.assertNotIn('PUMP01',s);self.assertNotIn('RetainPublish',s)
+  self.assertIn('VALVE08/demo/command',s);self.assertIn('VALVE08/demo/status',s);self.assertIn('VALVE08/demo/ack',s)
+  self.assertNotIn('VALVE08/status',s);self.assertEqual(4,len(p['devicePolicy']['Statement']))
+ def test_circuit_demo_cannot_be_combined_with_monitor_or_legacy_ids(self):
+  with self.assertRaises(ValueError):policies('ap-southeast-1','123456789012','IRRIGATION08','VALVE08',True,True)
+  with self.assertRaises(ValueError):policies('ap-southeast-1','123456789012',circuit_demo=True)
 if __name__=='__main__':unittest.main()

@@ -96,3 +96,22 @@ IAM or firmware output settings. Install matching private data/config and
 build separately. Do not delete interrupted certificate markers to retry.
 [Chapter45](../../docs/book/CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md) explains
 permissions, crash recovery, mapping limits and five unrun live cases.
+
+## Opt-in CIRCUIT_LED_DEMO for separate circuit boards02..99 (V32)
+
+Set IRRIGATION_CIRCUIT_CONTROL_ENABLED1, MONITOR_ONLY0, DEMO_ENABLED1,
+POSITION_FEEDBACK_ENABLED1 and SIMULATOR1 in the separate private config.
+Keep controller/valve/circuit/zone/revisions exactly matched. GPIO26 is an LED
+only; use independent GPIO32/33 simulated end stops. Dedicated /demo/command,
+/demo/status and /demo/ack topics; both actions require matching boot and
+commands carry mapping revisions. OPEN1..30s, ordinal/expiry, timer and
+disconnect close. Never automatically resume after boot/reconnect. Monitor
+defaults stay read-only and legacy01 defaults stay compatible. Compiler
+rejects mixed monitor/control or missing feedback.
+
+Redownload public projects from the new backend before enabling this profile.
+Monitor registration does not add command rights; render --circuit-demo and
+have an authorized administrator attach scoped device/backend policies.
+Stop the monitor simulator with the same client ID before switching profile.
+No pump coordination/physical valve mode; see
+[chapter46](../../docs/book/CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md).

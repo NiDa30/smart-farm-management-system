@@ -229,3 +229,17 @@ and never runs on download; no credentials are sent to this backend. The
 backend IAM addition still needs an authorized administrator to apply it
 separately. [Chapter45](../docs/book/CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md)
 documents offline validation, local recovery and unrun AWS acceptance.
+
+## V32 opt-in circuit LED control (simulator only)
+
+SMARTFARM_IRRIGATION_CIRCUIT_DEMO_ENABLED defaults false. Separate boards
+02..99 use CIRCUIT_LED_DEMO and exact VALVE##/demo/command,status,ack.
+GET /api/v1/irrigation-circuits/{id}/control; POST .../commands with requestId,
+action, durationSeconds (OPEN1..30/CLOSE null), expectedBootId, expectedRevision,
+expectedZoneRevision, requestedAt; GET .../commands/{UUID} for reconciliation.
+Stores before publish, no retry/replay, ACK never updates latest. OPEN requires
+fresh CLOSED position and caught-up status; CLOSE fences older intents.
+Circuit and zone edits share the tracking gate and need confirmed CLOSED.
+Separate worker cannot block pump ACK storage. No shared-pump coordinator,
+real valve, queue dispatch or monitor capability upgrade.
+[Chapter46](../docs/book/CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md).

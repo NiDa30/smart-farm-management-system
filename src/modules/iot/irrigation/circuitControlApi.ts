@@ -1,0 +1,25 @@
+import {parseCircuit,sameCircuit,type CircuitConfig} from './circuitApi';
+import {validPosition,type PositionFeedback} from './valveApi';
+export interface CircuitCommand {commandId:string;ordinal:number;config:CircuitConfig;bootId:string;action:'OPEN'|'CLOSE';durationSeconds:number|null;requestedAt:string;issuedAt:string;expiresAt:string;state:'PENDING'|'SENT'|'PUBLISH_UNCERTAIN'|'EXECUTED'|'REJECTED';errorCode:string|null}
+export interface CircuitStatus {config:CircuitConfig;bootId:string;sequence:number;observedAt:string;receivedAt:string;gpioState:'OPEN'|'CLOSED';reason:string;demoEnabled:boolean;lastOrdinal:number;positionFeedback:PositionFeedback}
+export interface CircuitControl {profile:'CIRCUIT_LED_DEMO';config:CircuitConfig;configurationState:string;asOf:string;enabled:boolean;connected:boolean;readyToOpen:boolean;latest:CircuitStatus|null;commands:CircuitCommand[]}
+export interface CircuitRequest {requestId:string;action:'OPEN'|'CLOSE';durationSeconds:number|null;expectedBootId:string;expectedRevision:number;expectedZoneRevision:number;requestedAt:string}
+const integer=(n:unknown,min=0):n is number=>typeof n==='number'&&Number.isSafeInteger(n)&&n>=min;
+const uuid=(s:unknown):s is string=>typeof s==='string'&&s.length===36&&/^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(s);
+const date=(s:unknown):s is string=>typeof s==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(s)&&Number.isFinite(Date.parse(s));
+export function sameControlConfig(a:CircuitConfig,b:CircuitConfig){return sameCircuit(a,b)&&a.revision===b.revision;}
+export function controlEligible(c:CircuitConfig){return c.expectedSource==='SIMULATOR'&&c.controllerId.length===12&&/^IRRIGATION(0[2-9]|[1-9][0-9])$/.test(c.controllerId)&&c.valveId.length===7&&/^VALVE(0[2-9]|[1-9][0-9])$/.test(c.valveId);}
+export function freshCircuitStatus(s:CircuitStatus|null,now:number){return !!s&&Math.min(Date.parse(s.observedAt),Date.parse(s.receivedAt))>now-15000&&Math.max(Date.parse(s.observedAt),Date.parse(s.receivedAt))<=now+2000;}
+export function parseCircuitCommand(value:unknown):CircuitCommand {const c=value as CircuitCommand;
+ if(!c||!uuid(c.commandId)||!integer(c.ordinal,1)||!uuid(c.bootId)||!['OPEN','CLOSE'].includes(c.action)||(c.action==='OPEN'?!integer(c.durationSeconds,1)||c.durationSeconds>30:c.durationSeconds!==null)||!date(c.requestedAt)||!date(c.issuedAt)||!date(c.expiresAt)||Date.parse(c.expiresAt)<=Date.parse(c.issuedAt)||Date.parse(c.expiresAt)-Date.parse(c.issuedAt)>15000||!['PENDING','SENT','PUBLISH_UNCERTAIN','EXECUTED','REJECTED'].includes(c.state)||(c.state==='REJECTED'?typeof c.errorCode!=='string'||!/^[A-Z_]{2,40}$/.test(c.errorCode):c.errorCode!==null))throw new Error('Phản hồi lệnh nhánh không hợp lệ.');
+ parseCircuit(c.config);if(!controlEligible(c.config))throw new Error('Lệnh không thuộc profile LED theo nhánh.');return c;
+}
+export function parseCircuitControl(value:unknown,id:string):CircuitControl {const v=value as CircuitControl;
+ if(!v||v.profile!=='CIRCUIT_LED_DEMO'||!date(v.asOf)||typeof v.enabled!=='boolean'||typeof v.connected!=='boolean'||typeof v.readyToOpen!=='boolean'||!['CURRENT','ZONE_CHANGED','WATER_DECLARATION_CHANGED','IDENTITY_CONFLICT'].includes(v.configurationState)||!Array.isArray(v.commands)||v.commands.length>20)throw new Error('Phản hồi điều khiển nhánh không hợp lệ.');
+ parseCircuit(v.config);if(v.config.circuitId!==id)throw new Error('Phản hồi thuộc nhánh khác.');const s=v.latest;
+ if(s!==null){if(!s||!uuid(s.bootId)||!integer(s.sequence)||!integer(s.lastOrdinal)||!date(s.observedAt)||!date(s.receivedAt)||!['OPEN','CLOSED'].includes(s.gpioState)||typeof s.demoEnabled!=='boolean'||!['BOOT','COMMAND_OPEN','COMMAND_CLOSE','TIMER_EXPIRED','CONNECTION_LOST','DEVICE_FAULT','POSITION_FAULT'].includes(s.reason)||!validPosition(s.positionFeedback,s.gpioState,s.reason)||(s.gpioState==='OPEN'&&(!s.demoEnabled||s.reason!=='COMMAND_OPEN'))||(s.gpioState==='CLOSED'&&s.reason==='COMMAND_OPEN'))throw new Error('Trạng thái điều khiển nhánh không hợp lệ.');parseCircuit(s.config);if(!controlEligible(s.config)||s.config.valveId!==v.config.valveId)throw new Error('Trạng thái thuộc van khác.');}
+ v.commands.forEach(c=>{parseCircuitCommand(c);if(c.config.circuitId!==id)throw new Error('Lệnh thuộc nhánh khác.');});
+ if(new Set(v.commands.map(c=>c.commandId)).size!==v.commands.length||v.commands.some((c,i)=>i>0&&c.ordinal>=v.commands[i-1].ordinal))throw new Error('Thứ tự lệnh nhánh không hợp lệ.');
+ if(v.readyToOpen&&(!v.enabled||!v.connected||!controlEligible(v.config)||v.configurationState!=='CURRENT'||!s||!sameControlConfig(s.config,v.config)||!s.demoEnabled||s.gpioState!=='CLOSED'||s.positionFeedback.state!=='CLOSED'||s.positionFeedback.fault!==null||!freshCircuitStatus(s,Date.parse(v.asOf))))throw new Error('Nhánh chưa đủ điều kiện mở.');return v;
+}
+export function matchesCircuitRequest(c:CircuitCommand,r:CircuitRequest,config:CircuitConfig){return c.commandId===r.requestId&&sameControlConfig(c.config,config)&&c.bootId===r.expectedBootId&&c.action===r.action&&c.durationSeconds===r.durationSeconds&&Date.parse(c.requestedAt)===Date.parse(r.requestedAt);}

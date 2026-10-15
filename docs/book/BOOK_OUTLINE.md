@@ -89,3 +89,5 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 44. [Project Wokwi theo nhánh](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md) — allowlist firmware trong JAR, snapshot cấu hình, policy giới hạn và checksum ổn định qua JVM.
 
 45. [Đăng ký monitor theo nhánh](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md) — kế hoạch ngoại tuyến, Thing/policy/certificate riêng, activation sau lưu khóa và ranh giới nghiệm thu AWS.
+
+46. [LED van theo nhánh](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md) — profile opt-in, ledger V32, trạng thái riêng, worker/topic cách ly và bước còn thiếu trước coordinator.

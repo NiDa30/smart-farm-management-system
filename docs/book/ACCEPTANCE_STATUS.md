@@ -302,3 +302,15 @@ activation, phục hồi lỗi không tạo trùng được kiểm tra bằng c�
 Không có AWS calls, IAM apply, Wokwi/GPIO thật. Năm ca live
 [chương45](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md) Chưa chạy; đây không là
 bằng chứng hoàn tất A3 hoặc nhiều van điều khiển/coordinator/dispatch queue.
+
+## Điều khiển LED theo nhánh V32 — 16/10/2026
+
+Profile CIRCUIT_LED_DEMO tắt mặc định, IDs02–99/SIMULATOR/board riêng,
+OPEN1–30s và CLOSE, GPIO khác position.439backend (23mới),35browser (9mới),
+4unit,33provisioning/7policy và4native programs đạt; lint/build và3profile
+firmware đạt. Compiler chặn profile sai, restored/emptyFSmerge đạt.
+Native command backend→decoder/model→ACK/OPEN/timer CLOSED→receiver/Postgres
+đạt, full-app/restart giữ clocks/ledger; timer native tiến nhanh, không GPIO.
+Monitor V31→V32 giữ evidence, không cấp quyền mở; MQTT/control tắt cloud.
+Sáu ca live [chương46](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md) Chưa chạy;
+không coordinator/flow proof/dispatch queue. A3 chưa hoàn tất.

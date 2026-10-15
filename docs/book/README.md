@@ -102,3 +102,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Project Wokwi giám sát theo nhánh](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md): tải ZIP firmware công khai, mapping/revision riêng và policy status-only; chưa provision.
 
 - [Đăng ký board monitor từ gói Wokwi](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md): plan offline, apply theo account, certificate riêng và phục hồi không tạo trùng.
+
+- [Điều khiển LED van theo nhánh](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md): OPEN/CLOSE riêng02–99, boot/revision/fence, ACK khác status; chưa điều phối bơm chung.

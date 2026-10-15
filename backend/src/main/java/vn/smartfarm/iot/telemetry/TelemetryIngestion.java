@@ -19,7 +19,7 @@ import software.amazon.awssdk.iot.AwsIotMqttConnectionBuilder;
 
 @Component
 @ConditionalOnProperty(name = "smartfarm.mqtt.enabled", havingValue = "true")
-public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn.smartfarm.iot.control.CommandTransport, vn.smartfarm.iot.irrigation.IrrigationTransport {
+public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn.smartfarm.iot.control.CommandTransport, vn.smartfarm.iot.irrigation.IrrigationTransport, vn.smartfarm.iot.irrigation.CircuitValveTransport {
     private static final Logger LOG = LoggerFactory.getLogger(TelemetryIngestion.class);
     private static final String TOPIC = "smartfarm/FARM001/+/telemetry";
     private final vn.smartfarm.iot.nodes.TelemetryRouter router;
@@ -31,6 +31,17 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     private final boolean irrigationEnabled;
     private final vn.smartfarm.iot.irrigation.IrrigationDemo irrigation;
     private final vn.smartfarm.iot.irrigation.CircuitValveMonitor valveMonitor;
+    private final vn.smartfarm.iot.irrigation.CircuitValveControl circuitControl;
+    private volatile boolean circuitReady;
+    private volatile java.util.Set<String> circuitValves=java.util.Set.of();
+    private final ThreadPoolExecutor circuitWorker = new ThreadPoolExecutor(1,1,0,TimeUnit.SECONDS,
+        new ArrayBlockingQueue<>(64), runnable -> new Thread(runnable,"circuit-led-control"));
+    @Override public boolean circuitValveConnected(String valve){return circuitReady&&connection!=null&&circuitValves.contains(valve);}
+    @Override public void publishCircuitValve(String valve,byte[] payload)throws Exception {
+        String topic=vn.smartfarm.iot.irrigation.CircuitValveControl.topic(valve,"command");
+        if(!circuitValveConnected(valve))throw new IllegalStateException("Circuit LED transport unavailable");
+        connection.publish(new software.amazon.awssdk.crt.mqtt.MqttMessage(topic,payload,QualityOfService.AT_LEAST_ONCE,false)).get(10,TimeUnit.SECONDS);
+    }
     private volatile boolean irrigationReady;
     @Override public boolean irrigationConnected(){return irrigationReady && connection!=null;}
     @Override public void publishIrrigation(byte[] payload)throws Exception {
@@ -54,9 +65,10 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
         vn.smartfarm.iot.monitoring.MqttHealth health,
         vn.smartfarm.iot.irrigation.IrrigationDemo irrigation,
         vn.smartfarm.iot.irrigation.CircuitValveMonitor valveMonitor,
+        vn.smartfarm.iot.irrigation.CircuitValveControl circuitControl,
         @org.springframework.beans.factory.annotation.Value("${smartfarm.irrigation.demo-enabled:false}") boolean irrigationEnabled,
         @org.springframework.beans.factory.annotation.Value("${smartfarm.control.enabled:false}") boolean controlsEnabled) {
-        this.irrigation=irrigation;this.valveMonitor=valveMonitor;this.irrigationEnabled=irrigationEnabled;this.health=health; this.router = router; this.pump=pump; this.controlsEnabled=controlsEnabled;
+        this.circuitControl=circuitControl;this.irrigation=irrigation;this.valveMonitor=valveMonitor;this.irrigationEnabled=irrigationEnabled;this.health=health; this.router = router; this.pump=pump; this.controlsEnabled=controlsEnabled;
     }
 
     @Override
@@ -70,14 +82,14 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                 .withCleanSession(true).withWebsockets(true).withWebsocketSigningRegion(region)
                 .withProtocolOperationTimeoutMs(10000)
                 .withConnectionEventCallbacks(new software.amazon.awssdk.crt.mqtt.MqttClientConnectionEvents() {
-                    public void onConnectionInterrupted(int error) { health.disconnected(); irrigationReady=false; controlReady=false; LOG.warn("MQTT interrupted; command dispatch disabled"); }
+                    public void onConnectionInterrupted(int error) { health.disconnected(); irrigationReady=false; circuitReady=false; controlReady=false; LOG.warn("MQTT interrupted; command dispatch disabled"); }
                     public void onConnectionResumed(boolean present) {
                         if (!initialized || stopping) return;
-                        if (present) { health.connected(); controlReady=controlsEnabled; irrigationReady=irrigationEnabled; return; }
+                        if (present) { health.connected(); controlReady=controlsEnabled; irrigationReady=irrigationEnabled; circuitReady=circuitControl.enabled(); return; }
                         health.reconnecting();
                         try { controlWorker.execute(() -> {
                             try { subscribeStreams(); }
-                            catch (Exception error) { controlReady=false; irrigationReady=false; LOG.error("MQTT resubscribe failed; commands disabled until recovery/restart"); }
+                            catch (Exception error) { controlReady=false; irrigationReady=false; circuitReady=false; LOG.error("MQTT resubscribe failed; commands disabled until recovery/restart"); }
                         }); } catch (RejectedExecutionException error) { controlReady=false; }
                     }
                 });
@@ -140,6 +152,19 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                 catch(RejectedExecutionException e){LOG.error("Valve monitor storage queue full");}
             }).get(10,TimeUnit.SECONDS);
         }
+        var demoValves=new java.util.HashSet<String>();
+        circuitReady=false;
+        for(String topic:circuitControl.topics()){
+            connection.subscribe(topic,QualityOfService.AT_LEAST_ONCE,message->{
+                if(message.getRetain()||message.getPayload().length>4096)return;
+                byte[] copy=Arrays.copyOf(message.getPayload(),message.getPayload().length);
+                try{circuitWorker.execute(()->{try{circuitControl.receive(message.getTopic(),copy,false);health.messageProcessed();}catch(RuntimeException e){LOG.warn("Circuit LED message rejected or not persisted");}});}
+                catch(RejectedExecutionException e){LOG.error("Circuit LED queue full; status/ACK not persisted");}
+            }).get(10,TimeUnit.SECONDS);
+            demoValves.add(topic.split("/")[2]);
+        }
+        circuitValves=java.util.Set.copyOf(demoValves);
+        circuitReady=circuitControl.enabled();
         irrigationReady=irrigationEnabled;
         health.subscriptionsReady(healthVersion);
         controlReady=controlsEnabled;
@@ -162,13 +187,15 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     }
     @Override
     public void destroy() throws Exception {
-        stopping=true; irrigationReady=false; controlReady=false; health.stopped();
+        stopping=true; irrigationReady=false; circuitReady=false; controlReady=false; health.stopped();
         try {
             if (connection != null) {
                 try { connection.disconnect().get(5, TimeUnit.SECONDS); }
                 finally { connection.close(); }
             }
         } finally {
+            circuitWorker.shutdown();
+            if (!circuitWorker.awaitTermination(5,TimeUnit.SECONDS)) circuitWorker.shutdownNow();
             valveMonitorWorker.shutdown();
             if (!valveMonitorWorker.awaitTermination(5,TimeUnit.SECONDS)) valveMonitorWorker.shutdownNow();
             controlWorker.shutdown();

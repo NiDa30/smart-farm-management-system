@@ -1161,3 +1161,24 @@ nghiệm thu quyền thật. Java/React/firmware/V31 không đổi nên không c
 Năm ca Windows/AWS/Wokwi Chưa chạy; mapping cũ/chuyển key/rotation không tự
 xử lý. [Chương45](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md),
 [bàn giao](../implementation/LOCAL_CIRCUIT_MONITOR_PROVISIONING_REPORT.md).
+
+## 16/10/2026 — mở/đóng LED van theo nhánh V32
+
+Thêm control ledger/status/boot/fence riêng, API và panel từng nhánh02–99.
+Profile opt-in mặc định tắt; exact /demo/ topics và worker riêng, không
+PUMP01. OPEN cần CLOSED position mới, boot/revision/current mapping và
+status theo kịp toàn bộ lệnh. HTTP intent chống gửi lại; commit trước publish,
+ACK không thay status, CLOSE chặn OPEN cũ. Firmware guard/timer/network,
+monitor và legacy giữ đường cũ. Renderer policy control mới, provisioning
+monitor không tự chuyển quyền. Sửa nhánh/shared controller/vùng cùng gate
+khi đã có control, cần CLOSED mới sau mọi command.
+
+Test phát hiện PostgreSQL round microsecond làm duplicate intent bị409;
+canonicalize trước lưu/so sánh. Full438 ban đầu đạt; bổ sung zone-edit guard
+và test rồi final439 đạt, không skip.35browser/4unit/33provisioning/7policy,
+4native programs,3firmware profiles/lintbuild đạt; invalid profile bị chặn
+và restored/emptyFSmerge đạt. Native command→ACK/OPEN/timer CLOSED→DB,
+full-app/stored/restart và nâng fixture monitor V31→V32 đạt, không refresh
+clocks. Sáu ca live Chưa chạy, timer mô hình không chứng minh GPIO thật.
+[Chương46](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md),
+[bàn giao](../implementation/LOCAL_CIRCUIT_VALVE_CONTROL_REPORT.md).

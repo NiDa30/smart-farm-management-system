@@ -60,7 +60,8 @@ public class IrrigationZones {
  }
  @Transactional
  public View update(String id,JsonNode input){
-  Config c=parse(input,true);if(!id.equals(c.zoneId()))throw bad(HttpStatus.BAD_REQUEST,"Zone ID mismatch");validateBinding(c);
+  Config c=parse(input,true);if(!id.equals(c.zoneId()))throw bad(HttpStatus.BAD_REQUEST,"Zone ID mismatch");
+  vn.smartfarm.iot.irrigation.CircuitValveControl.requireZoneEditable(jdbc,id);validateBinding(c);
   var revisions=jdbc.query("SELECT revision FROM irrigation_zone WHERE zone_id=? FOR UPDATE",(rs,n)->rs.getInt(1),id);
   if(revisions.isEmpty()||revisions.getFirst()!=c.revision())throw bad(HttpStatus.CONFLICT,"Zone changed; reload current revision");
   jdbc.update("DELETE FROM irrigation_zone_channel WHERE zone_id=?",id);

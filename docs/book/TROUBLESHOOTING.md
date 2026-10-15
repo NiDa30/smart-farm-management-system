@@ -500,3 +500,20 @@ assertion vào tên API. Model SDK cho biết list API có cả nextToken và
 nextMarker; đã chặn cả hai, không bỏ qua trang còn lại. Chưa xác nhận policy
 IAM bằng AWS thật; tài liệu ngoài bị proxy403.
 [Chương45](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md).
+
+## LED van theo nhánh chưa mở hoặc chưa xác nhận đóng
+
+Vào panel Điều khiển LED của đúng nhánh, không đọc cột Van monitor như
+GPIO control. Gói cũ trước chương46 chưa có profile mới: pull/restart và
+tải lại. Cần backend SMARTFARM_IRRIGATION_CIRCUIT_DEMO_ENABLED=true, firmware
+circuit1/monitor0/demo1/feedback1, IDs/revisions khớp và policy /demo/ riêng.
+Monitor status-only không cấp quyền command; công cụ provisioning monitor
+không tự chuyển sang control. Dừng simulator dùng trùng client ID.
+
+OPEN cần CLOSED position/source/receipt mới; ACK EXECUTED không thay status.
+Sau CLOSE chưa có status theo kịp ordinal thì chưa mở lại hoặc sửa mapping/
+vùng. Lệnh HTTP/MQTT cũ, boot cũ, unknown publish không tự replay.
+PostgreSQL lưu microsecond khác nanosecond của request: đã canonicalize để
+UUID cùng intent không bị409 giả. Không đổi UUID để ép retry khi chưa rõ
+kết quả; dùng GET đối chiếu. Fault switch cần sửa đầu vào rồi CLOSE; boot
+luôn đóng. [Chương46](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md).

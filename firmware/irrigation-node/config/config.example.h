@@ -30,3 +30,9 @@
 #ifndef IRRIGATION_ZONE_REVISION
 #define IRRIGATION_ZONE_REVISION 1
 #endif
+
+// Separate LED control profile for circuit boards 02..99. Explicit opt-in only.
+// Requires MONITOR_ONLY=0, DEMO_ENABLED=1, POSITION_FEEDBACK_ENABLED=1.
+#ifndef IRRIGATION_CIRCUIT_CONTROL_ENABLED
+#define IRRIGATION_CIRCUIT_CONTROL_ENABLED 0
+#endif
