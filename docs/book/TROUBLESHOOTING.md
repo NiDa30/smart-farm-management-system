@@ -411,3 +411,18 @@ Trong kiểm tra cloud, hai query snapshot ban đầu dùng nhầm tên bảng/c
 queue nên bị PostgreSQL từ chối (chỉ đọc); sửa sang irrigation_queue_request
 và sắp theo JSON đã lưu, so trước/sau nâng cấp nguyên vẹn. Không sửa dữ liệu
 hoặc nới validation để qua test. [Chương40](CHAPTER_40_VALVE_ALERTS.md).
+
+## V29: thẻ van có trạng thái nhưng lịch sử rỗng
+
+Lịch sử chỉ bắt đầu từ packet mới hợp lệ sau migration V29; không tự dựng từ
+latest hoặc evidence cảnh báo cũ. Kiểm tra monitor true, board02–99 đúng
+nhánh/source/revision/boot và MQTT đang nhận. Demo01 chưa thuộc màn này.
+Khoảng lọc dùng giờ backend nhận, không phải giờ đo; chỉnh bộ lọc xong phải
+bấm Đọc lịch sử van. Mã nhánh hoặc van sai không được biến thành wildcard.
+
+Tải thêm lỗi giữ dòng cũ nhưng khóa CSV; thử lại hoặc đọc từ đầu để đổi phạm
+vi. Cursor không dùng qua bộ lọc khác, không tự quay lại token cũ. CSV chỉ
+dòng đã tải, không hứa toàn bộ range. Đổi tên/revision mà lịch sử vẫn tên cũ
+là đúng: đó là snapshot lúc nhận. Khi unit test JSON sequence thất bại dù
+giá trị in ra giống nhau, đối chiếu typed record để phân biệt LongNode/
+IntNode, không bỏ kiểm tra metadata. [Chương41](CHAPTER_41_VALVE_HISTORY.md).

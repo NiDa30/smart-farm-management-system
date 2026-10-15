@@ -380,3 +380,16 @@ thái, không tự gửi lại. Fault monitor giữ trong boot: sửa công tắ
 board để kiểm tra phục hồi; không có reset từ web.
 Sáu ca [chương40](CHAPTER_40_VALVE_ALERTS.md) đều Chưa chạy trên Windows/AWS/
 Wokwi. Không nối bơm hoặc coi ACK đã xem là cho phép tưới.
+
+## V29 — lịch sử van
+
+Pull feat/day1-iot-foundation, restart backend đang chạy để áp V29 và chạy
+frontend ở terminal riêng. Giữ cờ monitor/policy status của V27; không cần
+build firmware hoặc thêm quyền IAM. Không xóa volume PostgreSQL.
+
+Vào Điều khiển Actuator → Cấu hình nhánh tưới → Lịch sử trạng thái van.
+Chọn khoảng giờ, mã nhánh/van02–99 và điều kiện rồi bấm Đọc lịch sử van.
+Chưa có dữ liệu ngay sau nâng cấp là đúng nếu chưa nhận packet mới; V29 không
+dựng lại từ latest status cũ. CSV chỉ xuất các dòng đã tải bằng Tải thêm.
+Xem [chương41](CHAPTER_41_VALVE_HISTORY.md) cho5ca Windows/AWS/Wokwi Chưa chạy,
+ngữ nghĩa hai đồng hồ, snapshot cũ và lưu ý chưa có retention tự động.

@@ -15,8 +15,8 @@ import vn.smartfarm.iot.nodes.WaterTelemetry;
 public class CircuitValveMonitor {
  public record Observation(String controllerId,String actuatorId,String circuitId,int circuitRevision,String zoneId,int zoneRevision,
   UUID bootId,long sequence,Instant observedAt,Instant receivedAt,String dataSource,boolean monitorOnly,String gpioState,String reason,ValvePositionFeedback positionFeedback) {}
- private final JdbcTemplate jdbc;private final WaterTelemetry json;private final CircuitValveAlerts alerts;private final boolean enabled;
- public CircuitValveMonitor(JdbcTemplate jdbc,WaterTelemetry json,CircuitValveAlerts alerts,@Value("${smartfarm.irrigation.monitor-enabled:false}")boolean enabled){this.jdbc=jdbc;this.json=json;this.alerts=alerts;this.enabled=enabled;}
+ private final JdbcTemplate jdbc;private final WaterTelemetry json;private final CircuitValveAlerts alerts;private final CircuitValveHistory history;private final boolean enabled;
+ public CircuitValveMonitor(JdbcTemplate jdbc,WaterTelemetry json,CircuitValveAlerts alerts,CircuitValveHistory history,@Value("${smartfarm.irrigation.monitor-enabled:false}")boolean enabled){this.jdbc=jdbc;this.json=json;this.alerts=alerts;this.history=history;this.enabled=enabled;}
  public boolean enabled(){return enabled;}
  private static boolean eligible(IrrigationCircuits.Config c){return c.expectedSource().equals("SIMULATOR")&&c.controllerId().matches("IRRIGATION(0[2-9]|[1-9][0-9])")&&c.valveId().matches("VALVE(0[2-9]|[1-9][0-9])");}
  /** Exact topic subscriptions, captured at startup/reconnect; additions require backend restart. */
@@ -65,7 +65,7 @@ public class CircuitValveMonitor {
    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(valve_id) DO UPDATE SET controller_id=EXCLUDED.controller_id,circuit_id=EXCLUDED.circuit_id,circuit_revision=EXCLUDED.circuit_revision,zone_id=EXCLUDED.zone_id,zone_revision=EXCLUDED.zone_revision,boot_id=EXCLUDED.boot_id,sequence=EXCLUDED.sequence,observed_at=EXCLUDED.observed_at,received_at=EXCLUDED.received_at,reason=EXCLUDED.reason,feedback_state=EXCLUDED.feedback_state,feedback_enabled=EXCLUDED.feedback_enabled,feedback_fault=EXCLUDED.feedback_fault
    """,actuator,controller,circuit,revision,zone,zoneRevision,boot,sequence,Timestamp.from(at),Timestamp.from(now),reason,feedback==null?"UNKNOWN":feedback.state(),feedback!=null,feedback==null?null:feedback.fault());
   jdbc.update("INSERT INTO circuit_valve_boot(valve_id,boot_id) VALUES(?,?) ON CONFLICT DO NOTHING",actuator,boot);
-  alerts.observe(c,latest(actuator));
+  Observation accepted=latest(actuator);alerts.observe(c,accepted);history.record(c,accepted);
  }
  private static long integer(JsonNode p,String field,long min,long max){var v=p.path(field);if(!v.isIntegralNumber()||!v.canConvertToLong()||v.longValue()<min||v.longValue()>max)throw new IllegalArgumentException("Integer");return v.longValue();}
 }

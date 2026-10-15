@@ -92,3 +92,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Nhận phản hồi riêng cho từng van giám sát](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md)
 
 - [Cảnh báo lỗi van và controller theo nhánh](CHAPTER_40_VALVE_ALERTS.md)
+
+- [Lịch sử bản tin van và CSV](CHAPTER_41_VALVE_HISTORY.md)

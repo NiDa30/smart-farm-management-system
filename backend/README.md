@@ -159,3 +159,21 @@ This does not resolve a fault or reset hardware. Event Log exposes three
 VALVE_ALERT_* types with separate source/recorded times, no command/run link.
 See [chapter40](../docs/book/CHAPTER_40_VALVE_ALERTS.md) and
 [handoff](../docs/implementation/LOCAL_VALVE_ALERTS_REPORT.md).
+
+## Circuit valve packet history (V29)
+
+Accepted new monitor packets append to circuit_valve_history atomically with
+latest/retired boots/episodes, with the original circuit config and observation.
+Duplicate/rejected packets never append. No backfill from older latest rows.
+History ID allocation is serialized until commit to give pagination a stable
+committed prefix across writers. No new command transport or firmware change.
+
+GET `/api/v1/valve-history?from=...&to=...` filters by receipt time [from,to),
+range <=31days, optional circuitId/valveId(02–99), condition ALL/FAULT/UNKNOWN/
+OPEN/CLOSED/CONFLICT, limit1–200(default50), and opaque cursor. Cursor is scoped
+to filters/range; ceilingId excludes later appends, ordered receipt/id DESC.
+Snapshot stays historical after config edits; disabled monitor may still read
+stored rows. Web CSV exports loaded rows only. No automatic retention yet;
+monitor heartbeats grow local PostgreSQL storage. Legacy demo01 is separate.
+See [chapter41](../docs/book/CHAPTER_41_VALVE_HISTORY.md) and
+[handoff](../docs/implementation/LOCAL_VALVE_HISTORY_REPORT.md).

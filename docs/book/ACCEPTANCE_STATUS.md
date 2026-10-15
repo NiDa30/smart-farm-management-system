@@ -240,3 +240,14 @@ MQTT/control/demo false, monitor true, commands/run/queue mới0; không AWS.
 Sáu ca Windows/AWS/Wokwi mới Chưa chạy. Chỉ giám sát van02–99, chưa gom demo01,
 chưa OFFLINE episode/email/reset/coordinator hoặc dispatch queue.
 [Chương40](CHAPTER_40_VALVE_ALERTS.md).
+
+## Lịch sử van V29 — 15/10/2026
+
+369backend, không skip (17mới),11browser lịch sử,18browser nhánh hồi quy,
+3unit parser/lintbuild đạt. Full-app native packet→receiver→PostgreSQL→React
+giữ snapshot revision1 sau khi cấu hình lên revision2, lọc/CSV/chi tiết và
+restart JVM giữ metadata. V28→29 giữ configs/queue/status/boot/episode/cursor,
+không dựng history từ latest cũ. MQTT/control/demo false, monitor true,
+commands/run/queue mới0. Năm ca Windows/AWS/Wokwi mới Chưa chạy. Chưa retention
+tự động, lịch sử demo01 hoặc coordinator/dispatch queue.
+[Chương41](CHAPTER_41_VALVE_HISTORY.md).

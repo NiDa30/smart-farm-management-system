@@ -1061,3 +1061,19 @@ AWS, commands/run/queue mới0, không sửa demo5433. Sáu ca Windows/Wokwi m�
 Chưa chạy; A3 còn coordinator/interlock/dispatch queue.
 [Chương40](CHAPTER_40_VALVE_ALERTS.md),
 [bàn giao](../implementation/LOCAL_VALVE_ALERTS_REPORT.md).
+
+## 15/10/2026 — V29 lịch sử quan sát van
+
+Lưu từng packet monitor được chấp nhận cùng transaction status/boot/episode.
+Giữ snapshot cấu hình và hai giờ; API theo receivedAt, range31ngày, cursor
+gắn scope và mốc ID, tuần tự cấp ID tới commit để tránh mẫu pending chen trang.
+Web thêm lịch sử từ cấu hình nhánh, lọc theo nhánh/van/vị trí/lỗi, CSV đúng
+dòng đã tải và không thực thi công thức tên nhánh. Không backfill/command mới.
+369backend skip0/11browser mới/18browser nhánh/3unit precision/lintbuild đạt.
+Full-app native nhận3mẫu, đổi cấu hình không đổi snapshot cũ, restart và CSV
+đạt; V28 rows nguyên vẹn. Fixture test đầu so JSON LongNode với IntNode cho
+sequence nên đổi sang so record typed; cursor browser fixture lặp token che
+ca ceiling đổi nên sửa fixture về token cuối null, không nới validation.
+Năm ca Windows/Wokwi mới Chưa chạy. Retention/coordinator/dispatch còn sau.
+[Chương41](CHAPTER_41_VALVE_HISTORY.md),
+[bàn giao](../implementation/LOCAL_VALVE_HISTORY_REPORT.md).

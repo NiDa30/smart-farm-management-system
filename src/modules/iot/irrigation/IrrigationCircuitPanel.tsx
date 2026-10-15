@@ -4,7 +4,7 @@ import {parseNodes,type NodesSnapshot} from '../nodes/nodeApi';
 import {parseCircuit,parseCircuits,sameCircuit,circuitLabels,observedValveState,type CircuitConfig,type CircuitSnapshot} from './circuitApi';
 const API='/api/v1/irrigation-circuits';
 const blank=():CircuitConfig=>({circuitId:'',name:'',zoneId:'',zoneRevision:1,controllerId:'IRRIGATION01',valveId:'VALVE01',pumpId:'PUMP01',waterNodeId:'',lowChannelId:'',flowChannelId:'',expectedSource:'SIMULATOR',revision:1});
-export function IrrigationCircuitPanel({onBack,onQueue}:{onBack?:()=>void;onQueue?:()=>void}) {
+export function IrrigationCircuitPanel({onBack,onQueue,onHistory}:{onBack?:()=>void;onQueue?:()=>void;onHistory?:()=>void}) {
  const [data,setData]=useState<CircuitSnapshot|null>(null),[zones,setZones]=useState<ZoneSnapshot|null>(null),[nodes,setNodes]=useState<NodesSnapshot|null>(null),[form,setForm]=useState(blank),[editing,setEditing]=useState(false);
  const [busy,setBusy]=useState(false),[epoch,setEpoch]=useState(0),[error,setError]=useState(''),[message,setMessage]=useState(''),[pending,setPending]=useState<{config:CircuitConfig;editing:boolean}|null>(null),[,redraw]=useState(0);
  const mounted=useRef(true),flight=useRef(false),mutation=useRef<AbortController|null>(null),clock=useRef({floor:0,at:0,received:0});
@@ -33,6 +33,7 @@ export function IrrigationCircuitPanel({onBack,onQueue}:{onBack?:()=>void;onQueu
  function edit(c:CircuitConfig){setForm(c);setEditing(true);setMessage('Đang sửa phiên bản '+c.revision+'.');}
  return <section aria-label="Cấu hình nhánh tưới" className="max-w-5xl mx-auto space-y-4">
   <div>{onBack&&<button className="underline mr-4" disabled={busy} onClick={onBack}>Quay lại điều khiển</button>}{onQueue&&<button className="underline" disabled={busy} onClick={onQueue}>Mở hàng chờ diễn tập</button>}</div>
+  {onHistory&&<button className="underline" disabled={busy} onClick={onHistory}>Lịch sử trạng thái van</button>}
   <h1 className="text-xl font-bold">Nhánh tưới theo vùng và trạm nước</h1>
   <p className="bg-amber-50 p-3 rounded">Cấu hình nhiều nhánh, dùng chung PUMP01 hoặc trạm nước. Mỗi vùng và mã van chỉ thuộc một nhánh. Mã controller/van mới là dự kiến; chưa tạo thiết bị AWS, các van mới có chế độ giám sát riêng. Hàng chờ vẫn chỉ diễn tập.</p>
   {error&&<p role="alert">{error}</p>}{data&&!fresh&&!error&&<p role="alert">Dữ liệu cấu hình đã cũ. Đọc lại trước khi lưu.</p>}{message&&<p role="status">{message}</p>}

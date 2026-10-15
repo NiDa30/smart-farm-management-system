@@ -781,3 +781,14 @@ Không firmware/IAM/dispatch mới; sáu ca Windows/AWS/Wokwi Chưa chạy. Chư
 demo01 hoặc cảnh báo offline. Còn command nhiều van, local interlock xuyên
 van–bơm và flow proof/coordinator trước dispatch queue; A3 chưa hoàn tất.
 [Chương40](../book/CHAPTER_40_VALVE_ALERTS.md).
+
+## Cập nhật 15/10/2026 — lịch sử van V29
+
+Giám sát van02–99 có lịch sử từng packet hợp lệ, cấu hình/phiên bản tại lúc
+nhận, giờ đo/nhận riêng, lọc lỗi/vị trí/nhánh/van và CSV dữ liệu đã tải. Không
+mượn trạng thái giữa van, không backfill hoặc chuyển lịch sử cũ sang mapping
+mới. 369backend/11browser history/18browser nhánh/3unit/lintbuild/full-app
+PostgreSQL+restart đạt; V28 rows giữ nguyên, commands0. Năm ca Windows/AWS/
+Wokwi mới Chưa chạy; chưa retention tự động. Đây là khả năng đối chiếu WS02
+phục vụ A3, chưa command nhiều van/coordinator/interlock/dispatch queue.
+[Chương41](../book/CHAPTER_41_VALVE_HISTORY.md).
