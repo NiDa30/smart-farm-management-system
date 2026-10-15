@@ -2,6 +2,9 @@
 
 Ngày triển khai: 15/10/2026, giờ Việt Nam.
 
+Mốc tiếp theo: [chương35](CHAPTER_35_PUMP_HTTP_INTENT.md) đã thêm HTTP intent
+cho profile protected. Các đoạn “chưa HTTP” dưới đây mô tả phạm vi riêng V22.
+
 ## Phần nào được bảo vệ
 
 Sau [hàng chờ diễn tập](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md), bước tiếp theo

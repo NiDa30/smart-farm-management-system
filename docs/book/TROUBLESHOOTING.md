@@ -314,3 +314,12 @@ ON sau timeout; chờ status đúng hoặc đối chiếu boot, không tự hạ
 Native packet fixture chỉ cập nhật timestamp lúc seed để validate receive;
 không làm mới cho web trông online. [Chương34](CHAPTER_34_PUMP_COMMAND_FENCING.md)
 ghi cả lỗi compile/test/selector và cách giải quyết.
+
+## HTTP intent V23
+
+409 khi review/boot/phiên ý định đổi: đọc mới trước khi xác nhận, không đổi
+UUID để tự retry cùng ý định cũ. Response mất: giữ ID, GET đối chiếu;404 chưa
+chứng minh request không thể tới sau. OFF mới đã lưu chặn ON cũ nhưng không
+xác nhận GPIO OFF. Khi MQTT offline, OFF vẫn có thể lưu failed và tăng
+phiên; history ghi MQTT_UNAVAILABLE. Đọc UUID cũ không tự gửi OFF khi mạng
+trở lại, cần yêu cầu mới. [Chương35](CHAPTER_35_PUMP_HTTP_INTENT.md).

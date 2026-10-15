@@ -22,9 +22,11 @@ public class WateringRule {
     private final IrrigationCalendar calendar;
     private final JdbcTemplate jdbc;
     private final PumpService pump;
+    private final vn.smartfarm.iot.control.PumpCommandFencing fencing;
     private final TelemetryRepository telemetry;
     private final TransactionTemplate transaction;
-    public WateringRule(JdbcTemplate jdbc,PumpService pump,TelemetryRepository telemetry,PlatformTransactionManager manager,IrrigationCalendar calendar) {
+    public WateringRule(JdbcTemplate jdbc,PumpService pump,TelemetryRepository telemetry,PlatformTransactionManager manager,IrrigationCalendar calendar,vn.smartfarm.iot.control.PumpCommandFencing fencing) {
+        this.fencing=fencing;
         this.jdbc=jdbc;this.pump=pump;this.telemetry=telemetry;this.transaction=new TransactionTemplate(manager);this.calendar=calendar;
     }
     public State state() {
@@ -78,6 +80,9 @@ public class WateringRule {
     public synchronized PumpService.Command manualCommand(PumpService.Request request) {
         manualHold();
         return pump.create(request);
+    }
+    public synchronized vn.smartfarm.iot.control.PumpCommandFencing.Receipt manualRequest(vn.smartfarm.iot.control.PumpCommandFencing.HttpIntent request) {
+        return fencing.createHttp(request,this::manualHold);
     }
     private boolean fresh(TelemetryRepository.Reading sample) {
         Instant now=Instant.now();

@@ -968,3 +968,13 @@ merge/lintbuild/full-app native status và restart thật đạt. Queue fixture
 V21→22 bảo toàn4lượt. Không AWS/Wokwi/GPIO,6ca Windows Chưa chạy. Lỗi và cách
 sửa được ghi tại [chương34](CHAPTER_34_PUMP_COMMAND_FENCING.md). Chưa HTTP
 intent fence/lease/dispatch queue hoặc coordinator thật.
+
+## 15/10/2026 — HTTP intent V23
+
+Thêm UUID/review version/boot/deadline, startup invalidation và GET receipt.
+OFF offline giữ failed/barrier; duplicate không pause rule mới. UI giữ ID
+qua reload, GET đối chiếu, không auto POST.262backend skip0/11browser/4unit/
+lintbuild và full-app native/offline fixture trước-sau restart đạt. Queue
+V22→23 giữ4lượt; không AWS/Wokwi/GPIO,6ca Chưa chạy.
+[Chương35](CHAPTER_35_PUMP_HTTP_INTENT.md) ghi lỗi/cách sửa. Chưa ownership/
+lease hoặc dispatch queue.

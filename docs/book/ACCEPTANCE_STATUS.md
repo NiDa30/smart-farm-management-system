@@ -172,3 +172,11 @@ nhận native status quaJava/Postgres, giữ metadata qua restart thật; physic
 control/MQTT tắt, command/run/queue0. V21→22 giữ4queue records/revision.
 Chưa AWS/Wokwi/GPIO thật,6ca Windows Chưa chạy. MQTT fence chưa phải HTTP
 intent fence/lease hay coordinator. [Chương34](CHAPTER_34_PUMP_COMMAND_FENCING.md).
+
+## HTTP intent V23 — 15/10/2026
+
+262backend skip0/11pump browser/4unit/lintbuild đạt; full app native status và
+1OFF offline failed, replay đúngUUID/controlfalse không publish, UI GET-only
+đối chiếu và restart process giữ record/tăng phiên. Queue migration giữ4lượt.
+6ca Windows/AWS/Wokwi Chưa chạy; legacy mặc định chưa HTTP fence; ownership/
+coordinator/dispatch queue chưa làm. [Chương35](CHAPTER_35_PUMP_HTTP_INTENT.md).

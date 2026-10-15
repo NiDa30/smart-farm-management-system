@@ -619,3 +619,11 @@ ACK/status validation và legacy OFF latch đến reboot.247backend/6pump browse
 restart đạt; physicalcontrol/MQTT tắt.6ca live Chưa chạy. Queue vẫn PREVIEW_ONLY;
 HTTP đến muộn/idempotency và lease/van-bơm chưa làm.
 [Chương34](../book/CHAPTER_34_PUMP_COMMAND_FENCING.md).
+
+## Bằng chứng 15/10/2026 — HTTP intent V23
+
+Có version/boot/review/UUID cho manual protected profile, GET receipt và
+OFF offline barrier, UI giữ ID/đối chiếu qua reload.262backend/11browser/4unit/
+lintbuild/full-app PostgreSQL restart đạt. Legacy mặc định chưa HTTP fence;
+queue vẫn PREVIEW_ONLY, ownership/lease/coordinator còn sau.6ca live Chưa chạy.
+[Chương35](../book/CHAPTER_35_PUMP_HTTP_INTENT.md).

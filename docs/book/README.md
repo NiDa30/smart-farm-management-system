@@ -80,3 +80,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Hàng chờ tưới nhiều vùng ở chế độ diễn tập](CHAPTER_33_IRRIGATION_QUEUE_PREVIEW.md)
 
 - [Chặn lệnh MQTT cũ tại PUMP01 bằng boot và ordinal](CHAPTER_34_PUMP_COMMAND_FENCING.md)
+
+- [Ý định HTTP và đối chiếu yêu cầu điều khiển PUMP01](CHAPTER_35_PUMP_HTTP_INTENT.md)

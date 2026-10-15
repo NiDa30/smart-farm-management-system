@@ -703,3 +703,13 @@ opt-in/lintbuild/full-app native status+restart đạt; queue V21→22 giữ4lư
 intent fence hoặc pump lease/loại trừ manual-rule/sequence nhiều van. Queue
 vẫn PREVIEW_ONLY, coordinator A3 chưa hoàn tất.
 [Chương34](../book/CHAPTER_34_PUMP_COMMAND_FENCING.md).
+
+## Cập nhật 15/10/2026 — HTTP intent V23
+
+Protected manual HTTP thêm UUID/review version/boot/deadline, restart fence
+và GET đối chiếu; OFF offline giữ stop intent dù không publish. UI giữ ID
+trước POST, reload không tự gửi lại.262backend/11pump browser/4unit/lintbuild/
+full-app native/offline fixture restart và bảo toàn4queue records đạt.6ca
+Windows/AWS/Wokwi Chưa chạy; legacy default không HTTP fence. Còn quyền sở
+hữu chung/manual-rule exclusion và sequence van-bơm trước dispatch queue;
+coordinator A3 chưa hoàn tất. [Chương35](../book/CHAPTER_35_PUMP_HTTP_INTENT.md).

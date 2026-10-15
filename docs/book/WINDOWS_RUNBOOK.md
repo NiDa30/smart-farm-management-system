@@ -281,3 +281,12 @@ và SMARTFARM_CONTROL_ENABLED=true trước helper. Không đổi IAM/cert/Thing
 Lệch profile chặn ON/reset; legacy OFF ở firmware mới khóa đến reboot.
 [Chương34](CHAPTER_34_PUMP_COMMAND_FENCING.md) có lệnh và6ca Chưa chạy. Queue
 vẫn chỉ diễn tập; HTTP đến server muộn chưa có intent fence.
+
+## HTTP intent PUMP01 V23 — 15/10/2026
+
+Pull/restart backend và frontend cùng lúc, giữ DB để V23 migrate. Không flash
+lại nếu đã dùng firmware V22 với hai phía opt-in; legacy mặc định vẫn cũ.
+Web dùng UUID/context cho ON/reset và lưu mục chưa rõ qua reload cùng tab.
+Đọc theo ID, không tự retry. OFF offline có thể đã lưu failed/barrier; phải
+đối chiếu lịch sử, không coi503 là chưa lưu ý định tắt.
+[Chương35](CHAPTER_35_PUMP_HTTP_INTENT.md) có6ca Windows Chưa chạy.
