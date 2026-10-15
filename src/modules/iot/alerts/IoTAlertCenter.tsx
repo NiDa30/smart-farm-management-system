@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {AlertTriangle,RefreshCw} from 'lucide-react';
+import {ValveAlertCenter} from './ValveAlertCenter';
 import {SoilAlertCenter} from './SoilAlertCenter';
 import {WaterAlertCenter} from './WaterAlertCenter';
 import {AlertAcknowledgement} from './AlertAcknowledgement';
@@ -82,13 +83,14 @@ const SensorAlertPanel:React.FC<{onBusyChange:(busy:boolean)=>void}>=({onBusyCha
 };
 
 export const IoTAlertCenter:React.FC=()=>{
-  const [tab,setTab]=useState<'sensor'|'water'|'soil'>('sensor'),[busy,setBusy]=useState(false);
+  const [tab,setTab]=useState<'sensor'|'water'|'soil'|'valve'>('sensor'),[busy,setBusy]=useState(false);
   return <div className="space-y-4">
-    <nav aria-label="Nhóm cảnh báo" className="flex gap-2">
+    <nav aria-label="Nhóm cảnh báo" className="flex flex-wrap gap-2">
       <button disabled={busy} aria-pressed={tab==='sensor'} onClick={()=>setTab('sensor')} className="border rounded px-4 py-2 aria-pressed:bg-emerald-100 disabled:opacity-40">Cảm biến môi trường</button>
       <button disabled={busy} aria-pressed={tab==='water'} onClick={()=>setTab('water')} className="border rounded px-4 py-2 aria-pressed:bg-emerald-100 disabled:opacity-40">Trạm nước</button>
       <button disabled={busy} aria-pressed={tab==='soil'} onClick={()=>setTab('soil')} className="border rounded px-4 py-2 aria-pressed:bg-emerald-100 disabled:opacity-40">Đất nhiều điểm</button>
+      <button disabled={busy} aria-pressed={tab==='valve'} onClick={()=>setTab('valve')} className="border rounded px-4 py-2 aria-pressed:bg-emerald-100 disabled:opacity-40">Van theo nhánh</button>
     </nav>
-    {tab==='sensor'?<SensorAlertPanel onBusyChange={setBusy}/>:tab==='water'?<WaterAlertCenter onBusyChange={setBusy}/>:<SoilAlertCenter onBusyChange={setBusy}/>}
+    {tab==='sensor'?<SensorAlertPanel onBusyChange={setBusy}/>:tab==='water'?<WaterAlertCenter onBusyChange={setBusy}/>:tab==='soil'?<SoilAlertCenter onBusyChange={setBusy}/>:<ValveAlertCenter onBusyChange={setBusy}/>}
   </div>;
 };

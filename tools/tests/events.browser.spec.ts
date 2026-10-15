@@ -85,3 +85,16 @@ for(const [reason,label] of [['FLOW_LOW','Thiếu lưu lượng tại bộ đi�
  await page.goto('/');await page.getByRole('button',{name:'Chi tiết device:1',exact:true}).click();
  await expect(page.getByRole('region',{name:'Chi tiết sự kiện',exact:true})).toContainText(label);
 });
+
+test('valve fault lifecycle keeps source times and has no invented command or run',async({page})=>{
+ const state=await fixtures(page);state.items=[
+  {...event('valve-open:1'),category:'ALERT',type:'VALVE_ALERT_OPENED',deviceId:'VALVE04',action:null,state:'OPEN',reason:'POSITION_FAULT',value:null,commandId:null,runId:null,sourceAt:at},
+  {...event('valve-clear:1'),category:'ALERT',type:'VALVE_ALERT_CLEARED',deviceId:'VALVE04',action:null,state:'CLEARED',reason:'POSITION_FAULT',value:null,commandId:null,runId:null,sourceAt:at},
+  {...event('valve-seen:1'),category:'ALERT',type:'VALVE_ALERT_ACKNOWLEDGED',deviceId:'VALVE04',action:null,state:'ACKNOWLEDGED',reason:'POSITION_FAULT',value:null,commandId:null,runId:null,sourceAt:null}
+ ];
+ await page.goto('/');await expect(page.getByText('Phát sinh cảnh báo van',{exact:true})).toBeVisible();
+ await expect(page.getByText('Cảnh báo van trở về bình thường',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Chi tiết valve-seen:1',exact:true}).click();
+ const detail=page.getByRole('region',{name:'Chi tiết sự kiện'});await expect(detail).toContainText('Thời gian thiết bị: Không được lưu');
+ await expect(detail).not.toContainText('Run ID: 7');await expect(detail).not.toContainText('ab6cfc5e-18ff-4a01-852b-03604df6b52f');
+});

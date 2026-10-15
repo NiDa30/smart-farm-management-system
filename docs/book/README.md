@@ -90,3 +90,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Nhánh tưới: vùng, van dự kiến và trạm nước](CHAPTER_38_IRRIGATION_CIRCUITS.md)
 
 - [Nhận phản hồi riêng cho từng van giám sát](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md)
+
+- [Cảnh báo lỗi van và controller theo nhánh](CHAPTER_40_VALVE_ALERTS.md)

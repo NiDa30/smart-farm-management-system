@@ -1,16 +1,16 @@
 import React,{useState} from 'react';
 import {type SensorAlert} from './alertApi';
 interface Props {
-  alert:Pick<SensorAlert,'id'|'clearedAt'|'acknowledgedAt'|'acknowledgementNote'>;title:string;busy:boolean;unavailable:boolean;needsCheck:boolean;error:string;success:boolean;
+  alert:Pick<SensorAlert,'id'|'clearedAt'|'acknowledgedAt'|'acknowledgementNote'>;title:string;conditionLabel?:string;busy:boolean;unavailable:boolean;needsCheck:boolean;error:string;success:boolean;
   onSave:(note:string)=>Promise<boolean>;onCheck:()=>void;onClose:()=>void;
 }
-export const AlertAcknowledgement:React.FC<Props>=({alert,title,busy,unavailable,needsCheck,error,success,onSave,onCheck,onClose})=>{
+export const AlertAcknowledgement:React.FC<Props>=({alert,title,conditionLabel='Điều kiện cảm biến',busy,unavailable,needsCheck,error,success,onSave,onCheck,onClose})=>{
   const [note,setNote]=useState('');
   const unsaved=!!note.trim()&&note.trim()!==alert.acknowledgementNote;
   return <section aria-label="Xác nhận cảnh báo" className="bg-white border border-emerald-300 rounded-xl p-5 space-y-3">
     <div className="flex justify-between gap-3"><h2 className="font-semibold">{title} · #{alert.id}</h2><button disabled={busy} onClick={onClose} className="border rounded px-3 py-1">Đóng chi tiết</button></div>
-    <p>Điều kiện cảm biến: {alert.clearedAt?'Đã trở về bình thường':'Đang cảnh báo'}</p>
-    <p>Xác nhận đã xem: {alert.acknowledgedAt?new Date(alert.acknowledgedAt).toLocaleString('vi-VN'):'Chưa xem'}</p>
+    <p>{conditionLabel}: {alert.clearedAt?'Đã trở về bình thường':'Đang cảnh báo'}</p>
+    <p>Xác nhận đã xem: {alert.acknowledgedAt?new Date(alert.acknowledgedAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}):'Chưa xem'}</p>
     {alert.acknowledgedAt&&<p className="whitespace-pre-wrap break-words">Ghi chú đã lưu: {alert.acknowledgementNote??'Không có ghi chú'}</p>}
     {!alert.acknowledgedAt&&!alert.clearedAt&&<form className="space-y-3" onSubmit={event=>{event.preventDefault();if(busy||unavailable||needsCheck||note.length>500)return;void onSave(note.trim()).then(saved=>{if(saved)setNote('');});}}>
       <label className="block text-sm">Ghi chú khi xác nhận (không bắt buộc, tối đa 500 ký tự)

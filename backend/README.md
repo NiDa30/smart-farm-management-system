@@ -141,3 +141,21 @@ No new HTTP receive/command endpoint. Circuits GET adds valveMonitorEnabled and
 valveObservation. Queue remains preview-only.
 [Chapter39](../docs/book/CHAPTER_39_CIRCUIT_VALVE_MONITOR.md),
 [handoff](../docs/implementation/LOCAL_CIRCUIT_VALVE_MONITOR_REPORT.md).
+
+## Circuit valve fault episodes (V28)
+
+Accepted new V27 monitor packets update status and POSITION_FAULT/DEVICE_FAULT
+episodes atomically. Recovery needs two consecutive fresh healthy packets in
+one boot, sequence+1, strictly increasing source time and <=15s source/receipt
+gaps; position faults require independent CLOSED feedback. Restart resets only
+partial recovery proof. Configuration snapshots and opening evidence remain
+immutable; changed mappings cannot clear older revisions. No stale/offline
+episode scheduler, backfill, command transport or new firmware/IAM requirement.
+
+GET `/api/v1/valve-alerts`, GET `/{id}` and PUT `/{id}/acknowledgement` with
+exact body `{"note":null}` or string <=500 store the first human note. Same-note
+retries are idempotent; conflicting notes or first ACK after recovery return409.
+This does not resolve a fault or reset hardware. Event Log exposes three
+VALVE_ALERT_* types with separate source/recorded times, no command/run link.
+See [chapter40](../docs/book/CHAPTER_40_VALVE_ALERTS.md) and
+[handoff](../docs/implementation/LOCAL_VALVE_ALERTS_REPORT.md).

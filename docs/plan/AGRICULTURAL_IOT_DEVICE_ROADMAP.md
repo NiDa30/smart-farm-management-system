@@ -768,3 +768,16 @@ rows giữ nguyên, command0. 5ca Windows/AWS/Wokwi mới Chưa chạy. Còn com
 nhiều van, namespace/provisioning hoàn chỉnh, local interlock xuyên van–bơm,
 flow proof/coordinator và dispatch queue trước khi tự tưới SOIL; A3 chưa xong.
 [Chương39](../book/CHAPTER_39_CIRCUIT_VALVE_MONITOR.md).
+
+## Cập nhật 15/10/2026 — A3 đợt cảnh báo van V28
+
+Đã có lịch sử POSITION_FAULT/DEVICE_FAULT cho van02–99 monitor-only, bản chụp
+nhánh, bằng chứng mở/phục hồi, hai mẫu khỏe mới và ghi chú đã xem bất biến.
+Trung tâm Cảnh báo thêm tab van; Event Log phân biệt giờ đo/nhận/đã xem,
+không bịa run/command. Thay mapping, mất packet hoặc ACK không tự xóa lỗi.
+352backend/13browser van/24browser cảnh báo/11browser Event Log/nativeencoder/
+lintbuild/full-app PostgreSQL+restart đạt; nâng V27 giữ cấu hình/queue/status.
+Không firmware/IAM/dispatch mới; sáu ca Windows/AWS/Wokwi Chưa chạy. Chưa gom
+demo01 hoặc cảnh báo offline. Còn command nhiều van, local interlock xuyên
+van–bơm và flow proof/coordinator trước dispatch queue; A3 chưa hoàn tất.
+[Chương40](../book/CHAPTER_40_VALVE_ALERTS.md).

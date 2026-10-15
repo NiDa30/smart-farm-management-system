@@ -365,3 +365,18 @@ Build app/FS/merge riêng; không flash project ENV01 nhầm sang board này.
 Policy helper --monitor-only chỉ render quyền status, không provision.
 Xem [chương39](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md) cho config/lệnh và5ca
 Windows/Wokwi còn Chưa chạy. Không có nút điều khiển van02+ trong V27.
+
+## V28 — cảnh báo van theo nhánh
+
+Pull feat/day1-iot-foundation; dừng backend bằng Ctrl+C rồi chạy lại bằng
+lệnh và các cờ giám sát V27 đang dùng. Flyway tự áp V28; không xóa volume
+PostgreSQL. Giữ SMARTFARM_IRRIGATION_MONITOR_ENABLED=true, MQTT/status policy
+cho từng van. Không cấp thêm IAM hoặc build firmware cho phần cảnh báo mới.
+
+Mở Trung tâm Cảnh báo → Van theo nhánh. Fault từ mẫu mới mở đợt, hai status
+khỏe liên tiếp mới phục hồi; mẫu trước migration không tự được backfill.
+Xác nhận đã xem không xóa lỗi. Mất phản hồi khi ghi thì bấm Đối chiếu trạng
+thái, không tự gửi lại. Fault monitor giữ trong boot: sửa công tắc và reboot
+board để kiểm tra phục hồi; không có reset từ web.
+Sáu ca [chương40](CHAPTER_40_VALVE_ALERTS.md) đều Chưa chạy trên Windows/AWS/
+Wokwi. Không nối bơm hoặc coi ACK đã xem là cho phép tưới.

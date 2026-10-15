@@ -395,3 +395,19 @@ CONFIG_CHANGED cần cập nhật revision trong private config và boot mới; 
 reset command; sửa công tắc và reboot. Mẫu cũ vẫn được lưu nhưng không được
 coi là CLOSED mới. DEVICE_FAULT phải hiển thị lỗi dù vị trí CLOSED.
 [Chương39](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md).
+
+## V28: van còn cảnh báo dù đã xem, mất mạng hoặc sửa công tắc
+
+Đã xem chỉ lưu ghi chú. Mất mạng không có mẫu phục hồi, nên đợt lỗi vẫn mở.
+Fault monitor giữ trong boot; sửa đầu vào rồi reboot board với CLOSED đúng,
+chờ hai status mới liên tiếp cùng boot/sequence+1. UNKNOWN/GPIO tắt không
+thay cho phản hồi vị trí. Restart backend ngắt chuỗi khỏe dở. Cấu hình đổi
+giữ đợt cũ CONFIG_CHANGED; packet revision mới không đóng đợt đó.
+
+Mới nâng cấp mà chưa có đợt: không backfill mẫu V27 cũ, cần packet mới qua
+receiver; màn van02–99 chưa gồm demo01. Nếu ghi chú chưa rõ kết quả, giữ bản
+nháp và GET Đối chiếu trạng thái; ghi chú đầu tiên không được ghi đè.
+Trong kiểm tra cloud, hai query snapshot ban đầu dùng nhầm tên bảng/cột
+queue nên bị PostgreSQL từ chối (chỉ đọc); sửa sang irrigation_queue_request
+và sắp theo JSON đã lưu, so trước/sau nâng cấp nguyên vẹn. Không sửa dữ liệu
+hoặc nới validation để qua test. [Chương40](CHAPTER_40_VALVE_ALERTS.md).

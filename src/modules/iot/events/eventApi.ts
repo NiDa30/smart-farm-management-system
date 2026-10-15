@@ -1,7 +1,7 @@
 export interface IoTEvent {
   id: string; eventAt: string; sourceAt: string | null; recordedAt: string | null;
   category: 'ALERT' | 'COMMAND' | 'DEVICE' | 'RULE';
-  type: 'ALERT_OPENED' | 'ALERT_CLEARED' | 'ALERT_ACKNOWLEDGED' | 'COMMAND_CREATED' | 'COMMAND_ACK' | 'DEVICE_STATE' | 'RULE_STARTED';
+  type: 'ALERT_OPENED' | 'ALERT_CLEARED' | 'ALERT_ACKNOWLEDGED' | 'VALVE_ALERT_OPENED' | 'VALVE_ALERT_CLEARED' | 'VALVE_ALERT_ACKNOWLEDGED' | 'COMMAND_CREATED' | 'COMMAND_ACK' | 'DEVICE_STATE' | 'RULE_STARTED';
   deviceId: string; action: string | null; state: string; reason: string | null;
   value: number | null; commandId: string | null; runId: number | null;
 }
@@ -14,7 +14,7 @@ export function parseEventPage(value: unknown): EventPage {
     || !(page.nextCursor === null || typeof page.nextCursor === 'string' && page.nextCursor.length <= 512)
     || !Array.isArray(page.items) || !page.items.every(v => v && typeof v.id === 'string' && date(v.eventAt)
       && ['ALERT','COMMAND','DEVICE','RULE'].includes(v.category)
-      && ['ALERT_OPENED','ALERT_CLEARED','ALERT_ACKNOWLEDGED','COMMAND_CREATED','COMMAND_ACK','DEVICE_STATE','RULE_STARTED'].includes(v.type)
+      && ['ALERT_OPENED','ALERT_CLEARED','ALERT_ACKNOWLEDGED','VALVE_ALERT_OPENED','VALVE_ALERT_CLEARED','VALVE_ALERT_ACKNOWLEDGED','COMMAND_CREATED','COMMAND_ACK','DEVICE_STATE','RULE_STARTED'].includes(v.type)
       && typeof v.deviceId === 'string' && /^[A-Z][A-Z0-9_-]{1,31}$/.test(v.deviceId) && typeof v.state === 'string'
       && (v.sourceAt === null || date(v.sourceAt)) && (v.recordedAt === null || date(v.recordedAt))
       && (v.action === null || typeof v.action === 'string') && (v.reason === null || typeof v.reason === 'string')

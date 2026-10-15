@@ -1046,3 +1046,18 @@ seq0 để qua test. Policy assertion ack nhầm backend được sửa sang /ac
 Sách [chương39](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md),
 [bàn giao](../implementation/LOCAL_CIRCUIT_VALVE_MONITOR_REPORT.md).
 5ca Windows/Wokwi mới Chưa chạy; chưa coordinator/dispatch queue.
+
+## 15/10/2026 — V28 cảnh báo lỗi van/controller theo nhánh
+
+Lưu đợt POSITION_FAULT/DEVICE_FAULT ngay từ packet monitor mới, cùng transaction
+status/boot. Phục hồi cần hai mẫu khỏe liên tiếp; restart ngắt chuỗi dở.
+Bản chụp cấu hình và bằng chứng mở không đổi, ACK/ghi chú đầu tiên chỉ đã xem.
+Web thêm tab Van theo nhánh và Event Log có ba lifecycle event đúng source/
+receipt time. Không thêm transport, email, reset hoặc quét cảnh báo offline.
+352backend skip0/13browser van/24browser cảnh báo/11browser Event Log/native
+encoder/lintbuild đạt. Full-app local ghi chú qua web, restart thật, phục hồi
+và Event Log đạt; nâng V27 giữ2nhánh/3queue/status/boot. Không mock API, không
+AWS, commands/run/queue mới0, không sửa demo5433. Sáu ca Windows/Wokwi mới
+Chưa chạy; A3 còn coordinator/interlock/dispatch queue.
+[Chương40](CHAPTER_40_VALVE_ALERTS.md),
+[bàn giao](../implementation/LOCAL_VALVE_ALERTS_REPORT.md).

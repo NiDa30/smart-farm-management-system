@@ -228,3 +228,15 @@ heartbeat native mới sequence1, không sửa timestamp0 hoặc resetDB.
 5ca Windows/AWS/Wokwi mới Chưa chạy. Monitor chỉ SIMULATOR, một van/board;
 chưa command nhiều van, coordinator hoặc dispatch queue.
 [Chương39](CHAPTER_39_CIRCUIT_VALVE_MONITOR.md).
+
+## Đợt cảnh báo van V28 — 15/10/2026
+
+352backend, không skip (19mới);13browser van,24browser cảnh báo hồi quy,
+11browser Event Log, native encoder và lint/build đạt. Full-app packet
+native→receiver→PostgreSQL→React: mở fault, xác nhận qua web, restart JVM giữ
+bằng chứng/ghi chú, hai mẫu mới phục hồi, ba Event Log không command/run.
+V27→28 giữ nguyên2nhánh/3queue/status/boot, không backfill mẫu cũ.
+MQTT/control/demo false, monitor true, commands/run/queue mới0; không AWS.
+Sáu ca Windows/AWS/Wokwi mới Chưa chạy. Chỉ giám sát van02–99, chưa gom demo01,
+chưa OFFLINE episode/email/reset/coordinator hoặc dispatch queue.
+[Chương40](CHAPTER_40_VALVE_ALERTS.md).

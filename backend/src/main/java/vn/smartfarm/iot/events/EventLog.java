@@ -52,6 +52,15 @@ public class EventLog {
             'PUMP01',NULL,reported_state,COALESCE(state_reason,change_type),NULL::double precision,
             NULL::uuid,NULL::bigint FROM pump_state_history
           UNION ALL
+          SELECT 'valve-open:'||id,opened_at,opened_source_at,opened_at,'ALERT','VALVE_ALERT_OPENED',
+            valve_id,NULL,'OPEN',type,NULL::double precision,NULL::uuid,NULL::bigint FROM circuit_valve_alert
+          UNION ALL
+          SELECT 'valve-clear:'||id,cleared_at,cleared_source_at,cleared_at,'ALERT','VALVE_ALERT_CLEARED',
+            valve_id,NULL,'CLEARED',type,NULL::double precision,NULL::uuid,NULL::bigint FROM circuit_valve_alert WHERE cleared_at IS NOT NULL
+          UNION ALL
+          SELECT 'valve-seen:'||id,acknowledged_at,NULL::timestamptz,acknowledged_at,'ALERT','VALVE_ALERT_ACKNOWLEDGED',
+            valve_id,NULL,'ACKNOWLEDGED',type,NULL::double precision,NULL::uuid,NULL::bigint FROM circuit_valve_alert WHERE acknowledged_at IS NOT NULL
+          UNION ALL
           SELECT 'run:'||id,started_at,NULL::timestamptz,started_at,'RULE','RULE_STARTED',
             'PUMP01',NULL,result,NULL,NULL::double precision,command_id,id FROM watering_run
         ) SELECT * FROM events WHERE event_at >= ? AND event_at < ?
@@ -94,7 +103,7 @@ public class EventLog {
         try {
             if (value.length()>512) throw new IllegalArgumentException();
             String[] parts=new String(Base64.getUrlDecoder().decode(value),StandardCharsets.UTF_8).split("\n",-1);
-            if (parts.length!=2 || !parts[1].matches("(?:alert-open|alert-clear|alert-seen|command|ack|device|run):[a-zA-Z0-9-]{1,40}")) throw new IllegalArgumentException();
+            if (parts.length!=2 || !parts[1].matches("(?:alert-open|alert-clear|alert-seen|valve-open|valve-clear|valve-seen|command|ack|device|run):[a-zA-Z0-9-]{1,40}")) throw new IllegalArgumentException();
             return new Cursor(Instant.parse(parts[0]),parts[1]);
         } catch (IllegalArgumentException | java.time.DateTimeException error) { throw bad("Invalid cursor"); }
     }

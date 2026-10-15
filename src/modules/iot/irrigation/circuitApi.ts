@@ -9,7 +9,7 @@ const obj=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.
 const code=(v:unknown)=>typeof v==='string'&&/^[A-Z][A-Z0-9_-]{1,31}$/.test(v);
 const revision=(v:unknown)=>Number.isInteger(v)&&Number(v)>0&&Number(v)<2147483647;
 const date=(v:unknown):v is string=>typeof v==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v));
-function parseObservation(v:unknown):ValveObservation {
+export function parseObservation(v:unknown):ValveObservation {
  if(!obj(v)||typeof v.controllerId!=='string'||!/^IRRIGATION(0[2-9]|[1-9][0-9])$/.test(v.controllerId)||typeof v.actuatorId!=='string'||!/^VALVE(0[2-9]|[1-9][0-9])$/.test(v.actuatorId)||!code(v.circuitId)||!revision(v.circuitRevision)||!code(v.zoneId)||!revision(v.zoneRevision)||typeof v.bootId!=='string'||!/^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(v.bootId)||!Number.isSafeInteger(v.sequence)||v.sequence<0||!date(v.observedAt)||!date(v.receivedAt)||v.dataSource!=='SIMULATOR'||v.monitorOnly!==true||v.gpioState!=='CLOSED'||!['BOOT','CONNECTION_LOST','DEVICE_FAULT','POSITION_FAULT'].includes(v.reason)||(v.positionFeedback===null?v.reason==='POSITION_FAULT':!validPosition(v.positionFeedback,v.gpioState,v.reason)))throw new Error('Quan sát van không hợp lệ.');
  return v as ValveObservation;
 }

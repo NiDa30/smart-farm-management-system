@@ -1,0 +1,18 @@
+import {parseCircuit,parseObservation,sameCircuit,type CircuitConfig,type ValveObservation} from '../irrigation/circuitApi';
+export interface ValveAlert {id:number;type:'POSITION_FAULT'|'DEVICE_FAULT';circuitSnapshot:CircuitConfig;openedAt:string;openedSourceAt:string;openedEvidence:ValveObservation;clearedAt:string|null;clearedSourceAt:string|null;clearedEvidence:ValveObservation|null;acknowledgedAt:string|null;acknowledgementNote:string|null;context:'CURRENT'|'CONFIG_CHANGED'|'MONITOR_DISABLED'}
+const obj=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v);
+const date=(v:unknown):v is string=>typeof v==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v));
+const matches=(c:CircuitConfig,o:ValveObservation)=>c.circuitId===o.circuitId&&c.revision===o.circuitRevision&&c.zoneId===o.zoneId&&c.zoneRevision===o.zoneRevision&&c.controllerId===o.controllerId&&c.valveId===o.actuatorId&&c.expectedSource===o.dataSource;
+export function parseValveAlert(v:unknown):ValveAlert {
+ if(!obj(v)||!Number.isSafeInteger(v.id)||v.id<1||!['POSITION_FAULT','DEVICE_FAULT'].includes(v.type)||!date(v.openedAt)||!date(v.openedSourceAt)||!['CURRENT','CONFIG_CHANGED','MONITOR_DISABLED'].includes(v.context))throw new Error('Cảnh báo van không hợp lệ.');
+ const c=parseCircuit(v.circuitSnapshot),o=parseObservation(v.openedEvidence);
+ if(!matches(c,o)||Date.parse(v.openedAt)!==Date.parse(o.receivedAt)||Date.parse(v.openedSourceAt)!==Date.parse(o.observedAt)||(v.type==='POSITION_FAULT'?!o.positionFeedback?.fault:o.reason!=='DEVICE_FAULT'))throw new Error('Bằng chứng mở cảnh báo không khớp.');
+ if(v.clearedAt===null){if(v.clearedSourceAt!==null||v.clearedEvidence!==null)throw new Error('Bằng chứng phục hồi chưa đầy đủ.');}
+ else {if(!date(v.clearedAt)||!date(v.clearedSourceAt)||Date.parse(v.clearedAt)<Date.parse(v.openedAt))throw new Error('Mốc phục hồi không hợp lệ.');const r=parseObservation(v.clearedEvidence);if(!matches(c,r)||Date.parse(v.clearedAt)!==Date.parse(r.receivedAt)||Date.parse(v.clearedSourceAt)!==Date.parse(r.observedAt)||r.reason==='DEVICE_FAULT'||r.reason==='POSITION_FAULT'||r.positionFeedback?.fault||v.type==='POSITION_FAULT'&&r.positionFeedback?.state!=='CLOSED')throw new Error('Chưa có bằng chứng phục hồi đúng van.');}
+ if(!(v.acknowledgedAt===null||date(v.acknowledgedAt))||!(v.acknowledgementNote===null||typeof v.acknowledgementNote==='string'&&v.acknowledgementNote.length<=500)||v.acknowledgedAt===null&&v.acknowledgementNote!==null)throw new Error('Xác nhận cảnh báo không hợp lệ.');
+ return {...v,circuitSnapshot:c,openedEvidence:o} as ValveAlert;
+}
+export function parseValveAlerts(v:unknown):ValveAlert[]{if(!Array.isArray(v)||v.length>100)throw new Error('Danh sách cảnh báo van không hợp lệ.');const a=v.map(parseValveAlert);if(new Set(a.map(x=>x.id)).size!==a.length)throw new Error('Trùng cảnh báo van.');return a;}
+export const valveAlertTitle=(a:ValveAlert)=>`${a.circuitSnapshot.name} · ${a.circuitSnapshot.valveId} · ${a.type==='POSITION_FAULT'?'Lỗi vị trí van':'Lỗi controller'}`;
+export const valveAlertContext={CURRENT:'Khớp cấu hình hiện tại',CONFIG_CHANGED:'Cấu hình đã đổi; cần đối chiếu đợt cũ',MONITOR_DISABLED:'Giám sát đang tắt; giữ lịch sử điều kiện'};
+export function sameValveEpisode(a:ValveAlert,b:ValveAlert){const x=a.openedEvidence,y=b.openedEvidence;return a.id===b.id&&a.type===b.type&&a.openedAt===b.openedAt&&a.openedSourceAt===b.openedSourceAt&&a.circuitSnapshot.revision===b.circuitSnapshot.revision&&sameCircuit(a.circuitSnapshot,b.circuitSnapshot)&&x.bootId===y.bootId&&x.sequence===y.sequence&&x.reason===y.reason&&x.positionFeedback?.state===y.positionFeedback?.state&&x.positionFeedback?.fault===y.positionFeedback?.fault;}

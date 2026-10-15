@@ -14,6 +14,7 @@
     "test:monitoring": "playwright test --config playwright.monitoring.config.ts",
     "test:dashboard": "playwright test --config playwright.dashboard.config.ts",
     "test:safety": "playwright test --config playwright.safety.config.ts",
+    "test:valve-alerts": "playwright test --config playwright.valve-alerts.config.ts",
     "test:alerts": "playwright test --config playwright.alerts.config.ts",
     "test:nodes": "playwright test --config playwright.nodes.config.ts",
     "test:volume": "playwright test --config playwright.volume.config.ts",
