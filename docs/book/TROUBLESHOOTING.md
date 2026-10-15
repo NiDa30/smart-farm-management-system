@@ -480,3 +480,23 @@ Khi restart rất nhanh, HTTP200 có thể đến từ backend cũ đang đóng 
 tiếp theo gặp502 trước khi backend mới lên. Trong kiểm tra cloud đã xác nhận
 PID mới và log Started, sau đó gọi API chức năng và chạy lại smoke. Chỉ thấy
 port8080 mở không đủ chứng minh JVM mới sẵn sàng; không sửa timestamp để thử lại.
+
+## Đăng ký monitor dừng ở plan, lock hoặc certificate pending
+
+PLAN ONLY là kết quả đúng khi chưa có --apply. Account phải khớp gói và STS;
+profile chỉ được dùng ở apply. Hash/macros/policy sai cần tải gói nguyên vẹn,
+không sửa hash để bỏ lỗi. Manifest/revision đã đổi không được ghi đè folder
+đang chứa key để ép áp dụng. Thing có principal/group hoặc policy khác bị
+chặn; công cụ không xóa ownership hoặc thay quyền của thiết bị khác.
+
+Sau lỗi AttachPolicy/activation, giữ thư mục recovery để chạy lại cùng
+certificate. Marker certificate-request.json mà chưa có manifest đầy đủ
+nghĩa là kết quả tạo chưa rõ hoặc chưa lưu được khóa: kiểm tra AWS riêng tư,
+không xóa marker để tạo thêm. Lock còn sau kill cần kiểm tra PID đã dừng và
+recovery trước xử lý. Log CLI chỉ in loại lỗi/op/code, không in phản hồi SDK.
+
+Test cloud đầu bắt nhầm chữ Publish trong nội dung IoT policy hợp lệ; sửa
+assertion vào tên API. Model SDK cho biết list API có cả nextToken và
+nextMarker; đã chặn cả hai, không bỏ qua trang còn lại. Chưa xác nhận policy
+IAM bằng AWS thật; tài liệu ngoài bị proxy403.
+[Chương45](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md).

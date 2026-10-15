@@ -83,3 +83,16 @@ command. Redownload on mapping changes and boot anew. The original repo
 profile stays unchanged. [Chapter44](../../docs/book/CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md)
 has five unrun Windows/AWS/Wokwi cases; cloud checks build exported public
 projects and a native packet, not real simulator/GPIO or AWS provisioning.
+
+## Optional local provisioning helper for downloaded monitor projects
+
+From the repository root, tools/aws/provision_circuit_monitor.py accepts
+--project-dir EXTRACTED_PROJECT --account-id ACCOUNT. Default is an offline
+plan; --profile PROFILE --apply explicitly provisions a dedicated monitor
+Thing/policy/certificate. The helper validates package hashes and regenerates
+status-only policies; stores recovery/key files under ignored .local/aws/
+circuit-monitor/ACCOUNT/CONTROLLER. It never modifies project inputs, backend
+IAM or firmware output settings. Install matching private data/config and
+build separately. Do not delete interrupted certificate markers to retry.
+[Chapter45](../../docs/book/CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md) explains
+permissions, crash recovery, mapping limits and five unrun live cases.

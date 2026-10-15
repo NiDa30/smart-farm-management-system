@@ -430,3 +430,20 @@ Giải nén project mới; README_VI.md trong gói chỉ cách copy private conf
 GPIO/LED trong profile này luôn OFF; đổi switch độc lập32/33 để giám sát.
 Tải gói không tạo Thing/certificate hoặc bật bơm. Năm ca live Chưa chạy;
 xem [chương44](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md).
+
+## Đăng ký board monitor từ project đã tải — 16/10/2026
+
+Pull code mới; không cần migration hoặc restart backend chỉ để chạy CLI.
+Tại Git Bash gốc repo, cài requirements-day1 vào venv nếu thiếu botocore,
+chạy provision_circuit_monitor.py --project-dir PROJECT --account-id ACCOUNT
+để xem plan. PROJECT là thư mục giải nén riêng; ACCOUNT phải đúng12chữ số.
+Thêm IAM provisioning đã xem vào danh tính quản trị phù hợp, rồi chạy cùng
+lệnh thêm --profile smartfarm --apply. Xem lệnh sao chép đầy đủ, giới hạn
+cert/*, phục hồi marker/lock và bảng5ca chưa chạy tại
+[chương45](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md).
+
+Output .local/aws/circuit-monitor/ACCOUNT/CONTROLLER giữ riêng từng board;
+không gửi key hoặc xóa folder khi lỗi. Công cụ không copy vào project, sửa
+IAM backend hay chạy simulator. Sau apply vẫn cần data/config riêng,
+build/buildfs/merge, backend IAM đọc status và restart subscribe như chương44.
+Đổi switch để kiểm tra status, GPIO monitor luônOFF. Chưa điều khiển van02–99.

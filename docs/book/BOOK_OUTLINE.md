@@ -87,3 +87,5 @@ Chỉ viết thực hành đã chạy sau từng mốc, giữ phần kiến trú
 43. [Nhật ký khóa qua reboot](CHAPTER_43_DURABLE_PUMP_SAFETY.md) — NVS trước ON, storage fault, reset đúng boot và giới hạn không resume.
 
 44. [Project Wokwi theo nhánh](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md) — allowlist firmware trong JAR, snapshot cấu hình, policy giới hạn và checksum ổn định qua JVM.
+
+45. [Đăng ký monitor theo nhánh](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md) — kế hoạch ngoại tuyến, Thing/policy/certificate riêng, activation sau lưu khóa và ranh giới nghiệm thu AWS.

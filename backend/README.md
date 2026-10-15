@@ -222,3 +222,10 @@ JSON map keys are sorted to keep policy bytes stable across JVM restarts;
 generation timestamps intentionally change. Full-app two downloads/native
 receiver/build/restart checked. [Chapter44](../docs/book/CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md),
 [handoff](../docs/implementation/LOCAL_CIRCUIT_MONITOR_PACKAGE_REPORT.md).
+
+The optional local tools/aws/provision_circuit_monitor.py can plan/apply a
+dedicated monitor identity from an extracted package. It is outside the JAR
+and never runs on download; no credentials are sent to this backend. The
+backend IAM addition still needs an authorized administrator to apply it
+separately. [Chapter45](../docs/book/CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md)
+documents offline validation, local recovery and unrun AWS acceptance.

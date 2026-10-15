@@ -1141,3 +1141,23 @@ không refresh observation để làm test qua. NVS V31 stored compatibility đ�
 Năm ca Windows/AWS/Wokwi Chưa chạy; gói monitor không điều khiển02–99 hoặc
 coordinator. [Chương44](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md),
 [bàn giao](../implementation/LOCAL_CIRCUIT_MONITOR_PACKAGE_REPORT.md).
+
+## 16/10/2026 — công cụ đăng ký board monitor theo gói
+
+Thêm provision_circuit_monitor.py: plan không SDK, apply rõ ràng bằng profile
+local, kiểm tra14hash/identity/macros/policy và STS account. Thing/policy đúng
+tên, cert tạo INACTIVE; lưu/fsync/kiểm tra cặp key trước attach độc quyền,
+đọc lại attachments/group và ACTIVE/PEM. Output riêng theo account/controller,
+khóa local; không ghi project, sửa IAM backend hoặc publish MQTT.
+
+33test mới/8provisioning cũ/5policy/2ACL đạt, không skip; model SDK xác nhận
+tham số, không xác nhận IAM thật. Hai public project chương44 plan lặp giữ
+nguyên file. Test đầu bắt nhầm chữ Publish trong policy, sửa assertion tên
+API; pagination nextMarker/nextToken đều chặn. Cài botocore đúng pin vào
+venv cloud đang thiếu; tài liệu IAM ngoài cloud bị proxy403, không báo đã
+nghiệm thu quyền thật. Java/React/firmware/V31 không đổi nên không chạy lại
+416backend/42browser của đợt trước như bằng chứng mới.
+
+Năm ca Windows/AWS/Wokwi Chưa chạy; mapping cũ/chuyển key/rotation không tự
+xử lý. [Chương45](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md),
+[bàn giao](../implementation/LOCAL_CIRCUIT_MONITOR_PROVISIONING_REPORT.md).

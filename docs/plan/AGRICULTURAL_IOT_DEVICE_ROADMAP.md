@@ -831,3 +831,19 @@ Không migration mới (vẫnV31), provisioning hoặc dispatch.416backend/42bro
 Chưa chạy. Người dùng còn phải cấp endpoint/certificate riêng và chạy board.
 A3 còn command nhiều van, proof theo nhánh, interlock xuyên controller và
 coordinator/dispatch queue. [Chương44](../book/CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md).
+
+## Cập nhật 16/10/2026 — đăng ký board giám sát theo gói
+
+Bổ sung CLI plan/apply từ project xuất ở chương44. Plan offline kiểm tra
+manifest14hash/config/policy; apply dùng profile local, STS account, Thing/
+policy riêng, certificate INACTIVE và checkpoint trước tạo. Lưu key trước
+attach/activation, kiểm tra ownership/group/attachments/PEM, lỗi gián đoạn
+không tự tạo thêm certificate. Web/backend không giữ credential hoặc apply
+IAM. SchemaV31/firmware/monitor contract không đổi.
+
+33test mới SDK giả lập/model pin,8regression provisioning/5policy/2ACL và
+hai gói thật plan lặp đạt; chưa AWS/Wokwi thực tế. Năm ca live Chưa chạy.
+[Chương45](../book/CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md),
+[bàn giao](../implementation/LOCAL_CIRCUIT_MONITOR_PROVISIONING_REPORT.md).
+Đây là giảm bước đăng ký board, chưa command02–99, proof theo nhánh,
+coordinator hoặc dispatch queue; A3 vẫn chưa hoàn tất.

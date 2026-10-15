@@ -100,3 +100,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Khóa an toàn qua reboot và nhật ký NVS](CHAPTER_43_DURABLE_PUMP_SAFETY.md): opt-in, commit/readback trước ON, boot luôn OFF/khóa; chưa nghiệm thu flash thật.
 
 - [Project Wokwi giám sát theo nhánh](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md): tải ZIP firmware công khai, mapping/revision riêng và policy status-only; chưa provision.
+
+- [Đăng ký board monitor từ gói Wokwi](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md): plan offline, apply theo account, certificate riêng và phục hồi không tạo trùng.

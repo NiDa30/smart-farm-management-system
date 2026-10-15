@@ -291,3 +291,14 @@ keys và kiểm lại; artifact cũ giữ riêng. NoAWS/noMQTT/noGPIO, commands0
 Đã có nút chuẩn bị project monitor riêng, không tự thêm thiết bị AWS hoặc
 chạy simulator. Năm ca Windows/AWS/Wokwi trong [chương44](CHAPTER_44_CIRCUIT_MONITOR_PACKAGE.md)
 vẫn Chưa chạy; chưa command nhiều van/coordinator/dispatch queue.
+
+## Đăng ký monitor từ gói — 16/10/2026
+
+Công cụ local plan/apply, giữ schemaV31 và runtime chương44.33test mới với
+SDK giả lập + model IoT pin,8regression provisioning,5policy và2ACL đạt,
+không skip. Hai project xuất từ web qua plan lặp ngoại tuyến, không ghi
+project hoặc sinh khóa. Tạo certificate INACTIVE, lưu khóa trước attach/
+activation, phục hồi lỗi không tạo trùng được kiểm tra bằng cặp test riêng.
+Không có AWS calls, IAM apply, Wokwi/GPIO thật. Năm ca live
+[chương45](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md) Chưa chạy; đây không là
+bằng chứng hoàn tất A3 hoặc nhiều van điều khiển/coordinator/dispatch queue.

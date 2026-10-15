@@ -141,3 +141,7 @@ trước giữ nguyên trong kiểm tra tương thích.
 Đây là cách chuẩn bị và nhân bản project giám sát. Chưa có lệnh điều khiển
 van02–99, coordinator nhiều vùng, proof theo nhánh hoặc dispatch queue. A3
 chưa hoàn tất; không bật bơm chỉ từ việc tải ZIP hoặc nhận position status.
+
+Bổ sung ngày16/10: có công cụ local tùy chọn để plan/apply danh tính của board
+từ gói đã tải. Xem [chương45](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md).
+API tải gói vẫn chỉ đọc; không tự gọi công cụ hoặc tạo tài nguyên AWS.
