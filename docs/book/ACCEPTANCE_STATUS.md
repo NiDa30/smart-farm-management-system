@@ -424,3 +424,15 @@ action/run; full app GET-only tới liên kết/recovery và quay lại đạt. 
 V42→V43 giữ23bảng chọn; restart23/24bảng không đổi, session recovery revision+1.
 Sáu ca live [chương57](CHAPTER_57_QUEUE_SESSION_HANDOFF.md) **Chưa chạy**.
 Chưa automated queue dispatch, coordinator multi-route hoặc physical acceptance.
+
+## V44 — tự khép phiên sau OFF,17/10/2026
+
+688backend(25mới),106circuit/sessionBrowser(8mới)+25queueBrowser,17parser
+(5mới),lint/build/native helper đạt, không skip. Chỉ explicit arm sau OFF,
+15s chờ proof, một CLOSE rồi FINISH theo ACK/status; không OPEN/ON/OFF/next.
+Manual/pause/restart/uncertainty không phát lại. Có startup-ready guard trước
+khi phục hồi xong. Scheduler thật với native OFF/CLOSE models và fake IO đã
+COMPLETE, một OFF/CLOSE/FINISH,0ON/OPEN/queue. Nâng V43→V44 giữ24bảng chọn;
+full app GET-only/restart giữ25bảng của fixture đã hoàn tất.
+Sáu ca live [chương58](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md) **Chưa chạy**;
+chưa coordinator toàn chu kỳ/multi-route/auto queue hoặc physical acceptance.

@@ -1031,3 +1031,16 @@ auto coordinator, multi-route/route switching, queue dispatch tự động và
 physical flow/actuator acceptance. Không coi handoff thủ công là hoàn tấtA3.
 [Chương57](../book/CHAPTER_57_QUEUE_SESSION_HANDOFF.md),
 [bàn giao](../implementation/LOCAL_QUEUE_SESSION_HANDOFF_REPORT.md).
+
+## Cập nhật17/10/2026 — A3 tự khép phần cuối phiên V44
+
+Bật một lần sau OFF, defaultfalse. Fixed15s chờ ACK/status OFF mới rồi một
+CLOSE, đợi ACK/status CLOSED mới FINISH. Không OPEN/ON/OFF/next hoặc đổi route.
+Freeze OFF/revision/boot, UUID trước IO, manual/pause/startup/uncertainty
+không replay. Scheduler bị chặn trước recovery startup. 688backend/131browser/
+17parser/lintbuild/native helper đạt; scheduler native models/fake IO→COMPLETE,
+upgrade24bảng và full app/completed fixture restart25bảng đối chiếu đạt.
+Sáu ca live Chưa chạy. A3 vẫn cần coordinator toàn chu kỳ, multi-route/queue
+và physical actuator/flow acceptance; không coi auto-close là tưới tự động
+hoàn chỉnh. [Chương58](../book/CHAPTER_58_POST_OFF_SESSION_CLOSURE.md),
+[bàn giao](../implementation/LOCAL_SESSION_CLOSURE_REPORT.md).

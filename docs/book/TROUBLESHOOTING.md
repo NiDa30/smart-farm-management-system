@@ -656,3 +656,16 @@ giữ liên kết, không phát lại. Chi tiết
 Khi phát triển đường GET mới, test PostgreSQL đã phát hiện SELECT FOR SHARE
 trong transaction read-only. Đã tách truy vấn đọc không khóa khỏi đường ghi
 có khóa; không bỏ read-only hoặc tắt test để né lỗi.
+
+## Tự khép phiên chưa gửi CLOSE hoặc chưa FINISH (V44)
+
+Cần phiên WAIT_OFF, OFF SENT/EXECUTED, đúng revision/OFF/boot/profile khi bật
+một lần. Worker chỉ CLOSE sau OFF ACK đúng boot và status mới phủ mọi lệnh;
+FINISH cần ACK CLOSE và CLOSED status mới. ACK đơn lẻ không đủ. Cửa sổ15giây
+không phải cam kết giao packet; hết hạn/đổi boot/mất kết quả cần recovery.
+
+Pause/manual action/restart ngăn bước tiếp theo nhưng không thu hồi CLOSE
+đã giữ/gửi. CLOSE tới muộn sau pause không tự FINISH. Không bật lại cùng
+phiên hoặc replay identity sau UNRESOLVED. Mất phản hồi pause phải GET thấy
+bản quyền kết thúc mới xác nhận không còn bước tự động; không dựa vào HTTP
+chưa rõ. Xem [chương58](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md).

@@ -120,3 +120,4 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Dừng phiên khi nguồn nước không còn hợp lệ](CHAPTER_55_SESSION_WATER_STOP.md): opt-in LOW supervisor, shared stop claim với thời tiết, evidence và lịch sử; không replay/resume hoặc flow proof.
 - [Giám sát lưu lượng tại trạm trong phiên](CHAPTER_56_SESSION_FLOW_SUPERVISION.md): ngưỡng/grace opt-in, mẫu sau ý định ON, chung claim OFF với LOW/mưa; chưa chứng minh nước tới từng luống.
 - [Chuyển lượt đầu hàng sang phiên có xác nhận](CHAPTER_57_QUEUE_SESSION_HANDOFF.md): giữ nguyên kế hoạch, chuẩn bị atomically, lưu liên kết và đối chiếu sau reload; chưa dispatch tự động.
+- [Tự khép phiên sau OFF](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md): opt-in một lần, ACK/status OFF trước CLOSE, CLOSED trước FINISH; pause/restart/uncertainty không phát lại.

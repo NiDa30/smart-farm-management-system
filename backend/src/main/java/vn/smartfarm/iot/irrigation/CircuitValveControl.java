@@ -48,7 +48,8 @@ public class CircuitValveControl {
  public Snapshot snapshot(String id){var c=circuits.find(id);var s=latest(c.valveId());boolean link=connected(c.valveId());Instant now=Instant.now();return new Snapshot(PROFILE,c,IrrigationCircuits.configurationState(jdbc,c),now,enabled,link,enabled&&link&&ready(c,s,now),s,jdbc.query("SELECT * FROM circuit_demo_command WHERE circuit_id=? ORDER BY ordinal DESC LIMIT 20",this::map,id));}
  @Transactional(readOnly=true)
  public Command lookup(String id,UUID key){var c=find(key);if(c==null||!c.config().circuitId().equals(id))throw bad(HttpStatus.NOT_FOUND,"Circuit command not found");return c;}
- public Command create(String id,Request r){
+ public Command create(String id,Request r){return create(id,r,()->{});}
+ public Command create(String id,Request r,Runnable beforeCommit){
   if(r==null||r.requestId()==null||r.expectedBootId()==null||r.requestedAt()==null||r.expectedRevision()<1||r.expectedZoneRevision()<1||r.action()==null||!Set.of("OPEN","CLOSE").contains(r.action())||(r.action().equals("OPEN")?r.durationSeconds()==null||r.durationSeconds()<1||r.durationSeconds()>30:r.durationSeconds()!=null))throw bad(HttpStatus.BAD_REQUEST,"Invalid circuit request");
   if(!enabled)throw bad(HttpStatus.FORBIDDEN,"Circuit LED control disabled");
   boolean[] send={false};Command command=tx.execute(status->{lock();Command old=find(r.requestId());
@@ -59,7 +60,7 @@ public class CircuitValveControl {
    Instant f=fence(c.valveId());if(r.action().equals("OPEN")&&(!ready(c,s,now)||f!=null&&!r.requestedAt().isAfter(f)))throw bad(HttpStatus.CONFLICT,"Fresh CLOSED position and command fence required");
    if(r.action().equals("CLOSE"))jdbc.update("INSERT INTO circuit_demo_gate(valve_id,close_fence_at) VALUES(?,?) ON CONFLICT(valve_id) DO UPDATE SET close_fence_at=EXCLUDED.close_fence_at",c.valveId(),Timestamp.from(now.plusSeconds(2)));
    Instant issued=now.truncatedTo(ChronoUnit.SECONDS);
-   jdbc.update("INSERT INTO circuit_demo_command(command_id,circuit_id,valve_id,config_snapshot,boot_id,action,duration_seconds,requested_at,issued_at,expires_at,state) VALUES(?,?,?,?::jsonb,?,?,?,?,?,?,'PENDING')",r.requestId(),id,c.valveId(),encode(c),s.bootId(),r.action(),r.durationSeconds(),Timestamp.from(r.requestedAt().truncatedTo(ChronoUnit.MICROS)),Timestamp.from(issued),Timestamp.from(issued.plusSeconds(10)));send[0]=true;return find(r.requestId());
+   jdbc.update("INSERT INTO circuit_demo_command(command_id,circuit_id,valve_id,config_snapshot,boot_id,action,duration_seconds,requested_at,issued_at,expires_at,state) VALUES(?,?,?,?::jsonb,?,?,?,?,?,?,'PENDING')",r.requestId(),id,c.valveId(),encode(c),s.bootId(),r.action(),r.durationSeconds(),Timestamp.from(r.requestedAt().truncatedTo(ChronoUnit.MICROS)),Timestamp.from(issued),Timestamp.from(issued.plusSeconds(10)));beforeCommit.run();send[0]=true;return find(r.requestId());
   });
   if(send[0])try{transports.getIfAvailable().publishCircuitValve(command.config().valveId(),payload(command));jdbc.update("UPDATE circuit_demo_command SET state='SENT' WHERE command_id=? AND state='PENDING'",command.commandId());}
   catch(Exception error){jdbc.update("UPDATE circuit_demo_command SET state='PUBLISH_UNCERTAIN' WHERE command_id=? AND state='PENDING'",command.commandId());}

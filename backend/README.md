@@ -400,3 +400,20 @@ GET and client reload never POST. Cancelling a handed-off queue is not OFF;
 use linked session recovery/explicit actions. Restart preserves the link,
 marks unfinished session RECOVERY_REQUIRED, no replay or automatic next head.
 [Chapter57](../docs/book/CHAPTER_57_QUEUE_SESSION_HANDOFF.md).
+
+### One-shot post-OFF session closure (V44)
+
+SMARTFARM_IRRIGATION_SESSION_CLOSURE_ENABLED defaults false, per-session
+explicit Arm required in WAIT_OFF, tied to reviewed revision/OFF/boots.
+GET/POST /api/v1/irrigation-circuits/{circuit}/session/{session}/closure,
+POST /closure/pause with armId. A15s decision window and nominal1s worker:
+OFF ACK matching boot plus fresh covering OFF status -> one CLOSE; CLOSE
+ACK plus fresh CLOSED proof -> FINISH/COMPLETE atomically. Never OPEN/ON/
+OFF/next, route switching, replay or resume. Manual actions pause, startup
+interrupts active definitions and leaves unfinished sessions in recovery.
+
+CLOSE/action identity commits before IO; guarded valve command commit checks
+same arm/OFF/deadline/session. Pause cannot retract a reserved/sent command.
+Missing/uncertain/expired outcomes stop automation, never replay CLOSE.
+Existing command/position proof rules remain; no firmware/IAM/topic change.
+[Chapter58](../docs/book/CHAPTER_58_POST_OFF_SESSION_CLOSURE.md).

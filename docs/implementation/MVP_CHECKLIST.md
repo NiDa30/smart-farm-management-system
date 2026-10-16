@@ -330,3 +330,16 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Sáu ca live chương57, auto coordinator/multi-route/queue dispatch và hardware acceptance.
 
 [Bàn giao V43](LOCAL_QUEUE_SESSION_HANDOFF_REPORT.md).
+
+## Bước V44 — tự khép một lần sau OFF
+
+- [x] Opt-in từng phiên WAIT_OFF, freeze OFF/revision/boot, fixed15s; không ON/OPEN/next.
+- [x] OFF ACK+status trước một CLOSE; CLOSE ACK+CLOSED status trước FINISH/COMPLETE.
+- [x] Identity/action commit trước IO, callback chống supersession, pause/manual/restart,
+  deadline/uncertain và startup-ready guard; không replay/resume.
+- [x] UI pending qua reload, GET readback chính xác, lịch sử và back navigation.
+- [x] 688backend/131browser/17parser/lint/build/native; scheduler fake IO→DB,
+  upgrade24bảng, full app/completed fixture restart25bảng đối chiếu.
+- [ ] Sáu ca live chương58, tự điều phối toàn chu kỳ/multi-route/queue và hardware acceptance.
+
+[Bàn giao V44](LOCAL_SESSION_CLOSURE_REPORT.md).

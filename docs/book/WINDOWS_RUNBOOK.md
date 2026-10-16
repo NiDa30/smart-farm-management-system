@@ -628,3 +628,26 @@ phiên; không tự POST lại. Queue đã HANDED_OFF thì hủy queue không d�
 phải dùng OFF/recovery trong phiên. Lượt diễn tập>10s cần lập lượt mới đúng
 thời hạn, không tự rút ngắn. Sáu ca live
 [chương57](CHAPTER_57_QUEUE_SESSION_HANDOFF.md) **Chưa chạy**.
+
+## Tự khép phiên sau OFF V44
+
+Giữ volume/private files; pull, dừng backend cũ rồi restart áp V44. Trong
+Git Bash terminal backend của profile LED theo nhánh/session hiện có:
+
+```bash
+export SMARTFARM_IRRIGATION_SESSION_CLOSURE_ENABLED=true
+bash tools/backend/run_backend_windows.sh
+```
+
+Giữ control/fence/route/circuit/session đúng profile và legacy demo=false.
+Không cần flag queue-handoff nếu không dùng hàng chờ. Flag chỉ mở khả năng,
+không tự gán quyền cho phiên cũ. Trong phiên đã gửi OFF, mở Tự khép phiên
+sau OFF → đọc điều kiện → Bật tự khép một lần cho phiên. Cửa sổ15giây để
+chờ proof OFF, gửi một CLOSE và chờ proof CLOSED/FINISH. Đặt switch feedback
+đúng trên board mô phỏng sau CLOSE; ACK không tự thay status.
+
+Không tăng timer, không auto ON hoặc chạy lượt sau. Pause chỉ ngăn bước
+kế tiếp, không thu hồi CLOSE đã giữ/gửi. Nếu chưa rõ POST/pause thì GET đối
+chiếu; không coi là đã dừng hoặc bật lại. Hết hạn/restart/uncertainty dùng
+recovery và OFF thủ công nếu cần. Sáu ca live
+[chương58](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md) **Chưa chạy**.

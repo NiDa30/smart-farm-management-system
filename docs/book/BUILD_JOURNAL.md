@@ -1378,3 +1378,22 @@ phát triển đã sửa lỗi FOR SHARE trên GET read-only; smoke ban đầu l
 trùng giữa active/recent đã chọn đúng phần tử, không tính lượt lỗi là pass.
 Sáu ca live Chưa chạy. Xem [chương57](CHAPTER_57_QUEUE_SESSION_HANDOFF.md) và
 [bàn giao](../implementation/LOCAL_QUEUE_SESSION_HANDOFF_REPORT.md).
+
+## 17/10/2026 — V44 tự khép phần cuối phiên
+
+Sau queue handoff, thêm explicit one-shot arm gắn OFF/revision/boot, fixed
+15s, CLOSE một lần và FINISH chỉ khi ACK/status độc lập đúng. UUID/action
+commit trước IO, callback chặn quyền đã pause trước command commit. Manual
+bước mới ngắt, duplicate cũ không ngắt lại; restart/uncertainty không replay.
+Không tự OPEN/ON/OFF hoặc lấy lượt sau. Client giữ body qua reload và GET
+đối chiếu, pause chưa rõ không coi là ngừng; status history không là live.
+
+Trong rà soát đã thêm startup-ready guard để scheduler không dùng quyền cũ
+trước khi recovery hoàn tất; test giữ retained arm chứng minh không publish.
+688backend/131browser/17parser,lint/build/native helper đạt. Native helper
+lượt đầu dùng nhầm route check của ON cho OFF; đã sửa đúng exemption sẵn có
+và giữ nguyên schema/artifact lỗi, chạy fixture mới verified, không thay
+production route guard. Upgrade giữ24bảng, completed fixture full app/restart
+25bảng không đổi. Sáu ca live Chưa chạy.
+[Chương58](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md),
+[bàn giao](../implementation/LOCAL_SESSION_CLOSURE_REPORT.md).
