@@ -25,12 +25,12 @@ const durableReasons=['RESTART_LOCKOUT','SAFETY_STORAGE_FAULT'];
 const reasons=[...durableReasons,'BOOT','COMMAND_ON','COMMAND_OFF','LOCKOUT_RESET','TIMER_EXPIRED','CONNECTION_LOST','DEVICE_FAULT','WATER_LOW','FLOW_LOW','FLOW_SENSOR_FAULT',...valveFaults];
 const reason=(v:unknown)=>v===null||text(v)&&reasons.includes(v);
 const flowConsistent=(r:{stateReason:string|null;reportedState:string;safetyLockout:boolean})=>!['FLOW_LOW','FLOW_SENSOR_FAULT',...valveFaults,...durableReasons].includes(r.stateReason??'')||r.reportedState==='OFF'&&r.safetyLockout;
-function valveConsistent(r:NonNullable<SafetySnapshot['relay']>){const p=r.valveInterlock;
+export function valveConsistent(r:NonNullable<SafetySnapshot['relay']>){const p=r.valveInterlock;
  if(p==null)return !valveFaults.includes(r.stateReason??'');
  if(typeof p!=='object'||Object.keys(p).filter(k=>k!=='route').sort().join(',')!=='dataSource,enabled,fault,state,version'||('route' in p&&!validRoute(p.route))||p.version!==1||p.enabled!==true||p.dataSource!=='SIMULATOR'||!['UNKNOWN','CLOSED','OPEN','CONFLICT'].includes(p.state)||!(p.fault===null||valveFaults.includes(p.fault)))return false;
  return !(p.fault!==null&&(r.reportedState!=='OFF'||!r.safetyLockout)||r.reportedState==='ON'&&(p.state!=='OPEN'||p.fault!==null||r.safetyLockout)||valveFaults.includes(r.stateReason??'')&&r.stateReason!==p.fault||r.stateReason==='LOCKOUT_RESET'&&(p.fault!==null||p.state!=='OPEN'));
 }
-function durableConsistent(r:NonNullable<SafetySnapshot['relay']>){
+export function durableConsistent(r:NonNullable<SafetySnapshot['relay']>){
  const d=r.durableSafety;if(d==null)return !durableReasons.includes(r.stateReason??'');
  if(typeof d!=='object'||Object.keys(d).sort().join(',')!=='enabled,state,storage,version'||d.version!==1||d.enabled!==true||d.storage!=='NVS'||!['READY','ARMED','LOCKED','STORAGE_FAULT'].includes(d.state))return false;
  const locked=d.state==='LOCKED'||d.state==='STORAGE_FAULT';

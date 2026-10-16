@@ -1206,3 +1206,23 @@ Fixture pump_route_smoke riêng: hai van CLOSED, một OPEN30s/ACK, bơm ON5s
 Full app GET-only phân biệt PC1/PC2 và dữ liệu cũ, giữ source/receipt/ledger
 qua restart. Sáu ca Windows/AWS/Wokwi Chưa chạy, chưa physical proof,
 coordinator hoặc dispatch hàng chờ. Xem [bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_ROUTE_REPORT.md).
+
+## 16/10/2026 — lịch sử bơm theo nhánh V34
+
+Sau route tĩnh V33, thêm trigger history trong cùng giao dịch pump_status,
+chỉ status accepted có route/fence. Giữ clocks/tuple/boot/sequence/proof/NVS,
+không backfill. API read-only có range/circuit/condition/cursor, ledger lệnh
+và ACK riêng; UI detail/hai CSV chỉ dòng đã tải. Không coi ACK/timeout là
+status mới, không gán route cho emergency OFF. [Chương48](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md).
+
+477backend (16mới),54browser nhánh (10mới),20unit history/safety (7mới) đạt,
+không skip; lint/build đạt. Test targeted đầu có1fail vì fixture Instant
+nanosecond khác độ chính xác microsecond PostgreSQL; chuẩn hóa fixture
+trước gửi, không đổi source/receipt đã lưu để ép test. Targeted16 và full
+cuối đạt; không cộng lượt test hoặc dùng lượt lỗi làm bằng chứng pass.
+
+Fixture riêng pump_history_smoke dùng native parser/model đã có,3status
+OFF/ON/OFF và1ACK ledger, không AWS/GPIO; logical millis nhanh. Full app
+GET-only/detail/CSV/circuit khác rỗng; V33→V34 giữ8bảng, history mới0;
+restart giữ9bảng, không replay/refresh timestamp. Không đổi firmware/deps.
+Năm ca live Chưa chạy. [Bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_HISTORY_REPORT.md).

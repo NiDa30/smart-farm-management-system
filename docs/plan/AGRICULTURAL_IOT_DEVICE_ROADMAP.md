@@ -884,3 +884,19 @@ GET-only giữ dữ liệu sau restart. Sáu ca AWS/Wokwi vẫn Chưa chạy.
 A3 vẫn cần coordinator tự phối hợp, route switching/physical proof theo
 thiết kế thực tế, interlock/flow xuyên controller và dispatch hàng chờ.
 Một boot bơm chỉ khai báo một nhánh; chưa tự chuyển nhiều vùng để tưới.
+
+## Cập nhật 16/10/2026 — truy vết bơm theo nhánh V34
+
+Lưu status PUMP01 có route được chấp nhận từ V34, giữ tuple/boot/sequence,
+source/receipt/local proof/NVS và commandId tương ứng ordinal. Không lấy
+latest cũ làm lịch sử. UI chọn nhánh, giờ/ON/OFF/khóa, detail, cursor và hai
+CSV riêng status/lệnh-ACK. Ledger lệnh là bản lưu lúc đọc; ACK không tự sinh
+status hay chứng minh nước chảy. OFF không mang route, không tự gán nhánh
+cho ý định đó. Không suy ra runtime hoặc lít từ các mẫu có khoảng trống.
+
+477backend/54browser nhánh/20unit history-safety,lint/build đạt; native→DB→
+full-app/CSV, nâng V33→V34 và restart giữ dữ liệu. Năm ca live Chưa chạy.
+[Chương48](../book/CHAPTER_48_PUMP_CIRCUIT_HISTORY.md),
+[bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_HISTORY_REPORT.md).
+Đây là nền Verify/Learn; A3 vẫn còn coordinator chuyển nhánh, interlock/flow
+xuyên controller, dispatch queue và nghiệm thu phần cứng.

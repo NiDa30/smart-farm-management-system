@@ -1,4 +1,4 @@
-# Trạng thái bằng chứng và nghiệm thu — 15/10/2026 (giờ Việt Nam)
+# Trạng thái bằng chứng và nghiệm thu — 16/10/2026 (giờ Việt Nam)
 
 ## Vùng tưới V19 — mới nhất 15/10/2026
 
@@ -314,3 +314,13 @@ Native command backend→decoder/model→ACK/OPEN/timer CLOSED→receiver/Postgr
 Monitor V31→V32 giữ evidence, không cấp quyền mở; MQTT/control tắt cloud.
 Sáu ca live [chương46](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md) Chưa chạy;
 không coordinator/flow proof/dispatch queue. A3 chưa hoàn tất.
+
+## Lịch sử bơm theo nhánh V34 — 16/10/2026
+
+477backend không skip,54browser nhánh,20unit history/safety,lint/build đạt.
+Native receiver→PostgreSQL→full app/detail/CSV giữ status khác ACK, filter
+nhánh và hai clocks; restart giữ9bảng. V33→V34 giữ8bảng, không nhập latest
+thành history. Firmware không thay; năm ca Windows/AWS/Wokwi Chưa chạy.
+[Chương48](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md),
+[bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_HISTORY_REPORT.md).
+Chưa coordinator/dispatch queue/flow xuyên controller hoặc nghiệm thu A3.

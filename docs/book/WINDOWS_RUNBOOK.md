@@ -477,3 +477,14 @@ Mọi nhánh khác dùng bơm phải có CLOSED mới. Mở van30s, đặt tiế
 ở cả hai board, chọn **Bơm theo nhánh (LED)**, đọc lại/reset nếu cần rồi
 bật5s. Tắt bơm và xác nhận OFF trước CLOSE hoặc sửa nhánh. Không auto resume,
 không dùng GPIO proof/ACK mô phỏng như xác nhận đường nước vật lý.
+
+## Xem lịch sử bơm theo nhánh, V34
+
+Pull/restart backend, giữ volume để Flyway áp V34. Vào Cấu hình nhánh tưới →
+Lịch sử bơm <mã>. Chọn khoảng giờ/nhánh/điều kiện rồi bấm Đọc lịch sử bơm;
+không gửi lệnh khi mở trang. History chỉ có các status có route được chấp
+nhận sau nâng cấp; lệnh V33 vẫn có thể hiện riêng, không backfill latest.
+CSV trạng thái và CSV lệnh là hai file, chỉ xuất dòng đã tải. Chưa cần key,
+certificate hoặc topic mới. Muốn có mẫu live phải thử LED theo chương47
+và xác nhận OFF khi xong, không replay fixture cloud hoặc bỏ chốt an toàn.
+[Chương48](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md).

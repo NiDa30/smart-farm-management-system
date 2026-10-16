@@ -216,3 +216,14 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 
 [Hướng dẫn](../book/CHAPTER_47_PUMP_CIRCUIT_ROUTE.md),
 [bàn giao](LOCAL_PUMP_CIRCUIT_ROUTE_REPORT.md). Không coi các test cloud là nghiệm thu A3.
+
+## Bước V34 — truy vết bơm theo nhánh
+
+- [x] History status accepted có route từ V34, nguyên clocks/tuple/boot/proof;
+  không backfill latest hoặc lấy ACK làm status.
+- [x] API/UI range/circuit/condition, detail, cursor và hai CSV chỉ dòng đã tải;
+  bounded command/ACK ledger riêng, kiểm thử upgrade/restart/cloud.
+- [ ] Năm ca live trong [chương48](../book/CHAPTER_48_PUMP_CIRCUIT_HISTORY.md).
+- [ ] Coordinator nhiều nhánh/flow proof xuyên controller/queue dispatch.
+
+[Bàn giao V34](LOCAL_PUMP_CIRCUIT_HISTORY_REPORT.md).

@@ -161,3 +161,7 @@ Xem [bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_ROUTE_REPORT.md).
 | Mất proof/gateway khi đang bật, GPIO OFF/khóa, không tự resume | Chưa chạy |
 | OFF bơm trước CLOSE; không đổi cấu hình khi bơm chưa xác nhận OFF | Chưa chạy |
 | Restart backend hoặc board giữa run, không replay ON; kiểm tra NVS riêng | Chưa chạy |
+
+Theo dõi các status mới có route và đối chiếu bản lưu lệnh/ACK tại
+[chương48](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md). Chỉ có history từ V34, không
+nhập lại latest V33 cũ hoặc suy ra số nước đã tưới.

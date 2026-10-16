@@ -532,3 +532,14 @@ CLOSE/sửa nhánh bị409; phải yêu cầu OFF bơm trước. MQTT offline c�
 OFF FAILED/MQTT_UNAVAILABLE, chưa xác nhận đã tắt. Route profile không dùng
 nút ON/reset chung hoặc rule ENV01. CLI provisioning monitor không tự cấp
 quyền control cho board van. Không xóa ledger/NVS/recovery để bỏ chốt an toàn.
+
+## Có ACK nhưng lịch sử bơm theo nhánh chưa có mẫu
+
+ACK không tự tạo status. V34 chỉ lưu status có valveInterlock.route/fence
+được receiver chấp nhận sau nâng cấp; không nhập lại latest cũ hoặc gán
+route cho legacy. Kiểm tra đúng nhánh/khoảng giờ nhận và bấm Đọc lịch sử bơm.
+Phần lệnh lọc theo issuedAt, không theo giờ nhận status. ON/OFF/khóa chỉ lọc
+mẫu. Có hasMore ở ledger thì thu hẹp khoảng giờ/nhánh; CSV không tự tải hết.
+Mẫu OFF/TIMER_EXPIRED có thể liên kết commandId của ON qua ordinal; không
+đồng nghĩa đã có lệnh OFF riêng. Không trừ timestamp để kết luận runtime
+hoặc lượng nước, nhất là khi mất gateway. Xem [chương48](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md).

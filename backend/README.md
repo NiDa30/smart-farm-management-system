@@ -259,3 +259,18 @@ Circuit gate serializes proof/reservation versus valve movement/config edits;
 confirm pump OFF covering every command before moving valves. No coordinator,
 queue dispatch or actual water-path attestation. All new flags default off.
 [Chapter47](../docs/book/CHAPTER_47_PUMP_CIRCUIT_ROUTE.md).
+
+## V34 pump circuit history (read only)
+
+GET /api/v1/pump-circuit-history accepts from/to (half-open receivedAt,
+max31days), optional circuitId, condition ALL/ON/OFF/LOCKED, limit1..200 and
+scoped cursor. V34 records new accepted route-bound pump_status rows in the
+same DB transaction; no latest backfill or legacy route assignment. Samples
+keep original route/boot/sequence/source/receipt/proof/NVS and known ordinal's
+commandId. Singleton row locking orders ID allocation through commit.
+GET /api/v1/pump-circuit-history/commands uses issuedAt and returns bounded
+current ledger/ACK snapshots of route-bearing commands, with hasMore. It does
+not expire commands or infer status. Emergency OFF is route-free and may be
+linked by a reported sample's ordinal, not invented as a route-selected intent.
+No new MQTT topic/firmware/flags, no retention policy or coordinator.
+[Chapter48](../docs/book/CHAPTER_48_PUMP_CIRCUIT_HISTORY.md).

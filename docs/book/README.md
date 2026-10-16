@@ -106,3 +106,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Điều khiển LED van theo nhánh](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md): OPEN/CLOSE riêng02–99, boot/revision/fence, ACK khác status; chưa điều phối bơm chung.
 
 - [Bơm LED gắn đúng nhánh tưới](CHAPTER_47_PUMP_CIRCUIT_ROUTE.md): route/revision khai báo tại bơm, đối chiếu van và cửa sổ bật ngắn; thao tác thủ công, chưa coordinator.
+
+- [Lịch sử bơm theo nhánh và CSV](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md): status có route lưu từ V34, lệnh/ACK riêng, lọc/phân trang/CSV; không suy ra thời gian chạy hoặc lượng nước.
