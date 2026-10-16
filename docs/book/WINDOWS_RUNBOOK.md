@@ -522,3 +522,16 @@ prepare_local_node.py hỗ trợ --node-type WEATHER; project riêng ở
 .local/weather-nodes/WEATHER01. Cần cert/clientId riêng, build/buildfs/merge
 trên máy bạn rồi mở project đó với Wokwi. Không chia sẻ key hoặc commit flash.
 Lệnh cụ thể và năm ca Chưa chạy: [chương 51](CHAPTER_51_WEATHER_NODE.md).
+
+## Chốt mưa theo vùng V38
+
+Pull/restart backend, giữ volume để áp V38. Trước cấu hình cần kết thúc phiên
+và xác nhận bơm nghỉ; dùng đúng profile fenced/route/circuit LED ở chương47.
+Sensor Realtime → Node & trạm nước → Vùng tưới → Chốt mưa <mã>, hoặc nút
+Chốt mưa trong Cấu hình nhánh. Chọn WEATHER cùng khu vực, RAIN_DETECTED đúng
+nguồn/calibration, bật rồi lưu. Không cần cert/topic mới cho chính gate;
+board thời tiết vẫn phải được kết nối theo chương51, backend nhận telemetry.
+Chưa có mẫu sẽ chặn, không làm mới timestamp bằng tay. Conflict cần đọc lại;
+mất phản hồi lưu dùng Đối chiếu, không tự gửi lại. Sau khi ON, mưa mới chưa
+tự OFF: gửi OFF, đợi status rồi CLOSE/FINISH. Sáu ca live **Chưa chạy** tại
+[chương52](CHAPTER_52_ZONE_RAIN_GATE.md); dữ liệu cloud chỉ là mô phỏng riêng.

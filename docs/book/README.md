@@ -114,3 +114,4 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Lịch sử phiên tưới và đối chiếu từng bước](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md): tìm phiên cũ, tách kết quả gọi với ACK hiện có, phân trang và CSV chỉ dòng đã tải.
 
 - [Node thời tiết mưa và ánh sáng](CHAPTER_51_WEATHER_NODE.md): WEATHER/v2, project Wokwi riêng, history/CSV, mưa cũ thành Unknown; chưa weather gate.
+- [Chốt mưa theo vùng trước khi bắt đầu tưới](CHAPTER_52_ZONE_RAIN_GATE.md): binding opt-in, mẫu mới đúng nguồn, ON recheck và lưu bằng chứng; chưa tự dừng khi mưa xuất hiện sau admission.

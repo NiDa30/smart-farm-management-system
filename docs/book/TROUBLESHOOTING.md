@@ -579,3 +579,14 @@ Nếu PIO cố ghi HOME read-only trong cloud, dùng core-dir /workspace/.platfo
 đã lưu và project public trong /tmp; không xin quyền HOME hoặc tắt TLS.
 SIM_LUX_V1 chỉ là thang dial; không xem là cảm biến lux thật.
 [Chương 51](CHAPTER_51_WEATHER_NODE.md).
+
+## Chốt mưa không cho bắt đầu (V38)
+
+Mở Chốt mưa của đúng vùng để xem lý do và mẫu gốc. MISSING/STALE cần board
+đang gửi kênh RAIN, không chỉ LIGHT; fault/null không phải không mưa. Kiểm tra
+observedAt/receivedAt, nguồn/calibration, khu vực và revision vùng. Không sửa
+mẫu DB hoặc đổi giờ để qua gate. Policy bật chặn cả ON không có route; dùng
+đúng profile/route thay vì bỏ chốt. Lưu policy cần phiên đã khép và bơm nghỉ.
+Mất phản hồi PUT chỉ GET đối chiếu; bản hiện tại khác yêu cầu chưa chứng minh
+lưu thất bại. Mưa sau ON chưa tự dừng: OFF vẫn được phép.
+[Chương52](CHAPTER_52_ZONE_RAIN_GATE.md).

@@ -943,3 +943,18 @@ restart, upgrade giữ 15 bảng đạt. Năm ca live Chưa chạy.
 [Chương 51](../book/CHAPTER_51_WEATHER_NODE.md).
 A4 mới giám sát: chưa weather gate, ánh sáng vào quyết định tưới, forecast
 hoặc calibration thật. A3 coordinator/multi-route/flow-proof/queue còn mở.
+
+## Cập nhật 16/10/2026 — A4 chốt mưa trước khi bắt đầu, V38
+
+Mỗi vùng opt-in một RAIN_DETECTED từ WEATHER/v2 cùng khu vực, nguồn và hiệu
+chuẩn; missing/stale/fault/skew/mismatch chặn, không thay bằng false. Phiên
+bắt đầu/OPEN và ON theo route dùng gate; giữ chỗ ON kiểm tra lại và lưu policy
++sample trong command. OFF không bị gate chặn, không auto-resume. UI từ vùng
+hoặc nhánh, revision/conflict/GET readback khi mất phản hồi lưu.
+
+Đây là admission point, chưa tự OFF khi mưa xuất hiện sau khi ON được giữ chỗ,
+chưa dùng lux/dự báo/ET hoặc điều phối queue nhiều vùng. Chưa hoàn tất A3/A4.
+544backend/45node browser/75circuit/17pump/28unit đạt; fixture không transport,
+upgrade/restart giữ dữ liệu; sáu ca AWS/Wokwi **Chưa chạy**.
+[Chương52](../book/CHAPTER_52_ZONE_RAIN_GATE.md),
+[bàn giao](../implementation/LOCAL_ZONE_RAIN_GATE_REPORT.md).

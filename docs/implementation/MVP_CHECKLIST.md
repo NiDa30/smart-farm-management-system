@@ -259,3 +259,15 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Weather gate theo vùng/chính sách unknown/dispatch và hiệu chuẩn thật.
 
 [Bàn giao V37](LOCAL_WEATHER_NODE_REPORT.md).
+
+## Bước V38 — chốt mưa trước lượt tưới
+
+- [x] Binding vùng→WEATHER/RAIN, source/calibration/revision, opt-in.
+- [x] Unknown/fault/stale/rain chặn, ON kiểm tra lại và lưu admission evidence.
+- [x] OFF độc lập; UI conflict/lost response GET-only, không gửi lại.
+- [x] DB/browser/full app/upgrade/restart kiểm tra riêng, không AWS thật.
+- [ ] Sáu ca live [chương52](../book/CHAPTER_52_ZONE_RAIN_GATE.md).
+- [ ] Dừng liên tục khi thời tiết đổi sau admission; dự báo/hiệu chuẩn vật lý.
+- [ ] A3 coordinator nhiều nhánh, flow proof xuyên node và queue dispatch.
+
+[Bàn giao V38](LOCAL_ZONE_RAIN_GATE_REPORT.md).

@@ -354,3 +354,13 @@ Native packet qua receiver/DB thật trong schema riêng, 5mẫu/10readings,
 Upgrade giữ 15 bảng V36, không tự thêm node. Đây là giám sát mưa/độ rọi,
 không weather gate hoặc chứng minh hiệu chuẩn phần cứng. Năm ca live ở
 [chương 51](CHAPTER_51_WEATHER_NODE.md) **Chưa chạy**. A3/A4 còn mở.
+
+## V38 — chốt mưa theo vùng, 16/10/2026
+
+544 backend (19 mới),45 browser node/vùng (8 mới),75 nhánh/phiên và17pump hồi
+quy,28unit parser (5rain mới),lint/build đạt; không skip. Chốt opt-in kiểm tra
+mẫu mưa mới tại ON reservation, lưu bằng chứng; OFF không qua gate. Không tự
+OFF khi mưa đến sau admission. Native fixture riêng đúng six-state sequence,
+0command/run; full app GET-only/restart giữ12bảng, upgrade giữ10bảng WEATHER
+cũ. Sáu ca live [chương52](CHAPTER_52_ZONE_RAIN_GATE.md) **Chưa chạy**.
+A3 coordinator/queue dispatch và A4 continuous weather decision còn mở.

@@ -133,3 +133,7 @@ hai no-op. Chi tiết lỗi phát hiện/sửa trong
 | Hai node cùng khu vực, ID/cert/history độc lập | Chưa chạy |
 
 Chưa nghiệm thu rain/lux vật lý, hiệu chuẩn, weather gate hoặc AI/dự báo.
+
+Bước tiếp theo đã triển khai ở [chương52](CHAPTER_52_ZONE_RAIN_GATE.md): V38
+thêm chốt mưa opt-in theo vùng tại thời điểm bắt đầu; phần mô tả V37 ở trên
+vẫn là bằng chứng của đợt giám sát, không phải nghiệm thu gate AWS/Wokwi.

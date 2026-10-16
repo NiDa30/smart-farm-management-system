@@ -104,11 +104,13 @@ public class PumpCommandFencing {
     if(request.action().equals("ON")&&request.durationSeconds()>30)throw bad(HttpStatus.BAD_REQUEST,"Circuit pump demo maximum30seconds");
     route=http.route();deadline=check.valveDeadline();
    }
+   var weather=request.action().equals("ON")?vn.smartfarm.iot.nodes.ZoneRainGate.requireOn(jdbc,route):null;
    UUID id=http==null?UUID.randomUUID():http.requestId();Instant issued=Instant.now().truncatedTo(ChronoUnit.SECONDS),expires=issued.plusSeconds(10);
    if(route!=null&&request.action().equals("ON")){Instant cutoff=deadline.minusSeconds(request.durationSeconds()+2).truncatedTo(ChronoUnit.SECONDS);if(cutoff.isBefore(expires))expires=cutoff;if(!expires.isAfter(issued))throw bad(HttpStatus.CONFLICT,"VALVE_WINDOW_TOO_SHORT");}
    Long ordinal=capable?jdbc.queryForObject("SELECT nextval('pump_fence_ordinal_seq')",Long.class):null;
    UUID target=capable?d.boot():null;
    jdbc.update("INSERT INTO pump_command(command_id,action,duration_seconds,issued_at,expires_at,state,fence_ordinal,target_boot_id) VALUES(?,?,?,?,?,'PENDING',?,?)",id,request.action(),request.durationSeconds(),Timestamp.from(issued),Timestamp.from(expires),ordinal,target);
+   if(weather!=null)try{jdbc.update("UPDATE pump_command SET weather_gate=?::jsonb WHERE command_id=?",mapper.writeValueAsString(weather),id);}catch(java.io.IOException e){throw new IllegalStateException(e);}
    if(route!=null)try{jdbc.update("UPDATE pump_command SET circuit_route=?::jsonb WHERE command_id=?",mapper.writeValueAsString(route),id);}catch(java.io.IOException e){throw new IllegalStateException(e);}
    jdbc.update("UPDATE pump_command SET control_source=?,owner_command_id=? WHERE command_id=?",automatic?"AUTOMATION":"MANUAL",automatic&&off?owner:null,id);
    if(automatic)reserve.accept(id); // tracking and generation check are atomic with claim

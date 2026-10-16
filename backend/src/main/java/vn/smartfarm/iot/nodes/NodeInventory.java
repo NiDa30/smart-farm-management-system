@@ -110,6 +110,7 @@ public class NodeInventory {
     @Transactional
     public boolean storeChannels(String topic,WaterTelemetry.Packet packet) {
         String type=typeOf(packet.deviceId());
+        if(type.equals("WEATHER"))jdbc.queryForObject("SELECT singleton FROM pump_dispatch_gate WHERE singleton=1 FOR UPDATE",Integer.class);
         if(!topic.equals("smartfarm/FARM001/"+packet.deviceId()+"/telemetry")||!Set.of("WATER","SOIL","WEATHER").contains(type))
             throw new IllegalArgumentException("Unknown channel node or topic mismatch");
         var allowed=switch(type){case "WATER"->WaterTelemetry.METRICS;case "SOIL"->WaterTelemetry.SOIL_METRICS;default->WaterTelemetry.WEATHER_METRICS;};

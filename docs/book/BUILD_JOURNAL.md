@@ -1281,3 +1281,19 @@ và fixture giờ snapshot được sửa, giữ assertion; không skip.
 Không AWS/Wokwi mới; năm ca [chương 51](CHAPTER_51_WEATHER_NODE.md) Chưa chạy.
 Chưa rain gate/forecast hoặc hoàn tất A3/A4.
 [Bàn giao](../implementation/LOCAL_WEATHER_NODE_REPORT.md).
+
+## 16/10/2026 — V38 chốt mưa theo vùng trước ON
+
+Nối WEATHER/v2 với vùng bằng policy opt-in có revision/source/calibration.
+Unknown/fault/stale/rain chặn lượt bật mới; ON fenced kiểm tra lại trong
+reservation và lưu bằng chứng, OFF độc lập. UI chọn kênh cùng khu vực,
+clock monotonic, draft/conflict và lost response chỉ GET đối chiếu. Mưa sau
+admission chưa tự OFF, không auto-resume hoặc coi lux là điều kiện tưới.
+
+544backend/45node browser/75circuit/17pump/28unit/lint/build đạt. Lượt đầu
+fixture area nhầm tên bảng, đã sửa và full cuối không fail/error/skip.
+Upgrade giữ10bảng WEATHER cũ, native5packet trong schema riêng cho đúng
+missing/dry/rain/fault/recovery,0command/run. Full app GET-only và restart
+JVM giữ12bảng đã đối chiếu, không refresh sample. Sách thêm chương52;
+sáu ca Windows/AWS/Wokwi còn Chưa chạy, không dùng mock để xác nhận live.
+[Bàn giao](../implementation/LOCAL_ZONE_RAIN_GATE_REPORT.md).
