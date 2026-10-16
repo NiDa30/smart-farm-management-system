@@ -77,7 +77,7 @@ public class PumpService {
             || (request.action().equals("ON") ? request.durationSeconds()==null || request.durationSeconds()<1 || request.durationSeconds()>3600 : request.durationSeconds()!=null))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Invalid command/duration");
         if(fencing.required())return fencing.create(request,beforePublish);
-        if(fencing.view().deviceEnabled()&&!request.action().equals("OFF"))throw new ResponseStatusException(HttpStatus.CONFLICT,"Enable backend pump fencing to match device");
+        if((fencing.view().deviceEnabled()||fencing.view().circuitRouteRequired())&&!request.action().equals("OFF"))throw new ResponseStatusException(HttpStatus.CONFLICT,"Enable backend pump fencing to match device");
         var transport=transports.getIfAvailable();
         if (transport==null || !transport.controlConnected()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"MQTT control unavailable");
         Status status=status();
@@ -136,6 +136,8 @@ public class PumpService {
             PumpValveInterlock proof=node.has("valveInterlock")?PumpValveInterlock.parse(node.get("valveInterlock"),state,node.path("safetyLockout").booleanValue(),reason):null;
             if(proof!=null&&!statusTopic||statusTopic&&PumpValveInterlock.FAULTS.contains(reason==null?"":reason)&&proof==null)throw new IllegalArgumentException();
             Long fenceOrdinal=fencing.validate(node,statusTopic,boot);
+            if(proof!=null&&proof.route()!=null&&(fenceOrdinal==null||!statusTopic))throw new IllegalArgumentException("Circuit route requires status fence");
+            if(proof!=null&&proof.route()!=null&&state.equals("ON")&&jdbc.queryForObject("SELECT count(*) FROM pump_command WHERE fence_ordinal=? AND target_boot_id=? AND circuit_route=?::jsonb AND action='ON'",Long.class,fenceOrdinal,boot,mapper.writeValueAsString(proof.route()))!=1)throw new IllegalArgumentException("ON route differs from dispatched circuit");
             PumpDurableSafety durable=node.has("durableSafety")?PumpDurableSafety.parse(node.get("durableSafety"),state,node.path("safetyLockout").booleanValue(),reason):null;
             if(durable!=null&&(!statusTopic||fenceOrdinal==null)||statusTopic&&PumpDurableSafety.REASONS.contains(reason==null?"":reason)&&durable==null)throw new IllegalArgumentException();
             if (statusTopic) {
@@ -151,6 +153,7 @@ public class PumpService {
                         AND (pump_status.durable_safety IS NULL OR EXCLUDED.durable_safety IS NOT NULL)
                         AND (pump_status.durable_safety->>'state' NOT IN ('LOCKED','STORAGE_FAULT') OR pump_status.durable_safety IS NULL OR EXCLUDED.durable_safety->>'state' IN ('LOCKED','STORAGE_FAULT') OR (EXCLUDED.state_reason='LOCKOUT_RESET' AND NOT EXCLUDED.safety_lockout AND EXCLUDED.durable_safety->>'state'='READY'))
                         AND (pump_status.valve_interlock IS NULL OR EXCLUDED.valve_interlock IS NOT NULL)
+                        AND (pump_status.valve_interlock->'route' IS NULL OR pump_status.valve_interlock->'route'=EXCLUDED.valve_interlock->'route')
                         AND (pump_status.valve_interlock->>'fault' IS NULL OR EXCLUDED.valve_interlock->>'fault' IS NOT NULL OR (EXCLUDED.state_reason='LOCKOUT_RESET' AND NOT EXCLUDED.safety_lockout AND EXCLUDED.valve_interlock->>'state'='OPEN')))
                        OR (EXCLUDED.boot_id <> pump_status.boot_id AND EXCLUDED.observed_at > pump_status.observed_at)
                     """,boot,node.path("sequence").asLong(),Timestamp.from(timestamp),state,node.path("safetyLockout").asBoolean(),reason,fenceOrdinal==null?null:1,fenceOrdinal,node.path("commandFence").path("restartRequired").asBoolean(false),proof==null?null:mapper.writeValueAsString(proof),durable==null?null:mapper.writeValueAsString(durable));

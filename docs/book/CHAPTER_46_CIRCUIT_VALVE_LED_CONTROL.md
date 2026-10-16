@@ -186,3 +186,8 @@ mapping/observations, monitor không cho phép mở control và flag mặc đị
 Bước A3 tiếp theo còn proof theo nhánh, coordinator lấy quyền bơm và kiểm
 tra flow trước dispatch queue. Không lấy GPIO/ACK ở chương này làm chứng minh
 nước đang đến đúng vùng. [Bàn giao](../implementation/LOCAL_CIRCUIT_VALVE_CONTROL_REPORT.md).
+
+Bước tiếp theo tại [chương47](CHAPTER_47_PUMP_CIRCUIT_ROUTE.md) bổ sung lệnh
+bơm LED có route cố định và chặn di chuyển van khi lượt bơm chưa xác nhận
+OFF. V32 riêng trong chương này vẫn không phải coordinator; không tự bật
+profile bơm khi mở panel điều khiển van.

@@ -1,9 +1,10 @@
+import {validRoute,type PumpCircuitRoute} from '../control/pumpCircuitRoute';
 import { validSettings, type WateringSettings } from '../automation/wateringSettings';
 import type { Monitoring } from '../devices/monitoringApi';
 export interface SafetyRule {
   enabled:boolean;lowCount:number;activeCommand:string|null;cooldownUntil:string|null;lastResult:string;
 }
-export interface LocalValveProof {version:1;enabled:true;dataSource:'SIMULATOR';state:'UNKNOWN'|'CLOSED'|'OPEN'|'CONFLICT';fault:'VALVE_NOT_OPEN'|'VALVE_PROOF_LOST'|'VALVE_SWITCH_CONFLICT'|null}
+export interface LocalValveProof {version:1;enabled:true;dataSource:'SIMULATOR';state:'UNKNOWN'|'CLOSED'|'OPEN'|'CONFLICT';fault:'VALVE_NOT_OPEN'|'VALVE_PROOF_LOST'|'VALVE_SWITCH_CONFLICT'|null;route?:PumpCircuitRoute}
 export interface DurableSafety {version:1;enabled:true;storage:'NVS';state:'READY'|'ARMED'|'LOCKED'|'STORAGE_FAULT'}
 export interface SafetySnapshot {
   farmId:'FARM001';asOf:string;mqtt:Monitoring['mqtt'];controlEnabled:boolean;controlTransportConnected:boolean;
@@ -26,7 +27,7 @@ const reason=(v:unknown)=>v===null||text(v)&&reasons.includes(v);
 const flowConsistent=(r:{stateReason:string|null;reportedState:string;safetyLockout:boolean})=>!['FLOW_LOW','FLOW_SENSOR_FAULT',...valveFaults,...durableReasons].includes(r.stateReason??'')||r.reportedState==='OFF'&&r.safetyLockout;
 function valveConsistent(r:NonNullable<SafetySnapshot['relay']>){const p=r.valveInterlock;
  if(p==null)return !valveFaults.includes(r.stateReason??'');
- if(typeof p!=='object'||Object.keys(p).sort().join(',')!=='dataSource,enabled,fault,state,version'||p.version!==1||p.enabled!==true||p.dataSource!=='SIMULATOR'||!['UNKNOWN','CLOSED','OPEN','CONFLICT'].includes(p.state)||!(p.fault===null||valveFaults.includes(p.fault)))return false;
+ if(typeof p!=='object'||Object.keys(p).filter(k=>k!=='route').sort().join(',')!=='dataSource,enabled,fault,state,version'||('route' in p&&!validRoute(p.route))||p.version!==1||p.enabled!==true||p.dataSource!=='SIMULATOR'||!['UNKNOWN','CLOSED','OPEN','CONFLICT'].includes(p.state)||!(p.fault===null||valveFaults.includes(p.fault)))return false;
  return !(p.fault!==null&&(r.reportedState!=='OFF'||!r.safetyLockout)||r.reportedState==='ON'&&(p.state!=='OPEN'||p.fault!==null||r.safetyLockout)||valveFaults.includes(r.stateReason??'')&&r.stateReason!==p.fault||r.stateReason==='LOCKOUT_RESET'&&(p.fault!==null||p.state!=='OPEN'));
 }
 function durableConsistent(r:NonNullable<SafetySnapshot['relay']>){

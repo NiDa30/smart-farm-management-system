@@ -50,3 +50,13 @@
 // Every boot stays OFF/locked until a new boot-targeted RESET_LOCKOUT succeeds.
 // Never restores an old ON or timer. No NVS erase on failure.
 #define FARM_PUMP_DURABLE_SAFETY_ENABLED 0
+
+// Static branch declaration for the local proof contacts; simulator only.
+// Requires fencing1 and valve proof1. Does not infer proof from MQTT ACK/status.
+#define FARM_PUMP_CIRCUIT_ROUTE_ENABLED 0
+#define FARM_PUMP_ROUTE_CIRCUIT_ID "CIRCUIT08"
+#define FARM_PUMP_ROUTE_CIRCUIT_REVISION 1
+#define FARM_PUMP_ROUTE_ZONE_ID "ZONE08"
+#define FARM_PUMP_ROUTE_ZONE_REVISION 1
+#define FARM_PUMP_ROUTE_CONTROLLER_ID "IRRIGATION08"
+#define FARM_PUMP_ROUTE_VALVE_ID "VALVE08"

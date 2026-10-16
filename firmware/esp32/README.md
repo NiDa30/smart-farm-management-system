@@ -146,3 +146,16 @@ validate actual NVS retention, brownout or GPIO timing. Wokwi full flash
 reload may discard NVS; boot locking is not evidence of persistence.
 [Chapter43](../../docs/book/CHAPTER_43_DURABLE_PUMP_SAFETY.md) has six unrun
 Windows/AWS/Wokwi/ESP32 cases. Do not auto resume a physical pump.
+
+## V33 static simulator branch at the local pump proof contacts
+
+FARM_PUMP_CIRCUIT_ROUTE_ENABLED defaults0. Route1 requires pump fencing1,
+valve proof1 and simulator1. Private config declares circuit/zone IDs and
+revisions, controller and valve02..99. Rebuild/reboot after mapping changes;
+no MQTT command switches the identity of the proof contacts. Status reports
+valveInterlock.route; ON/RESET require exact commandFence.route before ordinal
+acceptance or relay apply. Bound ON max30s; route-free OFF remains available.
+Independent contacts, reservoir/flow guards, timers and optional NVS still
+control output locally. Never infer contact proof from remote MQTT packets.
+[Chapter47](../../docs/book/CHAPTER_47_PUMP_CIRCUIT_ROUTE.md) covers Windows,
+backend opt-in, OPEN window and six unrun AWS/Wokwi acceptance cases.

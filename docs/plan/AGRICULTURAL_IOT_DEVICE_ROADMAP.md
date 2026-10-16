@@ -865,3 +865,22 @@ restart/nâng monitor V31→V32 đạt. Sáu ca live Chưa chạy.
 [bàn giao](../implementation/LOCAL_CIRCUIT_VALVE_CONTROL_REPORT.md).
 A3 còn proof theo nhánh, quyền bơm/coordinator/flow proof và dispatch queue;
 LED độc lập cùng mở không chứng minh nhiều van an toàn trên bơm chung.
+
+## Cập nhật 16/10/2026 — A3 bơm LED gắn nhánh cố định V33
+
+PUMP01 có route khai báo tại proof contacts, gồm mã/revision nhánh và vùng,
+controller/van02–99. HTTP ON/RESET phải chọn đúng route, van OPEN đã ACK và
+status vị trí mới, các nhánh khác CLOSED mới, proof cục bộ OPEN. ON1–30s
+trong cửa sổ van; không đủ thời gian thì từ chối. OFF không bị ràng route.
+Giữ gate trước reservation, không di chuyển/sửa nhánh khi bơm chưa có OFF
+xác nhận; generic/rule ENV01 không vượt qua route. V33 lưu route theo lệnh,
+không backfill hoặc cấp IAM mới. UI panel riêng, không tự retry/resume.
+
+461backend/44browser nhánh/17browser pump/20unit/10contract/native/public
+3profiles/lintbuild đạt; pipeline native→receiver→PostgreSQL và full app
+GET-only giữ dữ liệu sau restart. Sáu ca AWS/Wokwi vẫn Chưa chạy.
+[Chương47](../book/CHAPTER_47_PUMP_CIRCUIT_ROUTE.md),
+[bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_ROUTE_REPORT.md).
+A3 vẫn cần coordinator tự phối hợp, route switching/physical proof theo
+thiết kế thực tế, interlock/flow xuyên controller và dispatch hàng chờ.
+Một boot bơm chỉ khai báo một nhánh; chưa tự chuyển nhiều vùng để tưới.

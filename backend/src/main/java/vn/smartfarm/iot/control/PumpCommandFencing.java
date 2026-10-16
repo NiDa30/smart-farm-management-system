@@ -18,32 +18,35 @@ import org.springframework.web.server.ResponseStatusException;
 /** MQTT and HTTP fencing, with durable manual/automation ownership. No expiring lease. */
 @Service
 public class PumpCommandFencing {
- public record HttpIntent(UUID requestId,String action,Integer durationSeconds,UUID expectedBootId,Long intentRevision,Instant reviewedAt) {}
+ public record HttpIntent(UUID requestId,String action,Integer durationSeconds,UUID expectedBootId,Long intentRevision,Instant reviewedAt,@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) PumpCircuitRoute route) {public HttpIntent(UUID id,String action,Integer seconds,UUID boot,Long revision,Instant at){this(id,action,seconds,boot,revision,at,null);}}
  public record Receipt(HttpIntent request,PumpService.Command command) {}
  public record Context(long revision,Instant asOf,UUID bootId,boolean ready) {}
- public record View(boolean required,boolean deviceEnabled,boolean compatible,boolean restartRequired,Long lastOrdinal,Context intent,PumpOwnership.View ownership) {}
- private record Device(UUID boot,String state,boolean locked,boolean fresh,Integer version,Long ordinal,boolean restart) {}
+ public record View(boolean required,boolean deviceEnabled,boolean compatible,boolean restartRequired,Long lastOrdinal,Context intent,PumpOwnership.View ownership,boolean circuitRouteRequired,@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) PumpCircuitRoute circuitRoute) {}
+ private record Device(UUID boot,String state,boolean locked,boolean fresh,Integer version,Long ordinal,boolean restart,PumpCircuitRoute route) {}
  private record Dispatch(UUID id,byte[] payload,boolean replay,boolean unavailable) {}
  private final JdbcTemplate jdbc;private final ObjectMapper mapper;private final ObjectProvider<CommandTransport> transports;
  private volatile boolean httpReady;
  private final PumpOwnership ownership;
- private final TransactionTemplate tx;private final boolean required,controlEnabled;
+ private final TransactionTemplate tx;private final boolean required,controlEnabled,routeRequired,circuitEnabled;
+ @org.springframework.beans.factory.annotation.Autowired
  public PumpCommandFencing(JdbcTemplate jdbc,ObjectMapper mapper,ObjectProvider<CommandTransport> transports,PlatformTransactionManager manager,
-  @Value("${smartfarm.control.pump-fencing-enabled:false}") boolean required,@Value("${smartfarm.control.enabled:false}") boolean controlEnabled){this.jdbc=jdbc;this.ownership=new PumpOwnership(jdbc);this.mapper=mapper;this.transports=transports;this.tx=new TransactionTemplate(manager);this.required=required;this.controlEnabled=controlEnabled;}
+  @Value("${smartfarm.control.pump-fencing-enabled:false}") boolean required,@Value("${smartfarm.control.enabled:false}") boolean controlEnabled,@Value("${smartfarm.control.circuit-route-required:false}") boolean routeRequired,@Value("${smartfarm.irrigation.circuit-demo-enabled:false}") boolean circuitEnabled){this.jdbc=jdbc;this.ownership=new PumpOwnership(jdbc);this.mapper=mapper;this.transports=transports;this.tx=new TransactionTemplate(manager);this.required=required;this.controlEnabled=controlEnabled;this.routeRequired=routeRequired;this.circuitEnabled=circuitEnabled;}
+ public PumpCommandFencing(JdbcTemplate jdbc,ObjectMapper mapper,ObjectProvider<CommandTransport> transports,PlatformTransactionManager manager,boolean required,boolean enabled){this(jdbc,mapper,transports,manager,required,enabled,false,false);}
  public boolean required(){return required;}
  public <T> T ruleTransaction(java.util.function.Supplier<T> work){return tx.execute(t->{lock();return work.get();});}
  @org.springframework.transaction.annotation.Transactional(readOnly=true,isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
- public View view(){var d=device();boolean enabled=d!=null&&Integer.valueOf(1).equals(d.version());return new View(required,enabled,enabled==required,d!=null&&d.restart(),d==null?null:d.ordinal(),required?new Context(revision(),Instant.now(),d==null?null:d.boot(),httpReady):null,required?ownership.view():null);}
+ public View view(){var d=device();boolean enabled=d!=null&&Integer.valueOf(1).equals(d.version());return new View(required,enabled,enabled==required,d!=null&&d.restart(),d==null?null:d.ordinal(),required?new Context(revision(),Instant.now(),d==null?null:d.boot(),httpReady):null,required?ownership.view():null,routeRequired,d==null?null:d.route());}
  @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
  public void invalidateHttpOnStartup(){if(required){tx.executeWithoutResult(t->{lock();bump();});httpReady=true;}}
  private void lock(){jdbc.queryForObject("SELECT singleton FROM pump_dispatch_gate WHERE singleton=1 FOR UPDATE",Integer.class);}
  private long revision(){return jdbc.queryForObject("SELECT intent_revision FROM pump_dispatch_gate WHERE singleton=1",Long.class);}
  private void bump(){jdbc.update("UPDATE pump_dispatch_gate SET intent_revision=intent_revision+1 WHERE singleton=1");}
- public Receipt lookupHttp(UUID id){return jdbc.query("SELECT * FROM pump_command WHERE command_id=? AND http_intent_revision IS NOT NULL",(r,n)->new Receipt(new HttpIntent(id,r.getString("action"),r.getObject("duration_seconds",Integer.class),r.getObject("http_expected_boot",UUID.class),r.getLong("http_intent_revision"),r.getTimestamp("http_reviewed_at").toInstant()),command(id)),id).stream().findFirst().orElseThrow(()->bad(HttpStatus.NOT_FOUND,"HTTP pump request not found"));}
+ public Receipt lookupHttp(UUID id){return jdbc.query("SELECT * FROM pump_command WHERE command_id=? AND http_intent_revision IS NOT NULL",(r,n)->new Receipt(new HttpIntent(id,r.getString("action"),r.getObject("duration_seconds",Integer.class),r.getObject("http_expected_boot",UUID.class),r.getLong("http_intent_revision"),r.getTimestamp("http_reviewed_at").toInstant(),PumpCircuitRoute.stored(mapper,r.getString("circuit_route"))),command(id)),id).stream().findFirst().orElseThrow(()->bad(HttpStatus.NOT_FOUND,"HTTP pump request not found"));}
  private static HttpIntent validated(HttpIntent r){
   if(r==null||r.requestId()==null||r.action()==null||!Set.of("ON","OFF","RESET_LOCKOUT").contains(r.action())||r.intentRevision()==null||r.intentRevision()<1||r.intentRevision()>9007199254740991L||r.reviewedAt()==null
     ||(r.action().equals("ON")?r.durationSeconds()==null||r.durationSeconds()<1||r.durationSeconds()>3600:r.durationSeconds()!=null)||(!r.action().equals("OFF")&&r.expectedBootId()==null))throw bad(HttpStatus.BAD_REQUEST,"Invalid HTTP pump intent");
-  return new HttpIntent(r.requestId(),r.action(),r.durationSeconds(),r.expectedBootId(),r.intentRevision(),r.reviewedAt().truncatedTo(ChronoUnit.MICROS));
+  if(r.route()!=null){try{PumpCircuitRoute.parse(new ObjectMapper().valueToTree(r.route()));}catch(IllegalArgumentException e){throw bad(HttpStatus.BAD_REQUEST,"Invalid circuit route");}if(r.action().equals("OFF"))throw bad(HttpStatus.BAD_REQUEST,"Emergency OFF must not be route restricted");}
+  return new HttpIntent(r.requestId(),r.action(),r.durationSeconds(),r.expectedBootId(),r.intentRevision(),r.reviewedAt().truncatedTo(ChronoUnit.MICROS),r.route());
  }
  public PumpService.Command createAutomatic(PumpService.Request request,UUID owner,Consumer<UUID> reserve){
   if(!Set.of("ON","OFF").contains(request.action())||(request.action().equals("ON")?(owner!=null||request.durationSeconds()==null||request.durationSeconds()<1||request.durationSeconds()>30):request.durationSeconds()!=null))throw bad(HttpStatus.BAD_REQUEST,"Invalid automatic request");
@@ -56,7 +59,8 @@ public class PumpCommandFencing {
  }
  private Device device(){Instant now=Instant.now();return jdbc.query("SELECT * FROM pump_status WHERE singleton=1",(r,n)->new Device(r.getObject("boot_id",UUID.class),r.getString("reported_state"),r.getBoolean("safety_lockout"),
   r.getTimestamp("observed_at").toInstant().isAfter(now.minusSeconds(15))&&r.getTimestamp("received_at").toInstant().isAfter(now.minusSeconds(15))&&!r.getTimestamp("observed_at").toInstant().isAfter(now.plusSeconds(2))&&!r.getTimestamp("received_at").toInstant().isAfter(now.plusSeconds(2)),
-  r.getObject("fence_version",Integer.class),r.getObject("last_fence_ordinal",Long.class),r.getBoolean("fence_restart_required"))).stream().findFirst().orElse(null);}
+  r.getObject("fence_version",Integer.class),r.getObject("last_fence_ordinal",Long.class),r.getBoolean("fence_restart_required"),reportedRoute(r.getString("valve_interlock")))).stream().findFirst().orElse(null);}
+ private PumpCircuitRoute reportedRoute(String value){if(value==null)return null;try{var p=mapper.readTree(value);return p.has("route")?PumpCircuitRoute.parse(p.get("route")):null;}catch(Exception e){throw new IllegalArgumentException("Invalid stored pump route",e);}}
  public PumpService.Command create(PumpService.Request request,Consumer<UUID> beforePublish){return dispatch(request,beforePublish,null,()->{},false,null,id->{});}
  private PumpService.Command dispatch(PumpService.Request request,Consumer<UUID> beforePublish,HttpIntent http,Runnable manualHold,boolean automatic,UUID owner,Consumer<UUID> reserve){
   if(http==null&&(!required||!controlEnabled))throw bad(HttpStatus.FORBIDDEN,"Fenced pump control is disabled");
@@ -91,10 +95,20 @@ public class PumpCommandFencing {
      throw bad(HttpStatus.CONFLICT,"Wait for OFF status newer than ON acknowledgment");
     ownership.requireAvailable();
    }
+   PumpCircuitRoute route=null;Instant deadline=null;
+   if(!off&&(routeRequired||d.route()!=null||http!=null&&http.route()!=null)){
+    if(!circuitEnabled||d.route()==null||http==null||http.route()==null||!d.route().equals(http.route()))throw bad(HttpStatus.CONFLICT,"Explicit matching circuit route and control profile required");
+    jdbc.queryForObject("SELECT revision FROM irrigation_circuit_state WHERE singleton=1 FOR UPDATE",Long.class);
+    var check=PumpCircuitRoute.inspect(jdbc,mapper,http.route(),request.action().equals("RESET_LOCKOUT"));if(!check.ready())throw bad(HttpStatus.CONFLICT,check.reason());
+    if(request.action().equals("ON")&&request.durationSeconds()>30)throw bad(HttpStatus.BAD_REQUEST,"Circuit pump demo maximum30seconds");
+    route=http.route();deadline=check.valveDeadline();
+   }
    UUID id=http==null?UUID.randomUUID():http.requestId();Instant issued=Instant.now().truncatedTo(ChronoUnit.SECONDS),expires=issued.plusSeconds(10);
+   if(route!=null&&request.action().equals("ON")){Instant cutoff=deadline.minusSeconds(request.durationSeconds()+2).truncatedTo(ChronoUnit.SECONDS);if(cutoff.isBefore(expires))expires=cutoff;if(!expires.isAfter(issued))throw bad(HttpStatus.CONFLICT,"VALVE_WINDOW_TOO_SHORT");}
    Long ordinal=capable?jdbc.queryForObject("SELECT nextval('pump_fence_ordinal_seq')",Long.class):null;
    UUID target=capable?d.boot():null;
    jdbc.update("INSERT INTO pump_command(command_id,action,duration_seconds,issued_at,expires_at,state,fence_ordinal,target_boot_id) VALUES(?,?,?,?,?,'PENDING',?,?)",id,request.action(),request.durationSeconds(),Timestamp.from(issued),Timestamp.from(expires),ordinal,target);
+   if(route!=null)try{jdbc.update("UPDATE pump_command SET circuit_route=?::jsonb WHERE command_id=?",mapper.writeValueAsString(route),id);}catch(java.io.IOException e){throw new IllegalStateException(e);}
    jdbc.update("UPDATE pump_command SET control_source=?,owner_command_id=? WHERE command_id=?",automatic?"AUTOMATION":"MANUAL",automatic&&off?owner:null,id);
    if(automatic)reserve.accept(id); // tracking and generation check are atomic with claim
    else jdbc.update("UPDATE watering_rule SET enabled=false,low_count=0,last_result='MANUAL_HOLD',execution_epoch=execution_epoch+1 WHERE singleton=1");
@@ -105,7 +119,7 @@ public class PumpCommandFencing {
    bump();
    var p=mapper.createObjectNode().put("schemaVersion",1).put("deviceId","PUMP01").put("commandId",id.toString()).put("action",request.action()).put("issuedAt",issued.toString()).put("expiresAt",expires.toString());
    if(request.durationSeconds()!=null)p.put("durationSeconds",request.durationSeconds());
-   if(ordinal!=null)p.putObject("commandFence").put("version",1).put("ordinal",ordinal).put("targetBootId",target.toString());
+   if(ordinal!=null){var f=p.putObject("commandFence").put("version",1).put("ordinal",ordinal).put("targetBootId",target.toString());if(route!=null)f.set("route",mapper.valueToTree(route));}
    try{return new Dispatch(id,mapper.writeValueAsBytes(p),false,unavailable);}catch(Exception e){throw new IllegalStateException(e);}
   });
   if(dispatch.replay())return command(dispatch.id());

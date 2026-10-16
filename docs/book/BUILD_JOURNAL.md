@@ -1182,3 +1182,27 @@ full-app/stored/restart và nâng fixture monitor V31→V32 đạt, không refre
 clocks. Sáu ca live Chưa chạy, timer mô hình không chứng minh GPIO thật.
 [Chương46](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md),
 [bàn giao](../implementation/LOCAL_CIRCUIT_VALVE_CONTROL_REPORT.md).
+
+## 16/10/2026 — V33 route cố định tại bơm mô phỏng
+
+Sau LED van V32, thêm route sáu trường tại proof cục bộ, đối chiếu ở backend
+và firmware trước ON/reset; OFF vẫn không ràng route. Hai gate giữ thứ tự
+pump→circuit, khóa di chuyển/sửa nhánh khi chưa OFF; lifetime ON ngắn theo
+cửa sổ van. UI panel riêng và đối chiếu UUID, không retry/resume. Generic
+control/rule ENV01 không tự chạy trên route đã khai báo. V33 thêm một cột,
+không backfill. [Chương47](CHAPTER_47_PUMP_CIRCUIT_ROUTE.md).
+
+461backend,44browser nhánh,17browser pump,20unit intent/safety và10contract
+đạt, không skip. Native route/fence/journal/proof,3public firmware profiles,
+profile sai expected reject, emptyFS merge, lint/build đạt. Hai test targeted
+đầu lỗi fixture sửa issuedAt nhưng không dịch expiresAt cùng lúc, vi phạm
+CHECK lifetime; sửa dữ liệu thử, không bỏ constraint. Native fixture bị
+-Wmisleading-indentation; tách dòng, giữ warnings-as-errors. Assertion log
+negative-build ban đầu sai chuỗi; đối chiếu thông báo thật, restore config
+public và build lại đạt. Không coi log lỗi là kết quả đạt.
+
+Fixture pump_route_smoke riêng: hai van CLOSED, một OPEN30s/ACK, bơm ON5s
+đúng route/ACK/timer logical OFF, receiver thật/PostgreSQL; không AWS/GPIO.
+Full app GET-only phân biệt PC1/PC2 và dữ liệu cũ, giữ source/receipt/ledger
+qua restart. Sáu ca Windows/AWS/Wokwi Chưa chạy, chưa physical proof,
+coordinator hoặc dispatch hàng chờ. Xem [bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_ROUTE_REPORT.md).

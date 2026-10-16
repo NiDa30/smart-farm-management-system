@@ -517,3 +517,18 @@ PostgreSQL lưu microsecond khác nanosecond của request: đã canonicalize đ
 UUID cùng intent không bị409 giả. Không đổi UUID để ép retry khi chưa rõ
 kết quả; dùng GET đối chiếu. Fault switch cần sửa đầu vào rồi CLOSE; boot
 luôn đóng. [Chương46](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md).
+
+## Bơm theo nhánh bị chặn dù LED van đã mở
+
+Xem [chương47](CHAPTER_47_PUMP_CIRCUIT_ROUTE.md). Cần cả ACK OPEN và status
+GPIO/position OPEN mới của đúng boot/ordinal/config, cùng proof OPEN độc
+lập tại PUMP01. Các nhánh khác cũng phải báo CLOSED mới. Đèn sáng hoặc
+monitor status không đủ. PUMP_ROUTE_MISMATCH: đối chiếu đủ sáu trường và
+build/boot mới sau đổi mapping; không sửa DB hoặc bỏ fence. VALVE_WINDOW_TOO_SHORT:
+bơm OFF → đóng van → CLOSED mới → mở lượt mới; không tự kéo dài timer.
+PUMP_OWNER_UNRESOLVED/PUMP_COMMAND_UNCONFIRMED: gửi OFF và đợi status phủ
+mọi lệnh, không lấy timer hết hoặc ACK làm bằng chứng OFF. Khi bơm giữ quyền,
+CLOSE/sửa nhánh bị409; phải yêu cầu OFF bơm trước. MQTT offline có thể lưu
+OFF FAILED/MQTT_UNAVAILABLE, chưa xác nhận đã tắt. Route profile không dùng
+nút ON/reset chung hoặc rule ENV01. CLI provisioning monitor không tự cấp
+quyền control cho board van. Không xóa ledger/NVS/recovery để bỏ chốt an toàn.

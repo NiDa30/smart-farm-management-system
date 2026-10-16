@@ -21,6 +21,7 @@ smartfarm:
     enabled: ${SMARTFARM_MQTT_ENABLED:false}
   control:
     enabled: ${SMARTFARM_CONTROL_ENABLED:false}
+    circuit-route-required: ${SMARTFARM_PUMP_CIRCUIT_ROUTE_REQUIRED:false}
     pump-fencing-enabled: ${SMARTFARM_PUMP_FENCING_ENABLED:false}
   irrigation:
     circuit-demo-enabled: ${SMARTFARM_IRRIGATION_CIRCUIT_DEMO_ENABLED:false}

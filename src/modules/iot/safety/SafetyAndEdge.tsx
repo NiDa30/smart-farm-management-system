@@ -55,6 +55,7 @@ export const SafetyPanel:React.FC<{navigate:(route:string)=>void}>=({navigate})=
         {!snapshot.relay?.valveInterlock?<p>Chưa có bằng chứng thiết bị báo hỗ trợ liên động van.</p>:<>
           <p className="font-semibold">Bằng chứng hiện tại: {!relayCurrent?'Chưa xác định':snapshot.relay.valveInterlock.fault?'Thiết bị báo đã khóa do liên động van':snapshot.relay.valveInterlock.state==='OPEN'?'Thiết bị báo có phản hồi OPEN':'Chưa có phản hồi mở van hợp lệ'}</p>
           <p>Bản báo đã lưu: {snapshot.relay.valveInterlock.state} · Mô phỏng · phiên bản {snapshot.relay.valveInterlock.version}</p>
+          {snapshot.relay.valveInterlock.route&&<p>Nhánh khai báo tại bơm: {snapshot.relay.valveInterlock.route.circuitId} v{snapshot.relay.valveInterlock.route.circuitRevision} · {snapshot.relay.valveInterlock.route.valveId} · vùng {snapshot.relay.valveInterlock.route.zoneId} v{snapshot.relay.valveInterlock.route.zoneRevision}. Đây là cấu hình mô phỏng, cần đối chiếu dây tín hiệu.</p>}
           <p>Lỗi lưu: {snapshot.relay.valveInterlock.fault?reasonLabels[snapshot.relay.valveInterlock.fault]:'Không có lỗi liên động van trong mẫu'}</p>
           <p className="text-sm">Giờ nguồn: {time(snapshot.relay.observedAt)} · Backend nhận: {time(snapshot.relay.receivedAt)}</p>
         </>}

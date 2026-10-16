@@ -1,8 +1,9 @@
+import {validRoute,type PumpCircuitRoute} from './pumpCircuitRoute';
 import React, { useEffect, useState, useRef } from 'react';
 import {validContext,validOwnership,parseReceipt,loadIntents,PENDING_KEY,type PumpIntent,type IntentContext,type PumpOwnership} from './pumpIntentApi';
 import { Power, ShieldCheck, RefreshCw } from 'lucide-react';
 
-interface PumpStatus { deviceId: 'PUMP01'; reportedState: 'ON' | 'OFF' | 'UNKNOWN'; safetyLockout: boolean; fresh: boolean; controlEnabled: boolean; observedAt: string | null; commandFence?: {required:boolean;deviceEnabled:boolean;compatible:boolean;restartRequired:boolean;lastOrdinal:number|null;intent?:IntentContext|null;ownership?:PumpOwnership|null} }
+interface PumpStatus { deviceId: 'PUMP01'; reportedState: 'ON' | 'OFF' | 'UNKNOWN'; safetyLockout: boolean; fresh: boolean; controlEnabled: boolean; observedAt: string | null; commandFence?: {required:boolean;deviceEnabled:boolean;compatible:boolean;restartRequired:boolean;lastOrdinal:number|null;circuitRouteRequired?:boolean;circuitRoute?:PumpCircuitRoute;intent?:IntentContext|null;ownership?:PumpOwnership|null} }
 interface Command { commandId: string; action: string; durationSeconds: number | null; issuedAt: string; state: string; reportedState: string | null; errorCode: string | null }
 interface StateChange { id: number; observedAt: string; reportedState: string; safetyLockout: boolean; changeType: string; stateReason?: string | null }
 const API = '/api/v1/actuators/PUMP01';
@@ -42,6 +43,8 @@ export const PumpControl: React.FC<{onValveDemo?:()=>void;onQueue?:()=>void;onCi
         const [value, history] = await Promise.all(responses.map(response => response.json()));
         if (!value || value.deviceId !== 'PUMP01' || !['ON','OFF','UNKNOWN'].includes(value.reportedState)
           || (value.commandFence!==undefined&&(!value.commandFence||typeof value.commandFence.required!=='boolean'||typeof value.commandFence.deviceEnabled!=='boolean'||typeof value.commandFence.compatible!=='boolean'||typeof value.commandFence.restartRequired!=='boolean'||(value.commandFence.deviceEnabled?(value.commandFence.lastOrdinal===null):value.commandFence.lastOrdinal!==null||value.commandFence.restartRequired)||value.commandFence.compatible!==(value.commandFence.required===value.commandFence.deviceEnabled)||(value.commandFence.lastOrdinal!==null&&(!Number.isSafeInteger(value.commandFence.lastOrdinal)||value.commandFence.lastOrdinal<0))))
+          || (value.commandFence?.circuitRouteRequired!==undefined&&typeof value.commandFence.circuitRouteRequired!=='boolean')
+          || (value.commandFence?.circuitRoute!==undefined&&!validRoute(value.commandFence.circuitRoute))
           || (value.commandFence?.intent!==undefined&&value.commandFence.intent!==null&&!validContext(value.commandFence.intent))
           || (value.commandFence?.ownership!==undefined&&value.commandFence.ownership!==null&&!validOwnership(value.commandFence.ownership))
           || typeof value.fresh !== 'boolean' || typeof value.safetyLockout !== 'boolean' || typeof value.controlEnabled !== 'boolean'
@@ -71,10 +74,11 @@ export const PumpControl: React.FC<{onValveDemo?:()=>void;onQueue?:()=>void;onCi
   const protectedProfile=status?.commandFence?.required===true;
   const owner=status?.commandFence?.ownership;
   const ownerBlocked=owner?.blocked===true;
-  const canOn = !ownerBlocked&&(!protectedProfile||intentFresh)&&unknown.length===0&&protocolReady && !!fresh && status?.controlEnabled && state === 'OFF' && !status.safetyLockout && !pending && !sending && Number.isInteger(durationSeconds) && durationSeconds >= 1 && durationSeconds <= 3600;
+  const routeBound=status?.commandFence?.circuitRouteRequired===true||!!status?.commandFence?.circuitRoute;
+  const canOn = !routeBound&&!ownerBlocked&&(!protectedProfile||intentFresh)&&unknown.length===0&&protocolReady && !!fresh && status?.controlEnabled && state === 'OFF' && !status.safetyLockout && !pending && !sending && Number.isInteger(durationSeconds) && durationSeconds >= 1 && durationSeconds <= 3600;
   const send = async (action:'ON'|'OFF'|'RESET_LOCKOUT') => {
     if(flight.current)return;
-    if(action!=='OFF'&&(ownerBlocked||unknownRef.current.length||protectedProfile&&!intentFresh))return;
+    if(action!=='OFF'&&(routeBound||ownerBlocked||unknownRef.current.length||protectedProfile&&!intentFresh))return;
     flight.current=true;setSending(true);setError('');setNotice('');
     const protectedRequest=protectedProfile&&intentFresh&&unknownRef.current.length<20;
     const request:PumpIntent|null=protectedRequest?{requestId:crypto.randomUUID(),action,durationSeconds:action==='ON'?durationSeconds:null,expectedBootId:action==='OFF'?null:intent!.bootId,intentRevision:intent!.revision,reviewedAt:intent!.asOf}:null;
@@ -108,6 +112,7 @@ export const PumpControl: React.FC<{onValveDemo?:()=>void;onQueue?:()=>void;onCi
     <header><h1 className="text-xl font-bold flex gap-2 items-center"><Power className="w-5 h-5 text-emerald-600" /> Điều khiển PUMP01</h1><p className="text-sm text-slate-500 mt-1">Demo GPIO26 trên Wokwi · FARM001 / ENV01</p></header>
     <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 text-sm">Mô phỏng Wokwi với relay và LED tải. ACK xác nhận GPIO đã áp dụng, không chứng minh bơm vật lý đang chạy.</div>
     {status?.commandFence&&<div className="bg-slate-50 border rounded-xl p-3 text-sm"><p>Bảo vệ lệnh đến muộn qua MQTT: {status.commandFence.required?'Backend đã bật':'Backend chưa bật'} · Thiết bị: {status.commandFence.deviceEnabled?'Đã bật':'Chưa nhận xác nhận bảo vệ'}.</p>{!status.commandFence.compatible&&<p role="alert">Chế độ backend và thiết bị chưa khớp. Chưa cho phép bật hoặc reset khóa; lệnh tắt vẫn có thể yêu cầu.</p>}{status.commandFence.restartRequired&&<p role="alert">Thiết bị đã khóa sau lệnh tắt từ chế độ cũ. Cần khởi động lại thiết bị trước khi bật/reset; không tự chạy lại.</p>}</div>}
+    {routeBound&&<p role="alert">Bơm yêu cầu chọn đúng nhánh. Mở Cấu hình nhánh tưới → Bơm theo nhánh (LED) để kiểm tra van và xác nhận bật/reset. Lệnh tắt vẫn sử dụng được ở đây.</p>}
     {protectedProfile&&owner&&<section aria-label="Quyền sử dụng bơm" className="bg-slate-50 border rounded-xl p-4 text-sm space-y-1">
       <h2 className="font-semibold">Quyền sử dụng bơm</h2>
       {owner.holder?<><p>Nguồn giữ quyền: {owner.holder.source==='AUTOMATION'?'Tưới tự động':owner.holder.source==='MANUAL'?'Điều khiển thủ công':'Lệnh từ phiên bản trước'}.</p>
@@ -140,7 +145,7 @@ export const PumpControl: React.FC<{onValveDemo?:()=>void;onQueue?:()=>void;onCi
       <div className="flex flex-wrap gap-3">
         <button type="button" disabled={!canOn} onClick={() => void send('ON')} className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold disabled:opacity-40">Bật đèn</button>
         <button type="button" disabled={!status?.controlEnabled || sending} onClick={() => void send('OFF')} className="bg-rose-600 text-white px-4 py-2 rounded-lg font-semibold disabled:opacity-40">Gửi lệnh tắt</button>
-        <button type="button" disabled={ownerBlocked || unknown.length>0 || (protectedProfile&&!intentFresh) || !protocolReady || !fresh || state !== 'OFF' || !status?.safetyLockout || !status?.controlEnabled || sending} onClick={() => void send('RESET_LOCKOUT')} className="border px-4 py-2 rounded-lg disabled:opacity-40">Reset khóa</button>
+        <button type="button" disabled={routeBound || ownerBlocked || unknown.length>0 || (protectedProfile&&!intentFresh) || !protocolReady || !fresh || state !== 'OFF' || !status?.safetyLockout || !status?.controlEnabled || sending} onClick={() => void send('RESET_LOCKOUT')} className="border px-4 py-2 rounded-lg disabled:opacity-40">Reset khóa</button>
       </div>
       <p className="text-xs text-slate-500 flex gap-2"><ShieldCheck className="w-4 h-4" /> Bật tối đa 60 phút; chưa có status mới hoặc ACK thì không tự coi lệnh đã thực thi.</p>
       {notice&&<p role="status">{notice}</p>}

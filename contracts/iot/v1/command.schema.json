@@ -49,6 +49,9 @@
         "targetBootId": {
           "type": "string",
           "format": "uuid"
+        },
+        "route": {
+          "$ref": "#/$defs/pumpCircuitRoute"
         }
       },
       "required": [
@@ -87,6 +90,75 @@
           ]
         }
       }
+    },
+    {
+      "if": {
+        "required": [
+          "commandFence"
+        ],
+        "properties": {
+          "commandFence": {
+            "required": [
+              "route"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "enum": [
+              "ON",
+              "RESET_LOCKOUT"
+            ]
+          },
+          "durationSeconds": {
+            "maximum": 30
+          }
+        }
+      }
     }
-  ]
+  ],
+  "$defs": {
+    "pumpCircuitRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "circuitId",
+        "circuitRevision",
+        "zoneId",
+        "zoneRevision",
+        "controllerId",
+        "valveId"
+      ],
+      "properties": {
+        "circuitId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_-]{1,31}$"
+        },
+        "zoneId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_-]{1,31}$"
+        },
+        "circuitRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "zoneRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "controllerId": {
+          "type": "string",
+          "pattern": "^IRRIGATION(0[2-9]|[1-9][0-9])$"
+        },
+        "valveId": {
+          "type": "string",
+          "pattern": "^VALVE(0[2-9]|[1-9][0-9])$"
+        }
+      }
+    }
+  }
 }

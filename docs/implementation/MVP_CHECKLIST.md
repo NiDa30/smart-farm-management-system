@@ -204,3 +204,15 @@ Không ghi secret/credential vào bảng. Có thể dùng file test report priva
 | G7 | — | — | — | Chưa thực hiện | UNRUN |
 
 Checklist này không ghi nhận lại UI mock đã pass trong onboarding như bằng chứng MVP end-to-end. Typecheck có lỗi tại thời điểm audit và đã được sửa/kiểm tra pass trong Day1; AWS live gate và firmware compile vẫn chưa nghiệm thu. Chỉ thêm dấu kiểm cho phần có evidence tương ứng.
+
+## Bước V33 — bơm LED có route tĩnh tại proof cục bộ
+
+- [x] ON/reset chọn đúng nhánh/revisions/boot; van OPEN đã ACK và status mới,
+  nhánh khác CLOSED, local proof OPEN; thời gian bật trong cửa sổ van.
+- [x] Khóa di chuyển/sửa nhánh khi bơm chưa OFF phủ mọi lệnh; OFF không ràng route.
+- [x] Firmware/API/UI opt-in, ledger/reconcile không tự retry/resume; kiểm thử cloud.
+- [ ] Sáu ca AWS/Wokwi thực tế chương47, GPIO/NVS/physical path.
+- [ ] Coordinator chuyển nhiều vùng, flow proof xuyên controller, queue dispatch.
+
+[Hướng dẫn](../book/CHAPTER_47_PUMP_CIRCUIT_ROUTE.md),
+[bàn giao](LOCAL_PUMP_CIRCUIT_ROUTE_REPORT.md). Không coi các test cloud là nghiệm thu A3.

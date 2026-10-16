@@ -104,3 +104,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Đăng ký board monitor từ gói Wokwi](CHAPTER_45_CIRCUIT_MONITOR_PROVISIONING.md): plan offline, apply theo account, certificate riêng và phục hồi không tạo trùng.
 
 - [Điều khiển LED van theo nhánh](CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md): OPEN/CLOSE riêng02–99, boot/revision/fence, ACK khác status; chưa điều phối bơm chung.
+
+- [Bơm LED gắn đúng nhánh tưới](CHAPTER_47_PUMP_CIRCUIT_ROUTE.md): route/revision khai báo tại bơm, đối chiếu van và cửa sổ bật ngắn; thao tác thủ công, chưa coordinator.

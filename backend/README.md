@@ -243,3 +243,19 @@ Circuit and zone edits share the tracking gate and need confirmed CLOSED.
 Separate worker cannot block pump ACK storage. No shared-pump coordinator,
 real valve, queue dispatch or monitor capability upgrade.
 [Chapter46](../docs/book/CHAPTER_46_CIRCUIT_VALVE_LED_CONTROL.md).
+
+## V33 static circuit route at the simulator pump
+
+SMARTFARM_PUMP_CIRCUIT_ROUTE_REQUIRED defaults false. With pump fencing and
+circuit-demo control enabled, GET /api/v1/irrigation-circuits/{id}/pump-proof
+provides read-only preflight. Manual pump HttpIntent includes optional route
+(circuitId/circuitRevision/zoneId/zoneRevision/controllerId/valveId); ON/RESET
+must match the route reported in valveInterlock by the pump. Bound ON is
+1..30s and expiry is capped by the acknowledged OPEN valve's time window.
+Other configured branches must report fresh independent CLOSED positions.
+Generic/ENV01 automatic ON cannot target a reported route. Emergency OFF has
+no route. V33 adds nullable pump_command.circuit_route without backfill.
+Circuit gate serializes proof/reservation versus valve movement/config edits;
+confirm pump OFF covering every command before moving valves. No coordinator,
+queue dispatch or actual water-path attestation. All new flags default off.
+[Chapter47](../docs/book/CHAPTER_47_PUMP_CIRCUIT_ROUTE.md).

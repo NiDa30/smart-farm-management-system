@@ -463,3 +463,17 @@ flags. Vào Điều khiển Actuator → Cấu hình nhánh tưới → Điều 
 nhánh. Đợi GPIO/vị trí CLOSED mới; mở5s, đổi switch OPEN trong3s, khi đóng
 đổi về CLOSED. Không nối van/bơm thật, chưa coordinator. Sáu ca AWS/Wokwi
 mới Chưa chạy; code/test cloud không thay bằng chứng live của máy bạn.
+
+## Bơm LED theo nhánh, V33
+
+Đọc [chương47](CHAPTER_47_PUMP_CIRCUIT_ROUTE.md) trước khi bật profile. Trong
+config.local.h của firmware/esp32, sửa route cố định khớp nhánh/vùng/revisions,
+fence1/proof1/simulator1; build app/buildfs/merge đúng project, boot luôn OFF.
+Board van vẫn theo chương46, không dùng monitor status-only để mở van.
+Terminal Git Bash backend cần CONTROL_ENABLED, PUMP_FENCING_ENABLED,
+PUMP_CIRCUIT_ROUTE_REQUIRED và IRRIGATION_CIRCUIT_DEMO_ENABLED=true;
+IRRIGATION_DEMO_ENABLED=false. Không dán lệnh export Bash vào PowerShell.
+Mọi nhánh khác dùng bơm phải có CLOSED mới. Mở van30s, đặt tiếp điểm đúng
+ở cả hai board, chọn **Bơm theo nhánh (LED)**, đọc lại/reset nếu cần rồi
+bật5s. Tắt bơm và xác nhận OFF trước CLOSE hoặc sửa nhánh. Không auto resume,
+không dùng GPIO proof/ACK mô phỏng như xác nhận đường nước vật lý.

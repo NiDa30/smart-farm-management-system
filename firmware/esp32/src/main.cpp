@@ -100,6 +100,20 @@ static_assert(!FARM_VALVE_PROOF_ENABLED||FARM_VALVE_PROOF_SIMULATOR==1,"Local va
 static_assert(!FARM_VALVE_PROOF_ENABLED||FARM_WATER_INTERLOCK_ENABLED,"Valve proof requires reservoir interlock");
 static_assert(!FARM_VALVE_PROOF_ENABLED||(FARM_RELAY_PIN!=32&&FARM_RELAY_PIN!=33&&FARM_DHT_PIN!=32&&FARM_DHT_PIN!=33&&FARM_SOIL_PIN!=32&&FARM_SOIL_PIN!=33&&FARM_WATER_LEVEL_PIN!=32&&FARM_WATER_LEVEL_PIN!=33&&(!FARM_FLOW_INTERLOCK_ENABLED||(FARM_FLOW_PIN!=32&&FARM_FLOW_PIN!=33))),"Valve proof contacts require separate GPIO32/33");
 
+#ifndef FARM_PUMP_CIRCUIT_ROUTE_ENABLED
+#define FARM_PUMP_CIRCUIT_ROUTE_ENABLED 0
+#endif
+#if FARM_PUMP_CIRCUIT_ROUTE_ENABLED
+#ifndef FARM_PUMP_ROUTE_CIRCUIT_ID
+#error "Provide the complete static pump circuit route in private config"
+#endif
+static pumpRoute::Route configuredRoute=pumpRoute::make(FARM_PUMP_ROUTE_CIRCUIT_ID,FARM_PUMP_ROUTE_CIRCUIT_REVISION,FARM_PUMP_ROUTE_ZONE_ID,FARM_PUMP_ROUTE_ZONE_REVISION,FARM_PUMP_ROUTE_CONTROLLER_ID,FARM_PUMP_ROUTE_VALVE_ID);
+#else
+static pumpRoute::Route configuredRoute;
+#endif
+static_assert(FARM_PUMP_CIRCUIT_ROUTE_ENABLED==0||FARM_PUMP_CIRCUIT_ROUTE_ENABLED==1,"Route opt-in must be0or1");
+static_assert(!FARM_PUMP_CIRCUIT_ROUTE_ENABLED||(FARM_PUMP_FENCING_ENABLED&&FARM_VALVE_PROOF_ENABLED&&FARM_VALVE_PROOF_SIMULATOR==1),"Bound circuit requires fencing and simulator local valve proof");
+
 // Only ENV01 may control PUMP01 in this Wokwi MVP. Default disabled.
 static DHTesp dht;
 static esp_mqtt_client_handle_t client = nullptr;
@@ -277,6 +291,7 @@ static void publishPumpStatus() {
   fillPumpStatus(doc,relay.isOn() && !cut?"ON":"OFF",relay.lockout()||proof.fault()!=ValveProofInterlock::NONE,reason,
     activeCommand.length()?activeCommand.c_str():nullptr);
   if(FARM_VALVE_PROOF_ENABLED)fillValveProof(doc,proof);
+  if(FARM_PUMP_CIRCUIT_ROUTE_ENABLED)pumpRoute::write(doc["valveInterlock"]["route"].to<JsonObject>(),configuredRoute);
   if(FARM_PUMP_DURABLE_SAFETY_ENABLED)fillDurableSafety(doc,safetyJournal);
   if(FARM_PUMP_FENCING_ENABLED)pumpFence::status(doc,pumpOrder.lastOrdinal(),pumpOrder.restartRequired());
   String payload; serializeJson(doc, payload);
@@ -317,7 +332,8 @@ static void handleCommand(const CommandPacket &packet) {
     if(!pumpFence::decode(packet.payload,fencedCommand))error="INVALID_COMMAND";
     else {
       hasFence=!fencedCommand.legacyOff;
-      if(hasFence){
+      if(hasFence)error=pumpRoute::check(FARM_PUMP_CIRCUIT_ROUTE_ENABLED,off,fencedCommand.hasRoute,fencedCommand.route,configuredRoute);
+      if(hasFence&&!error){
         error=pumpOrder.accept(fencedCommand.ordinal,fencedCommand.target,bootId,off);
         if(error&&strcmp(error,"STALE_ORDINAL")==0){publishPumpStatus();return;}
       }
@@ -526,6 +542,7 @@ void setup() {
     Serial.printf("DURABLE_SAFETY %s; relay OFF; new boot-targeted reset required\n",PumpSafetyJournal<PumpSafetyNvs>::name(safetyJournal.state()));
   }
   if (FARM_WATER_INTERLOCK_ENABLED) pinMode(FARM_WATER_LEVEL_PIN, INPUT_PULLUP);
+  if(FARM_PUMP_CIRCUIT_ROUTE_ENABLED&&!pumpRoute::valid(configuredRoute)){controlEnabled=false;Serial.println("Invalid circuit route; control disabled, relay OFF");}
   if (FARM_WATER_INTERLOCK_ENABLED) Serial.printf("Water interlock enabled: GPIO%d closed=water, open=dry\n", FARM_WATER_LEVEL_PIN);
   else Serial.println("Water interlock disabled: set FARM_WATER_INTERLOCK_ENABLED=1 and rebuild");
   checkWaterSupply();

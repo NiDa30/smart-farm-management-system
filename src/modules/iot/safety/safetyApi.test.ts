@@ -68,3 +68,5 @@ test('durable reason cannot invent NVS and malformed capability is rejected',()=
 test('READY is OFF without lock, ARMED is a journal rather than output proof',()=>{
  const v:any=safetyFixture();v.relay.stateReason='LOCKOUT_RESET';v.relay.durableSafety={version:1,enabled:true,storage:'NVS',state:'READY'};assert.equal(parseSafety(v).relay!.reportedState,'OFF');v.relay.reportedState='ON';assert.throws(()=>parseSafety(v));v.relay.stateReason='COMMAND_ON';v.relay.durableSafety.state='ARMED';assert.equal(parseSafety(v).relay!.reportedState,'ON');v.relay.reportedState='OFF';assert.equal(parseSafety(v).relay!.durableSafety!.state,'ARMED');
 });
+
+test('local proof may declare a strict simulator circuit route without becoming physical attestation',()=>{const v:any=safetyFixture();v.relay.valveInterlock={version:1,enabled:true,dataSource:'SIMULATOR',state:'OPEN',fault:null,route:{circuitId:'CIRCUIT08',circuitRevision:1,zoneId:'ZONE08',zoneRevision:1,controllerId:'IRRIGATION08',valveId:'VALVE08'}};assert.equal(parseSafety(v).relay!.valveInterlock!.route!.valveId,'VALVE08');v.relay.valveInterlock.route.zoneRevision=true;assert.throws(()=>parseSafety(v));});
