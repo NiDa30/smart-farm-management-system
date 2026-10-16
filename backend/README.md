@@ -349,3 +349,18 @@ require idle pump/no active session and current revisions. UI supports explicit
 calibration review and GET-only uncertain-save readback. No new global flag,
 MQTT topic/IAM/firmware or continuous water stop. Weather stop V39 does not
 supervise LOW. See [chapter54](../docs/book/CHAPTER_54_CIRCUIT_WATER_ADMISSION.md).
+
+## Operator LOW supervision V41
+
+Policy stopOnUnavailable and SMARTFARM_IRRIGATION_WATER_STOP_ENABLED both
+default false; require admission/session/profile enabled to opt in. Worker
+checks DISPATCHING_ON/WAIT_ON operator sessions, requests OFF once for false/
+unknown/fault/stale/mismatched LOW, records immutable evidence before IO.
+Weather and water evaluators share the session stop latch/dispatch gate,
+so only one condition claims an automatic OFF. Manual OFF, late callbacks,
+uncertain IO and restart never replay/resume or overwrite a newer stop.
+GET /api/v1/irrigation-circuits/{id}/water-gate/stops lists20 decision records
+with operation/command states separately; neither proves physical OFF. No
+direct ON/legacy-rule supervision, flow proof or automatic CLOSE/FINISH.
+Device timers/interlocks still protect when backend/network is unavailable.
+[Chapter55](../docs/book/CHAPTER_55_SESSION_WATER_STOP.md).

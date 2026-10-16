@@ -117,3 +117,4 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Chốt mưa theo vùng trước khi bắt đầu tưới](CHAPTER_52_ZONE_RAIN_GATE.md): binding opt-in, mẫu mới đúng nguồn, ON recheck và lưu bằng chứng; chưa tự dừng khi mưa xuất hiện sau admission.
 - [Yêu cầu dừng phiên tưới khi thời tiết đổi](CHAPTER_53_SESSION_WEATHER_STOP.md): opt-in từng vùng/backend, một OFF có bằng chứng, không replay/resume; chỉ phiên operator.
 - [Chốt nguồn nước trước khi bắt đầu tưới](CHAPTER_54_CIRCUIT_WATER_ADMISSION.md): LOW theo binding của nhánh, opt-in, mẫu mới đúng nguồn, ON recheck/evidence; chưa flow proof hoặc stop liên tục.
+- [Dừng phiên khi nguồn nước không còn hợp lệ](CHAPTER_55_SESSION_WATER_STOP.md): opt-in LOW supervisor, shared stop claim với thời tiết, evidence và lịch sử; không replay/resume hoặc flow proof.

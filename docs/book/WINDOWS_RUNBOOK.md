@@ -560,3 +560,19 @@ Chính gate không thêm certificate/topic/IAM, nhưng trạm vẫn phải gửi
 đúng theo chương23. Không tự dừng khi LOW đổi sau ON, chưa flow proof xuyên
 node; giữ edge timer/guard. Sáu ca live **Chưa chạy** ở
 [chương54](CHAPTER_54_CIRCUIT_WATER_ADMISSION.md).
+
+## Dừng phiên khi nguồn nước không còn hợp lệ V41
+
+Giữ volume, pull/restart áp V41. Trong Git Bash backend profile LED/session
+đã có, thêm export SMARTFARM_IRRIGATION_WATER_STOP_ENABLED=true; legacy demo
+false. Khép phiên cũ và xác nhận bơm nghỉ, Chốt nguồn nước của nhánh → chọn
+thêm Yêu cầu OFF khi nguồn nước không cho phép trong phiên tưới rồi lưu.
+Cần gate bật, đúng LOW/source/calibration và board WATER đang gửi dữ liệu.
+Có thể bật rain-stop đồng thời, chỉ một nguồn giữ quyền tự dừng mỗi phiên.
+
+History nguồn nước tách kết quả gọi và command, chưa chứng minh OFF hiện tại.
+Nếu thời tiết dừng trước, xem history thời tiết. Mất MQTT/restart không tự
+replay; yêu cầu OFF mới nếu cần, chờ proof rồi CLOSE/FINISH. Không thêm cert/
+topic/IAM/firmware cho riêng worker; vẫn cần edge timer/interlock khi backend
+hoặc mạng dừng. Sáu ca live **Chưa chạy** ở
+[chương55](CHAPTER_55_SESSION_WATER_STOP.md).

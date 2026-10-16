@@ -152,3 +152,7 @@ cloud để đánh dấu live đạt hoặc tăng thời hạn bơm chỉ để 
 Chốt LOW không tự dừng sau ON. Không xóa DB/NVS, bỏ khóa ngoại hoặc sửa
 sample timestamp để vượt điều kiện. A3 còn flow proof xuyên controller,
 giám sát nước khi đang chạy, coordinator nhiều route và dispatch queue.
+
+V41 ở [chương55](CHAPTER_55_SESSION_WATER_STOP.md) bổ sung lựa chọn giám sát
+LOW trong phiên operator. Policy V40 giữ admission-only sau nâng cấp; cần
+bật riêng cả flag backend và stopOnUnavailable, không tự đổi hành vi cũ.

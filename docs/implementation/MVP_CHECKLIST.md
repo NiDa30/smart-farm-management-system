@@ -294,3 +294,14 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Giám sát LOW/flow khi đang tưới, cross-controller proof, multi-route/queue.
 
 [Bàn giao V40](LOCAL_CIRCUIT_WATER_GATE_REPORT.md).
+
+## Bước V41 — giám sát nguồn nước trong phiên
+
+- [x] stopOnUnavailable/flag opt-in, defaultfalse, giữ hành vi V40.
+- [x] LOW false/unknown giữ một OFF/evidence trước IO trong phiên có ON.
+- [x] Nước/mưa cạnh tranh một stop claim; manual/late dispatch/restart không replay.
+- [x] UI/history GET-only, unknown-save so cả mode, DB/browser/scheduler/upgrade/restart.
+- [ ] Sáu ca AWS/Wokwi [chương55](../book/CHAPTER_55_SESSION_WATER_STOP.md).
+- [ ] Flow proof/grace xuyên controller, coordinator/multi-route/queue, nghiệm thu thật.
+
+[Bàn giao V41](LOCAL_SESSION_WATER_STOP_REPORT.md).

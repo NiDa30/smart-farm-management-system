@@ -5,13 +5,15 @@ import vn.smartfarm.iot.control.PumpCircuitRoute;import vn.smartfarm.iot.irrigat
 /** Per-circuit LOW float admission only; does not prove flow or continuously supervise a pump. */
 @Service
 public class CircuitWaterGate {
- public record Policy(String circuitId,int circuitRevision,String calibrationVersion,boolean enabled,int revision) {}
- public record Request(int expectedRevision,int circuitRevision,String calibrationVersion,boolean enabled) {}
+ public record Policy(String circuitId,int circuitRevision,String calibrationVersion,boolean enabled,int revision,boolean stopOnUnavailable) {}
+ public record Request(int expectedRevision,int circuitRevision,String calibrationVersion,boolean enabled,boolean stopOnUnavailable) {public Request(int expectedRevision,int circuitRevision,String calibrationVersion,boolean enabled){this(expectedRevision,circuitRevision,calibrationVersion,enabled,false);}}
  public record Sample(Boolean value,String quality,Instant observedAt,Instant receivedAt,UUID bootId,long sequence,String dataSource,String calibrationVersion) {}
  public record View(IrrigationCircuits.Config config,Instant asOf,String calibrationVersion,Policy policy,String state,boolean allowed,Instant validUntil,Sample sample) {}
- private final JdbcTemplate jdbc;private final boolean profile;
- public CircuitWaterGate(JdbcTemplate jdbc,@Value("${smartfarm.control.enabled:false}")boolean control,@Value("${smartfarm.control.pump-fencing-enabled:false}")boolean fence,@Value("${smartfarm.control.circuit-route-required:false}")boolean route,@Value("${smartfarm.irrigation.circuit-demo-enabled:false}")boolean circuit){this.jdbc=jdbc;profile=control&&fence&&route&&circuit;}
- private static Policy policy(ResultSet r,int n)throws SQLException{return new Policy(r.getString("circuit_id"),r.getInt("circuit_revision"),r.getString("calibration_version"),r.getBoolean("enabled"),r.getInt("revision"));}
+ private final JdbcTemplate jdbc;private final boolean profile,stopProfile;
+ @org.springframework.beans.factory.annotation.Autowired
+ public CircuitWaterGate(JdbcTemplate jdbc,@Value("${smartfarm.control.enabled:false}")boolean control,@Value("${smartfarm.control.pump-fencing-enabled:false}")boolean fence,@Value("${smartfarm.control.circuit-route-required:false}")boolean route,@Value("${smartfarm.irrigation.circuit-demo-enabled:false}")boolean circuit,@Value("${smartfarm.irrigation.water-stop-enabled:false}")boolean waterStop,@Value("${smartfarm.irrigation.session-enabled:false}")boolean session){this.jdbc=jdbc;profile=control&&fence&&route&&circuit;stopProfile=waterStop&&session;}
+ public CircuitWaterGate(JdbcTemplate jdbc,boolean control,boolean fence,boolean route,boolean circuit){this(jdbc,control,fence,route,circuit,false,false);}
+ private static Policy policy(ResultSet r,int n)throws SQLException{return new Policy(r.getString("circuit_id"),r.getInt("circuit_revision"),r.getString("calibration_version"),r.getBoolean("enabled"),r.getInt("revision"),r.getBoolean("stop_on_unavailable"));}
  @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
  public View snapshot(String id){return inspect(jdbc,id,Instant.now());}
  private static List<Map<String,Object>> channel(JdbcTemplate jdbc,IrrigationCircuits.Config c){return jdbc.queryForList("SELECT m.calibration_version FROM iot_channel m JOIN iot_node n USING(node_id) WHERE m.node_id=? AND m.channel_id=? AND m.metric='WATER_PRESENT' AND m.unit='boolean' AND n.node_type='WATER' AND n.telemetry_version=2",c.waterNodeId(),c.lowChannelId());}
@@ -37,13 +39,15 @@ public class CircuitWaterGate {
  @Transactional
  public Policy save(String id,Request r){
   if(r==null||r.expectedRevision()<0||r.expectedRevision()==Integer.MAX_VALUE||r.circuitRevision()<1||r.calibrationVersion()!=null&&(r.calibrationVersion().isBlank()||r.calibrationVersion().length()>40))throw bad(HttpStatus.BAD_REQUEST,"Invalid water gate policy");
+  if(r.stopOnUnavailable()&&!r.enabled())throw bad(HttpStatus.BAD_REQUEST,"Water stop requires enabled admission gate");
+  if(r.stopOnUnavailable()&&!stopProfile)throw bad(HttpStatus.CONFLICT,"Enable operator session and water stop profile first");
   jdbc.queryForObject("SELECT singleton FROM pump_dispatch_gate WHERE singleton=1 FOR UPDATE",Integer.class);jdbc.queryForObject("SELECT revision FROM irrigation_circuit_state WHERE singleton=1 FOR UPDATE",Long.class);
   var old=inspect(jdbc,id,Instant.now());if((old.policy()==null?0:old.policy().revision())!=r.expectedRevision()||old.config().revision()!=r.circuitRevision())throw bad(HttpStatus.CONFLICT,"Review current circuit and water policy");IrrigationSessionGuard.editable(jdbc);PumpCircuitRoute.requireIdle(jdbc);
   if(r.enabled()){
    if(!profile)throw bad(HttpStatus.CONFLICT,"Enable fenced route-bound circuit profile first");var c=old.config();var ch=channel(jdbc,c);if(ch.isEmpty()||!Objects.equals(ch.getFirst().get("calibration_version"),r.calibrationVersion()))throw bad(HttpStatus.BAD_REQUEST,"Review declared WATER LOW channel calibration");
    if(jdbc.queryForObject("SELECT count(*) FROM irrigation_zone WHERE zone_id=? AND revision=? AND expected_source=?",Integer.class,c.zoneId(),c.zoneRevision(),c.expectedSource())!=1)throw bad(HttpStatus.CONFLICT,"Review zone revision first");
   }
-  jdbc.update("INSERT INTO circuit_water_gate(circuit_id,circuit_revision,calibration_version,enabled,revision) VALUES(?,?,?,?,?) ON CONFLICT(circuit_id) DO UPDATE SET circuit_revision=EXCLUDED.circuit_revision,calibration_version=EXCLUDED.calibration_version,enabled=EXCLUDED.enabled,revision=EXCLUDED.revision",id,r.circuitRevision(),r.calibrationVersion(),r.enabled(),r.expectedRevision()+1);
+  jdbc.update("INSERT INTO circuit_water_gate(circuit_id,circuit_revision,calibration_version,enabled,revision,stop_on_unavailable) VALUES(?,?,?,?,?,?) ON CONFLICT(circuit_id) DO UPDATE SET circuit_revision=EXCLUDED.circuit_revision,calibration_version=EXCLUDED.calibration_version,enabled=EXCLUDED.enabled,revision=EXCLUDED.revision,stop_on_unavailable=EXCLUDED.stop_on_unavailable",id,r.circuitRevision(),r.calibrationVersion(),r.enabled(),r.expectedRevision()+1,r.stopOnUnavailable());
   return jdbc.query("SELECT * FROM circuit_water_gate WHERE circuit_id=?",CircuitWaterGate::policy,id).getFirst();
  }
  private static ResponseStatusException bad(HttpStatus status,String text){return new ResponseStatusException(status,text);}

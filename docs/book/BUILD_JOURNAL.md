@@ -1331,3 +1331,19 @@ empty/fault/recovery,0command/run/session. Upgrade giữ13bảng cũ trừfield 
 null, full app/restart giữ14bảng, mẫu vẫn cũ. Không firmware/AWS/GPIO thật;
 LOW admission chưa tự OFF sau ON hoặc chứng minh flow. Sáu ca live Chưa chạy.
 [Bàn giao](../implementation/LOCAL_CIRCUIT_WATER_GATE_REPORT.md).
+
+## 17/10/2026 — V41 giám sát LOW và dùng chung quyền dừng
+
+Tách shared condition-stop từ V39, giữ weather semantics; thêm LOW supervisor
+opt-in với flag/policy mặc địnhfalse. EMPTY/unknown trong phiên có ON giữ
+OFF/evidence trước IO; shared latch ngăn nước và mưa gửi trùng, không replay/
+resume, không ghi đè manual OFF/phiên mới. UI mode/history/readback có so
+field mới, tách RETURNED với FAILED/PUBLISH_UNCERTAIN/EXECUTED và proof OFF.
+
+615backend/91circuitBrowser/51nodeBrowser/17pump/39unit/lintbuild đạt. Scheduler
+thật với native/template packet và fake IO tạo một OFF có ACK/status, không
+CLOSE/ON. Upgrade giữ14bảng cũ trừfield mới false; full app GET-only trước/sau
+restart,14bảng giữ nguyên/RECOVERY revision+1, không command/event mới.
+Không firmwarebuild/AWS/GPIO thật. Chương55 có sáu ca live Chưa chạy; LOW
+không chứng minh flow và không thay bảo vệ edge khi backend/network down.
+[Bàn giao](../implementation/LOCAL_SESSION_WATER_STOP_REPORT.md).

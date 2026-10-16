@@ -386,3 +386,15 @@ fault/recovery,0command/run/session. Upgrade giữ13bảng cũ (trừ field mớ
 full app GET-only/restart giữ14bảng đạt. Chỉ admission; chưa continuous LOW/
 flow protection hoặc coordinator. Sáu ca live
 [chương54](CHAPTER_54_CIRCUIT_WATER_ADMISSION.md) **Chưa chạy**.
+
+## V41 — giám sát LOW trong phiên,17/10/2026
+
+615backend(23mới),91circuitBrowser(7mới),51node/vùng,17pump,39unit(3mới),
+lint/build đạt, không skip. Stop policy/flag defaultfalse; nước và thời tiết
+cùng một claim/stop latch, chỉ một auto OFF/event tổng mỗi phiên. Unknown/
+LOWfalse giữ evidence trước IO, không replay/resume hoặc thay manual stop.
+Scheduler/native packets→fake OFF/ACK/status→DB đạt, không auto CLOSE. Upgrade
+14bảng cũ không đổi trừfield mới false; full app GET-only, restart14bảng không
+đổi và phiên RECOVERY chỉ revision+1. Sáu ca live
+[chương55](CHAPTER_55_SESSION_WATER_STOP.md) **Chưa chạy**. Chưa flow proof,
+physical dry-run protection hoặc coordinator nhiều route.

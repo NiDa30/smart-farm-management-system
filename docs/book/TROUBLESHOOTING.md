@@ -614,3 +614,15 @@ không bỏ khóa ngoại hoặc sửa DB sample để vượt điều kiện. D
 kênh hiện tại chỉ sau khi đã kiểm tra. OFF/RESET giữ luồng an toàn riêng,
 không có nghĩa gate sẽ tự OFF nếu nguồn thay đổi sau ON.
 [Chương54](CHAPTER_54_CIRCUIT_WATER_ADMISSION.md).
+
+## LOW không còn hợp lệ nhưng chưa thấy OFF tự động (V41)
+
+Cần flag SMARTFARM_IRRIGATION_WATER_STOP_ENABLED=true và policy
+stopOnUnavailable=true trong nhánh. Policy V40 mặc địnhfalse. Chỉ phiên
+DISPATCHING_ON/WAIT_ON chưa yêu cầu dừng được giám sát, không direct ON/rule
+ENV01. LOW true/FLOW0 không phải lỗi LOW. Nếu mưa hoặc OFF thủ công đã giữ
+quyền trước sẽ không có event nước thứ hai; xem cả hai history và bước phiên.
+RETURNED có thể chứa FAILED/MQTT_UNAVAILABLE hoặc PUBLISH_UNCERTAIN; đợi
+status/proof, không lấy lịch sử làm bằng chứng bơm vật lý đã tắt. Worker không
+replay khi có nước/mạng lại; backend down vẫn cần bảo vệ edge.
+[Chương55](CHAPTER_55_SESSION_WATER_STOP.md).

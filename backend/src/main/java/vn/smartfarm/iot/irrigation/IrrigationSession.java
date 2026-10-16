@@ -56,25 +56,29 @@ public class IrrigationSession {
    final JsonNode output=result;final boolean ok=returned;tx.executeWithoutResult(t->{gates();jdbc.update("UPDATE irrigation_session_action SET state=?,result=?::jsonb WHERE request_id=?",ok?"RETURNED":"UNRESOLVED",output==null?null:encode(output),a.requestId());String waiting=ok?(a.action().equals("CLOSE")?"WAIT_CLOSED":"WAIT_"+a.action()):"RECOVERY_REQUIRED";jdbc.update("UPDATE irrigation_session SET phase=?,reason=?,revision=revision+1,stop_requested=stop_requested OR ? WHERE session_id=? AND phase=? AND "+switch(a.action()){case "OPEN"->"open_id";case "ON"->"on_id";case "OFF"->"off_id";default->"close_id";}+"=?",waiting,ok?"CHECK_DEVICE_EVIDENCE":"STEP_UNRESOLVED",!ok,session,"DISPATCHING_"+a.action(),a.requestId());});
  }
  /** One durable OFF attempt per active operator session. No replay after a crash or uncertain publish. */
- public void stopForWeather(){
+ public void stopForWeather(){stopForCondition(true);}
+ public void stopForWater(){stopForCondition(false);}
+ private void stopForCondition(boolean weatherCause){
   if(!enabled||!ready||legacy)return;
   Operation op=tx.execute(t->{gates();var r=active();if(r==null||r.stopRequested()||r.onId()==null||!Set.of("DISPATCHING_ON","WAIT_ON").contains(r.phase()))return null;
-   var weather=vn.smartfarm.iot.nodes.ZoneRainGate.inspect(jdbc,r.config().zoneId(),Instant.now());
-   if(weather.policy()==null||!weather.policy().enabled()||!weather.policy().stopOnRain()||weather.allowed())return null;
-   if(Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM irrigation_weather_stop WHERE session_id=?)",Boolean.class,r.sessionId())))return null;
+   JsonNode evidence;String reason;String eventTable=weatherCause?"irrigation_weather_stop":"irrigation_water_stop";
+   if(weatherCause){var weather=vn.smartfarm.iot.nodes.ZoneRainGate.inspect(jdbc,r.config().zoneId(),Instant.now());if(weather.policy()==null||!weather.policy().enabled()||!weather.policy().stopOnRain()||weather.allowed())return null;evidence=mapper.valueToTree(weather);reason="WEATHER_"+weather.state();}
+   else{var water=vn.smartfarm.iot.nodes.CircuitWaterGate.inspect(jdbc,r.config().circuitId(),Instant.now());if(water.policy()==null||!water.policy().enabled()||!water.policy().stopOnUnavailable()||water.allowed())return null;evidence=mapper.valueToTree(water);reason="WATER_"+water.state();}
+   // Both evaluators hold the same gates and respect the same session stop latch.
+   if(Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM "+eventTable+" WHERE session_id=?)",Boolean.class,r.sessionId())))return null;
    UUID id=UUID.randomUUID();var at=Instant.now().truncatedTo(ChronoUnit.MICROS);var a=new Action(id,"OFF",r.revision(),at);var c=fencing.view().intent();boolean canDispatch=c!=null&&c.ready();
    var payload=canDispatch?new PumpCommandFencing.HttpIntent(id,"OFF",null,null,c.revision(),at,null):null;
    jdbc.update("INSERT INTO irrigation_session_action(request_id,session_id,action,definition,payload,state) VALUES(?,?,'OFF',?::jsonb,?::jsonb,?)",id,r.sessionId(),encode(a),encode(payload),canDispatch?"RESERVED":"UNRESOLVED");
-   jdbc.update("INSERT INTO irrigation_weather_stop(session_id,request_id,zone_id,evidence) VALUES(?,?,?,?::jsonb)",r.sessionId(),id,r.config().zoneId(),encode(weather));
-   jdbc.update("UPDATE irrigation_session SET stop_requested=true,phase=?,reason=?,off_id=?,revision=revision+1 WHERE session_id=?",canDispatch?"DISPATCHING_OFF":"RECOVERY_REQUIRED","WEATHER_"+weather.state(),id,r.sessionId());
+   jdbc.update("INSERT INTO "+eventTable+"(session_id,request_id,"+(weatherCause?"zone_id":"circuit_id")+",evidence) VALUES(?,?,?,?::jsonb)",r.sessionId(),id,weatherCause?r.config().zoneId():r.config().circuitId(),encode(evidence));
+   jdbc.update("UPDATE irrigation_session SET stop_requested=true,phase=?,reason=?,off_id=?,revision=revision+1 WHERE session_id=?",canDispatch?"DISPATCHING_OFF":"RECOVERY_REQUIRED",reason,id,r.sessionId());
    return operation(r.config().circuitId(),id);
   });
   if(op==null||!op.state().equals("RESERVED"))return;
   String circuit=jdbc.queryForObject("SELECT circuit_id FROM irrigation_session WHERE session_id=?",String.class,op.sessionId());var a=read(op.definition().toString(),Action.class);
   dispatchReserved(circuit,op.sessionId(),a,op,()->{
-   // Executed inside pump_dispatch_gate before command reservation commits. A late worker OFF
+   // Executed inside pump_dispatch_gate before command reservation commits. A late automatic OFF
    // must not affect a newer manual stop or a later session that now owns the pump.
-   if(jdbc.queryForObject("SELECT count(*) FROM irrigation_session WHERE session_id=? AND off_id=? AND phase='DISPATCHING_OFF' AND stop_requested",Integer.class,op.sessionId(),op.requestId())!=1)throw bad(HttpStatus.CONFLICT,"Weather stop superseded; never replay");
+   if(jdbc.queryForObject("SELECT count(*) FROM irrigation_session WHERE session_id=? AND off_id=? AND phase='DISPATCHING_OFF' AND stop_requested",Integer.class,op.sessionId(),op.requestId())!=1)throw bad(HttpStatus.CONFLICT,"Automatic stop superseded; never replay");
   });
  }
  private static void fresh(Instant at){if(at.isBefore(Instant.now().minusSeconds(10))||at.isAfter(Instant.now().plusSeconds(2)))throw bad(HttpStatus.CONFLICT,"Review expired");}

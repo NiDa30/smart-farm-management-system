@@ -987,3 +987,18 @@ WaterPacket→DB/full app/upgrade/restart giữ dữ liệu. Sáu ca live Chưa 
 proof hoặc hoàn tất A2/A3. Coordinator multi-route/queue và physical acceptance
 vẫn mở. [Chương54](../book/CHAPTER_54_CIRCUIT_WATER_ADMISSION.md),
 [bàn giao](../implementation/LOCAL_CIRCUIT_WATER_GATE_REPORT.md).
+
+## Cập nhật17/10/2026 — A2/A3 giám sát LOW trong phiên V41
+
+stopOnUnavailable từng nhánh và flag/backend mặc địnhfalse. Phiên đã giữ ON
+nếu LOW false/unknown/fault/stale/mismatch thì claim OFF/evidence trước IO.
+Nước và mưa dùng chung stop latch, chỉ một auto request/event tổng; manual
+OFF/restart không bị thay thế hoặc replay, nước về không resume. History
+nguồn nước GET-only tách operation/command/proof, không lẫn với physical OFF.
+615backend/91circuitBrowser/51nodeBrowser/17pump/39unit/lintbuild đạt,
+scheduler native→fake OFF/ACK/status→DB và full app/upgrade/restart đạt.
+Sáu ca live Chưa chạy. Chỉ operator session, chưa flow proof xuyên node,
+coordinator multi-route/queue hoặc đảm bảo dừng khi backend/network chết.
+A2/A3 vẫn cần hardware/flow/physical acceptance.
+[Chương55](../book/CHAPTER_55_SESSION_WATER_STOP.md),
+[bàn giao](../implementation/LOCAL_SESSION_WATER_STOP_REPORT.md).
