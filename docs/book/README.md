@@ -115,3 +115,4 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 
 - [Node thời tiết mưa và ánh sáng](CHAPTER_51_WEATHER_NODE.md): WEATHER/v2, project Wokwi riêng, history/CSV, mưa cũ thành Unknown; chưa weather gate.
 - [Chốt mưa theo vùng trước khi bắt đầu tưới](CHAPTER_52_ZONE_RAIN_GATE.md): binding opt-in, mẫu mới đúng nguồn, ON recheck và lưu bằng chứng; chưa tự dừng khi mưa xuất hiện sau admission.
+- [Yêu cầu dừng phiên tưới khi thời tiết đổi](CHAPTER_53_SESSION_WEATHER_STOP.md): opt-in từng vùng/backend, một OFF có bằng chứng, không replay/resume; chỉ phiên operator.

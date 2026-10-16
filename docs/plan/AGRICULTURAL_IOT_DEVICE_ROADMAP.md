@@ -958,3 +958,18 @@ chưa dùng lux/dự báo/ET hoặc điều phối queue nhiều vùng. Chưa ho
 upgrade/restart giữ dữ liệu; sáu ca AWS/Wokwi **Chưa chạy**.
 [Chương52](../book/CHAPTER_52_ZONE_RAIN_GATE.md),
 [bàn giao](../implementation/LOCAL_ZONE_RAIN_GATE_REPORT.md).
+
+## Cập nhật17/10/2026 — A4 giám sát dừng phiên thời tiết V39
+
+stopOnRain riêng từng vùng/backend mặc địnhfalse. Chỉ phiên operator đã
+reserve ON: rain hoặc unknown/fault/stale/mismatch giữ một OFF identity và
+bằng chứng rồi dispatch một lần. Manual stop/restart không bị ghi đè hoặc
+replay; hết mưa không resume. Lịch sử GET-only tách kết quả gọi/ledger với
+proof OFF. Backend/mạng down vẫn cần timer/interlock thiết bị, không đảm bảo
+OFF từ server. Direct ON/rule ENV01 chưa thuộc chế độ giám sát này.
+567backend/51nodeBrowser/75circuit/17pump/31unit,lint/build đạt,
+scheduler thật/native packet→fake OFF/ACK/status→DB và full app/restart giữ
+dữ liệu đạt. Sáu ca live **Chưa chạy**. A3/A4 chưa hoàn tất: multi-route,
+flow xuyên controller, queue dispatch, forecast/ET và nghiệm thu phần cứng.
+[Chương53](../book/CHAPTER_53_SESSION_WEATHER_STOP.md),
+[bàn giao](../implementation/LOCAL_SESSION_WEATHER_STOP_REPORT.md).

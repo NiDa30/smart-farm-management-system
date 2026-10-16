@@ -1,13 +1,15 @@
+import {WeatherStopsPanel} from './WeatherStopsPanel';
 import React,{useEffect,useRef,useState} from 'react';
 import {parseNodes,sourceLabels,type FarmNode} from '../nodes/nodeApi';
 import {parseRainView,parseRainPolicy,rainMatches,rainState,rainLabels,type RainView,type RainRequest} from './rainGateApi';
 export function ZoneRainGatePanel({zoneId,onBack,backLabel='Quay lại vùng tưới'}:{zoneId:string;onBack:()=>void;backLabel?:string}){
+ const [history,setHistory]=useState(false);
  const [view,setView]=useState<RainView|null>(null),[nodes,setNodes]=useState<FarmNode[]>([]),[draft,setDraft]=useState<RainRequest|null>(null),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false),[uncertain,setUncertain]=useState(false),[conflict,setConflict]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[epoch,setEpoch]=useState(0),[,tick]=useState(0);
  const mounted=useRef(true),flight=useRef(false),pending=useRef<RainRequest|null>(null),mutation=useRef<AbortController|null>(null),clock=useRef({floor:0,at:0,received:-Infinity}),dirtyRef=useRef(false);
  dirtyRef.current=dirty;
  const url=`/api/v1/irrigation-zones/${encodeURIComponent(zoneId)}/weather`;
  function accept(v:RainView,start:number){const now=performance.now(),old=clock.current;clock.current={floor:Math.max(Date.parse(v.asOf)+now-start,old.floor+Math.max(0,now-old.at)),at:now,received:now};setView(v);}
- function from(v:RainView):RainRequest {const p=v.policy;return {expectedRevision:p?.revision??0,zoneRevision:v.zoneRevision,nodeId:p?.nodeId??'',channelId:p?.channelId??'',expectedSource:v.zoneSource,calibrationVersion:p?.calibrationVersion??null,enabled:p?.enabled??false};}
+ function from(v:RainView):RainRequest {const p=v.policy;return {expectedRevision:p?.revision??0,zoneRevision:v.zoneRevision,nodeId:p?.nodeId??'',channelId:p?.channelId??'',expectedSource:v.zoneSource,calibrationVersion:p?.calibrationVersion??null,enabled:p?.enabled??false,stopOnRain:p?.stopOnRain??false};}
  useEffect(()=>{mounted.current=true;const timer=setInterval(()=>tick(v=>v+1),500);return()=>{mounted.current=false;mutation.current?.abort();clearInterval(timer);};},[]);
  useEffect(()=>{let active=true,running=false,controller:AbortController;
   async function load(){if(running||flight.current||busy)return;running=true;controller=new AbortController();const start=performance.now(),timeout=setTimeout(()=>controller.abort(),7000);
@@ -33,15 +35,18 @@ export function ZoneRainGatePanel({zoneId,onBack,backLabel='Quay lại vùng tư
    setDraft(from(v));dirtyRef.current=false;setDirty(false);setUncertain(false);setConflict(false);setError('');setMessage(uncertain?'Đã đối chiếu đúng cấu hình đã lưu. Không gửi lại yêu cầu.':'Đã đọc cấu hình mới nhất. Kiểm tra trước khi sửa.');
   }catch{if(mounted.current)setMessage('Chưa đối chiếu được. Kiểm tra backend rồi đọc lại.');}finally{clearTimeout(timeout);flight.current=false;if(mounted.current)setBusy(false);}
  }
+ if(history)return <WeatherStopsPanel zoneId={zoneId} onBack={()=>setHistory(false)}/>;
  return <section aria-label={`Chốt mưa ${zoneId}`} className="space-y-4">
   <button className="underline disabled:opacity-40" disabled={busy||uncertain} onClick={onBack}>{backLabel}</button><h2 className="text-xl font-bold">Chốt mưa · {zoneId}</h2>
   <p className="bg-amber-50 rounded p-3">Khi bật chốt, chỉ mẫu không mưa hợp lệ, đúng nguồn/hiệu chuẩn và mới trong 30 giây mới qua điều kiện bắt đầu tưới. Thiếu mẫu, mẫu cũ, lỗi hoặc có mưa sẽ chặn lượt bật mới. Các điều kiện bơm, van và nguồn nước vẫn được kiểm tra riêng.</p>
-  <p>Đây là kiểm tra trước khi bắt đầu: mưa xuất hiện sau khi bật chưa tự dừng bơm; cần gửi OFF. Không tự tiếp tục tưới khi hết mưa. Ánh sáng chỉ để theo dõi.</p>
+  <p>Chốt mặc định kiểm tra trước khi bắt đầu. Có thể bật thêm yêu cầu OFF khi đang trong phiên tưới có xác nhận mà có mưa hoặc mẫu không còn hợp lệ. Cần backend bật chế độ giám sát; không áp dụng cho nút ON ngoài phiên. Không tự tiếp tục khi hết mưa. Ánh sáng chỉ để theo dõi.</p>
   <p aria-label="Kết quả chốt mưa" className="font-semibold">{rainLabels[state]}</p>{error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
   {view&&<div className="border rounded p-3"><p>Khu vực {view.areaId} · Phiên bản vùng {view.zoneRevision} · {sourceLabels[view.zoneSource]}</p><p>Cấu hình đã lưu: {view.policy?`${view.policy.nodeId} / ${view.policy.channelId} · v${view.policy.revision} · ${view.policy.enabled?'Bật':'Tắt'}`:'Chưa có'}</p>{view.sample&&<><p>Mẫu đã lưu: {view.sample.value===null?'Lỗi cảm biến':view.sample.value?'Có mưa':'Không mưa'} · {sourceLabels[view.sample.dataSource??'UNSPECIFIED']}</p><p>Đo: {new Date(view.sample.observedAt).toLocaleString('vi-VN')} · Nhận: {new Date(view.sample.receivedAt).toLocaleString('vi-VN')}</p><p>Boot {view.sample.bootId} · Seq {view.sample.sequence} · Hiệu chuẩn {view.sample.calibrationVersion??'Chưa khai báo'}</p></>}</div>}
   <button className="underline" disabled={busy} onClick={()=>setEpoch(v=>v+1)}>Làm mới chốt mưa</button>
+  <button className="underline" disabled={busy||uncertain} onClick={()=>setHistory(true)}>Lịch sử dừng do thời tiết</button>
   {draft&&<form aria-label="Cấu hình chốt mưa" onSubmit={save} className="border rounded p-4 space-y-3"><fieldset disabled={busy||uncertain||conflict||changed} className="space-y-3">
-   <label className="block"><input type="checkbox" checked={draft.enabled} onChange={e=>edit({...draft,enabled:e.target.checked})}/> Bật chốt mưa cho vùng</label>
+   <label className="block"><input type="checkbox" checked={draft.enabled} onChange={e=>edit({...draft,enabled:e.target.checked,stopOnRain:e.target.checked?draft.stopOnRain:false})}/> Bật chốt mưa cho vùng</label>
+   <label className="block"><input type="checkbox" disabled={!draft.enabled} checked={draft.stopOnRain??false} onChange={e=>edit({...draft,stopOnRain:e.target.checked})}/> Yêu cầu OFF khi thời tiết không cho phép trong phiên tưới</label><p className="text-sm">Cần bật riêng trên backend. Chỉ gửi một yêu cầu dừng cho mỗi phiên; gửi thành công chưa chứng minh bơm OFF. Khi backend hoặc mạng dừng, thiết bị vẫn cần timer/interlock cục bộ.</p>
    <label className="block">Node mưa<select aria-label="Node mưa" className="border p-2 ml-2" value={draft.nodeId} onChange={e=>{const n=eligible.find(n=>n.nodeId===e.target.value),c=n?.channels.find(c=>c.metric==='RAIN_DETECTED');edit({...draft,nodeId:e.target.value,channelId:c?.channelId??'',calibrationVersion:c?.calibrationVersion??null});}}><option value="">Chọn node WEATHER cùng khu vực</option>{draft.nodeId&&!selected&&<option value={draft.nodeId}>{draft.nodeId} · không còn phù hợp</option>}{eligible.map(n=><option key={n.nodeId} value={n.nodeId}>{n.name} · {n.nodeId}</option>)}</select></label>
    <label className="block">Kênh mưa<select aria-label="Kênh mưa" className="border p-2 ml-2" value={draft.channelId} onChange={e=>edit({...draft,channelId:e.target.value,calibrationVersion:channels?.find(c=>c.channelId===e.target.value)?.calibrationVersion??null})}><option value="">Chọn kênh RAIN_DETECTED</option>{draft.channelId&&!channels?.some(c=>c.channelId===draft.channelId)&&<option value={draft.channelId}>{draft.channelId} · không còn phù hợp</option>}{channels?.map(c=><option key={c.channelId} value={c.channelId}>{c.channelId}</option>)}</select></label>
    <p>Nguồn khớp vùng: {sourceLabels[draft.expectedSource]} · Hiệu chuẩn: {draft.calibrationVersion??'Chưa khai báo'}</p>

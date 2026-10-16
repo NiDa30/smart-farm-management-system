@@ -316,4 +316,20 @@ GET inventory and existing node/channel history keep false/zero/null
 separate; no node/device/sample is seeded by V37. Existing ENV/v1/WATER/SOIL
 contracts remain. The frontend does not label stale/fault rain as dry.
 [Chapter51](../docs/book/CHAPTER_51_WEATHER_NODE.md) covers the separate
-simulator board and private local project helpers. No weather decision gate yet.
+simulator board and private local project helpers. No weather decision gate in V37; V38/V39 below add opt-in behavior.
+
+## Per-zone rain admission V38 and operator weather stop V39
+
+GET/PUT /api/v1/irrigation-zones/{id}/weather configure an opt-in WEATHER/v2
+RAIN_DETECTED gate, same area/source/calibration, optimistic revisions. Both
+sample clocks must be fresh under30s. Fenced ON rechecks and captures evidence;
+OFF is independent. V39 adds stopOnRain=false by default, requiring the gate,
+operator session profile and SMARTFARM_IRRIGATION_RAIN_STOP_ENABLED=true.
+Worker polls active operator sessions after ON reservation and records one
+OFF request/evidence/session before IO when rain/unknown blocks the gate.
+No auto ON/CLOSE/resume or replay after uncertain IO/restart. Does not supervise
+direct pump ON or the legacy ENV01 rule. Network/backend downtime still needs
+device timers/interlocks. GET /{id}/weather/stops lists20 decision records with
+operation and command states separately; neither proves current physical OFF.
+[Chapter53](../docs/book/CHAPTER_53_SESSION_WEATHER_STOP.md) covers Windows flags,
+limits and six live AWS/Wokwi cases that remain unrun.

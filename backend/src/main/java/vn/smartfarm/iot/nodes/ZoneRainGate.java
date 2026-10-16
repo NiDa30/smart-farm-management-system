@@ -16,14 +16,16 @@ import vn.smartfarm.iot.irrigation.IrrigationSessionGuard;
 /** Point-in-time rain admission gate. Does not schedule, stop, retry or resume a pump. */
 @Service
 public class ZoneRainGate {
- public record Policy(String zoneId,int zoneRevision,String nodeId,String channelId,String expectedSource,String calibrationVersion,boolean enabled,int revision) {}
- public record Request(int expectedRevision,int zoneRevision,String nodeId,String channelId,String expectedSource,String calibrationVersion,boolean enabled) {}
+ public record Policy(String zoneId,int zoneRevision,String nodeId,String channelId,String expectedSource,String calibrationVersion,boolean enabled,int revision,boolean stopOnRain) {}
+ public record Request(int expectedRevision,int zoneRevision,String nodeId,String channelId,String expectedSource,String calibrationVersion,boolean enabled,boolean stopOnRain) {public Request(int expectedRevision,int zoneRevision,String nodeId,String channelId,String expectedSource,String calibrationVersion,boolean enabled){this(expectedRevision,zoneRevision,nodeId,channelId,expectedSource,calibrationVersion,enabled,false);}}
  public record Sample(Boolean value,String quality,Instant observedAt,Instant receivedAt,UUID bootId,long sequence,String dataSource,String calibrationVersion) {}
  public record View(String zoneId,int zoneRevision,String areaId,String zoneSource,Instant asOf,Policy policy,String state,boolean allowed,Instant validUntil,Sample sample) {}
  private final JdbcTemplate jdbc;
- private final boolean profile;
- public ZoneRainGate(JdbcTemplate jdbc,@Value("${smartfarm.control.enabled:false}")boolean control,@Value("${smartfarm.control.pump-fencing-enabled:false}")boolean fence,@Value("${smartfarm.control.circuit-route-required:false}")boolean route,@Value("${smartfarm.irrigation.circuit-demo-enabled:false}")boolean circuit){this.jdbc=jdbc;profile=control&&fence&&route&&circuit;}
- private static Policy policy(ResultSet r,int n)throws SQLException{return new Policy(r.getString("zone_id"),r.getInt("zone_revision"),r.getString("node_id"),r.getString("channel_id"),r.getString("expected_source"),r.getString("calibration_version"),r.getBoolean("enabled"),r.getInt("revision"));}
+ private final boolean profile,stopProfile;
+ @org.springframework.beans.factory.annotation.Autowired
+ public ZoneRainGate(JdbcTemplate jdbc,@Value("${smartfarm.control.enabled:false}")boolean control,@Value("${smartfarm.control.pump-fencing-enabled:false}")boolean fence,@Value("${smartfarm.control.circuit-route-required:false}")boolean route,@Value("${smartfarm.irrigation.circuit-demo-enabled:false}")boolean circuit,@Value("${smartfarm.irrigation.rain-stop-enabled:false}")boolean rainStop,@Value("${smartfarm.irrigation.session-enabled:false}")boolean session){this.jdbc=jdbc;profile=control&&fence&&route&&circuit;stopProfile=rainStop&&session;}
+ public ZoneRainGate(JdbcTemplate jdbc,boolean control,boolean fence,boolean route,boolean circuit){this(jdbc,control,fence,route,circuit,false,false);}
+ private static Policy policy(ResultSet r,int n)throws SQLException{return new Policy(r.getString("zone_id"),r.getInt("zone_revision"),r.getString("node_id"),r.getString("channel_id"),r.getString("expected_source"),r.getString("calibration_version"),r.getBoolean("enabled"),r.getInt("revision"),r.getBoolean("stop_on_rain"));}
  @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
  public View snapshot(String zone){return inspect(jdbc,zone,Instant.now());}
  public static View inspect(JdbcTemplate jdbc,String zone,Instant now){
@@ -58,6 +60,8 @@ public class ZoneRainGate {
  @Transactional
  public Policy save(String zone,Request r){
   if(r==null||r.expectedRevision()<0||r.expectedRevision()==Integer.MAX_VALUE||r.zoneRevision()<1||!code(r.nodeId())||!code(r.channelId())||!Set.of("SIMULATOR","PHYSICAL").contains(r.expectedSource()==null?"":r.expectedSource())||r.calibrationVersion()!=null&&(r.calibrationVersion().isBlank()||r.calibrationVersion().length()>40))throw bad(HttpStatus.BAD_REQUEST,"Invalid rain gate policy");
+  if(r.stopOnRain()&&!r.enabled())throw bad(HttpStatus.BAD_REQUEST,"Weather stop requires enabled rain gate");
+  if(r.stopOnRain()&&!stopProfile)throw bad(HttpStatus.CONFLICT,"Enable operator session and weather stop profile first");
   jdbc.queryForObject("SELECT singleton FROM pump_dispatch_gate WHERE singleton=1 FOR UPDATE",Integer.class);
   jdbc.queryForObject("SELECT revision FROM irrigation_circuit_state WHERE singleton=1 FOR UPDATE",Long.class);
   var old=inspect(jdbc,zone,Instant.now());
@@ -69,7 +73,7 @@ public class ZoneRainGate {
    var found=jdbc.queryForObject("SELECT count(*) FROM iot_channel c JOIN iot_node n USING(node_id) WHERE c.node_id=? AND c.channel_id=? AND c.metric='RAIN_DETECTED' AND c.unit='boolean' AND c.calibration_version IS NOT DISTINCT FROM ? AND n.node_type='WEATHER' AND n.telemetry_version=2 AND n.area_id=?",Integer.class,r.nodeId(),r.channelId(),r.calibrationVersion(),old.areaId());
    if(found!=1)throw bad(HttpStatus.BAD_REQUEST,"Select declared rain channel in the zone area");
   }
-  jdbc.update("INSERT INTO zone_rain_gate(zone_id,zone_revision,node_id,channel_id,expected_source,calibration_version,enabled,revision) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(zone_id) DO UPDATE SET zone_revision=EXCLUDED.zone_revision,node_id=EXCLUDED.node_id,channel_id=EXCLUDED.channel_id,expected_source=EXCLUDED.expected_source,calibration_version=EXCLUDED.calibration_version,enabled=EXCLUDED.enabled,revision=EXCLUDED.revision",zone,r.zoneRevision(),r.nodeId(),r.channelId(),r.expectedSource(),r.calibrationVersion(),r.enabled(),r.expectedRevision()+1);
+  jdbc.update("INSERT INTO zone_rain_gate(zone_id,zone_revision,node_id,channel_id,expected_source,calibration_version,enabled,revision,stop_on_rain) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(zone_id) DO UPDATE SET zone_revision=EXCLUDED.zone_revision,node_id=EXCLUDED.node_id,channel_id=EXCLUDED.channel_id,expected_source=EXCLUDED.expected_source,calibration_version=EXCLUDED.calibration_version,enabled=EXCLUDED.enabled,revision=EXCLUDED.revision,stop_on_rain=EXCLUDED.stop_on_rain",zone,r.zoneRevision(),r.nodeId(),r.channelId(),r.expectedSource(),r.calibrationVersion(),r.enabled(),r.expectedRevision()+1,r.stopOnRain());
   return jdbc.query("SELECT * FROM zone_rain_gate WHERE zone_id=?",ZoneRainGate::policy,zone).getFirst();
  }
  private static boolean code(String s){return s!=null&&s.matches("[A-Z][A-Z0-9_-]{1,31}");}

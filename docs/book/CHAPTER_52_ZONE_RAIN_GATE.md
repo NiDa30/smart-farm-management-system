@@ -137,3 +137,7 @@ bơm/van của chương47. Không dùng các ca cloud để đánh dấu đã ch
 
 Kết thúc với LED/bơm OFF, van CLOSED, phiên khép đúng proof. Không xóa DB,
 đổi giờ hoặc làm mới sample giả để vượt chốt.
+
+Bước V39 ở [chương53](CHAPTER_53_SESSION_WEATHER_STOP.md) bổ sung chế độ
+opt-in yêu cầu OFF trong phiên operator khi thời tiết không còn cho phép.
+Policy V38 mặc định giữ admission-only; không tự bật chế độ mới khi nâng cấp.

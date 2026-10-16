@@ -364,3 +364,14 @@ OFF khi mưa đến sau admission. Native fixture riêng đúng six-state sequen
 0command/run; full app GET-only/restart giữ12bảng, upgrade giữ10bảng WEATHER
 cũ. Sáu ca live [chương52](CHAPTER_52_ZONE_RAIN_GATE.md) **Chưa chạy**.
 A3 coordinator/queue dispatch và A4 continuous weather decision còn mở.
+
+## V39 — yêu cầu dừng phiên theo thời tiết,17/10/2026
+
+567backend(23mới),51node/vùng browser(6mới),75nhánh/phiên,17pump,31unit(3mới),
+lint/build đạt, không skip. Policy cũ stopOnRain=false; backend flagfalse.
+Chỉ phiên operator đã giữ ON, mỗi phiên một OFF request/evidence, commit
+trước IO, không replay/resume. Mất MQTT là ledger FAILED/UNCERTAIN, chưa OFF.
+Scheduler thật/native packet + fake transport/DB đạt một OFF có ACK/status;
+không auto CLOSE. Upgrade giữ12bảng cũ, restart giữ12bảng và chỉ tăng revision phiên RECOVERY,
+full app GET-only đạt. Sáu ca live [chương53](CHAPTER_53_SESSION_WEATHER_STOP.md)
+**Chưa chạy**; không thay timer cục bộ hoặc hoàn tất A3/A4.

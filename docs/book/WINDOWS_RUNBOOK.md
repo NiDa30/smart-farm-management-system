@@ -535,3 +535,15 @@ Chưa có mẫu sẽ chặn, không làm mới timestamp bằng tay. Conflict c�
 mất phản hồi lưu dùng Đối chiếu, không tự gửi lại. Sau khi ON, mưa mới chưa
 tự OFF: gửi OFF, đợi status rồi CLOSE/FINISH. Sáu ca live **Chưa chạy** tại
 [chương52](CHAPTER_52_ZONE_RAIN_GATE.md); dữ liệu cloud chỉ là mô phỏng riêng.
+
+## Yêu cầu dừng phiên theo thời tiết V39
+
+Giữ volume, pull/restart áp V39. Trong Git Bash backend profile LED theo
+nhánh, session=true, thêm export SMARTFARM_IRRIGATION_RAIN_STOP_ENABLED=true;
+legacy demo=false. Vùng tưới → Chốt mưa → chọn thêm Yêu cầu OFF trong phiên,
+lưu khi phiên cũ đã khép và bơm nghỉ. Chốt cũ không tự chọn chế độ mới.
+Chỉ phiên operator đã giữ ON được giám sát, không direct ON/rule ENV01.
+Lịch sử dừng do thời tiết tách kết quả gọi và command: RETURNED/EXECUTED chưa
+thay proof OFF. Mất mạng không tự gửi lại; recovery thủ công, OFF mới nếu
+cần, xác nhận OFF rồi CLOSE/FINISH. Không có firmware/cert/IAM mới cho worker.
+Sáu ca live **Chưa chạy**, chi tiết [chương53](CHAPTER_53_SESSION_WEATHER_STOP.md).

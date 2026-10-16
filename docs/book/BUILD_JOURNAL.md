@@ -1297,3 +1297,21 @@ missing/dry/rain/fault/recovery,0command/run. Full app GET-only và restart
 JVM giữ12bảng đã đối chiếu, không refresh sample. Sách thêm chương52;
 sáu ca Windows/AWS/Wokwi còn Chưa chạy, không dùng mock để xác nhận live.
 [Bàn giao](../implementation/LOCAL_ZONE_RAIN_GATE_REPORT.md).
+
+## 17/10/2026 — V39 dừng phiên operator khi thời tiết không còn cho phép
+
+Thêm stopOnRain policy và flag/backend mặc địnhfalse, một OFF request/phiên
+với mẫu quyết định commit trước IO. Tái dùng guarded session dispatch,
+ngăn late stop đè manual OFF mới; không replay/resume. History UI/API phân
+biệt operation RETURNED với command FAILED/PUBLISH_UNCERTAIN/EXECUTED và
+proof OFF. Chỉ phiên có ON, không điều khiển mọi direct ON/rule ENV01.
+
+567backend/51node browser/75circuit/17pump/31unit/lintbuild đạt. Harness đã
+sửa kỳ vọng MQTT offline và Spring spy; full cuối không fail/error/skip.
+Fixture scheduler ban đầu ingest cả native fast timer OFF; lượt kế ACK
+fence dùng sai shape. Sửa harness và schema mới, giữ schema lỗi nguyên vẹn.
+Bản đạt scheduler+native ACK/ON, weather RAIN→một fake OFF ACK/status, không
+CLOSE; chưa AWS/Wokwi thật. Upgrade giữ12bảng, restart giữ12bảng và chỉ tăng revision phiên RECOVERY,
+full app GET-only đạt. Sáu ca live Chưa chạy ở chương53. Không sửa firmware,
+không đọc/cấp secrets, không chạy broker/AWS thật.
+[Bàn giao](../implementation/LOCAL_SESSION_WEATHER_STOP_REPORT.md).

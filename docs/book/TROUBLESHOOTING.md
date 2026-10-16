@@ -590,3 +590,15 @@ mẫu DB hoặc đổi giờ để qua gate. Policy bật chặn cả ON không 
 Mất phản hồi PUT chỉ GET đối chiếu; bản hiện tại khác yêu cầu chưa chứng minh
 lưu thất bại. Mưa sau ON chưa tự dừng: OFF vẫn được phép.
 [Chương52](CHAPTER_52_ZONE_RAIN_GATE.md).
+
+## Phiên tưới không tự dừng hoặc yêu cầu OFF chưa xác nhận (V39)
+
+Cần cả flag SMARTFARM_IRRIGATION_RAIN_STOP_ENABLED=true, session/profile LED
+và stopOnRain trên policy của vùng; policy cũ mặc địnhfalse. Chỉ phiên đang
+DISPATCHING_ON/WAIT_ON được giám sát, không ON ngoài phiên. Xem Lịch sử dừng
+do thời tiết: RETURNED có thể đi với FAILED/MQTT_UNAVAILABLE hoặc
+PUBLISH_UNCERTAIN. Đọc status/proof, không coi lịch sử là OFF hiện tại. Worker
+không replay khi mạng trở lại/restart; dùng OFF thủ công mới nếu cần rồi
+khép đúng bước. Backend không hoạt động thì không thể bảo đảm gửi OFF;
+thiết bị vẫn cần timer/interlock cục bộ.
+[Chương53](CHAPTER_53_SESSION_WEATHER_STOP.md).

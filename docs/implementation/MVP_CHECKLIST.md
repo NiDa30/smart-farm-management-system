@@ -271,3 +271,15 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] A3 coordinator nhiều nhánh, flow proof xuyên node và queue dispatch.
 
 [Bàn giao V38](LOCAL_ZONE_RAIN_GATE_REPORT.md).
+
+## Bước V39 — dừng phiên theo thời tiết, opt-in
+
+- [x] Flag/backend và policy riêng, mặc địnhfalse, không đổi hành vi vùng cũ.
+- [x] Rain/unknown trong phiên có ON giữ một OFF request với evidence trước IO.
+- [x] Concurrent/manual OFF/ON race, delayed dispatch, no replay/restart.
+- [x] Lịch sử GET-only tách operation/command/physical OFF; UI giữ opt-in.
+- [x] Backend/browser/scheduler-fake/full-app/upgrade/restart kiểm tra riêng.
+- [ ] Sáu ca AWS/Wokwi [chương53](../book/CHAPTER_53_SESSION_WEATHER_STOP.md).
+- [ ] Đa route, flow proof xuyên node, queue dispatch, dự báo/ET/nông học.
+
+[Bàn giao V39](LOCAL_SESSION_WEATHER_STOP_REPORT.md).
