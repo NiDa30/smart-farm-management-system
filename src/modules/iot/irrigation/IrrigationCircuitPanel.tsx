@@ -80,7 +80,7 @@ export function IrrigationCircuitPanel({onBack,onQueue,onHistory}:{onBack?:()=>v
   <div>{onBack&&<button className="underline mr-4" disabled={busy} onClick={onBack}>Quay lại điều khiển</button>}{onQueue&&<button className="underline" disabled={busy} onClick={onQueue}>Mở hàng chờ diễn tập</button>}</div>
   {onHistory&&<button className="underline" disabled={busy} onClick={onHistory}>Lịch sử trạng thái van</button>}
   <button className="underline" onClick={()=>setSessionHistory('')}>Lịch sử mọi phiên tưới</button><h1 className="text-xl font-bold">Nhánh tưới theo vùng và trạm nước</h1>
-  <p className="bg-amber-50 p-3 rounded">Cấu hình nhiều nhánh, dùng chung PUMP01 hoặc trạm nước. Mỗi vùng và mã van chỉ thuộc một nhánh. Mã controller/van mới là dự kiến; chưa tạo thiết bị AWS, các van mới có chế độ giám sát riêng. Hàng chờ vẫn chỉ diễn tập.</p>
+  <p className="bg-amber-50 p-3 rounded">Cấu hình nhiều nhánh, dùng chung PUMP01 hoặc trạm nước. Mỗi vùng và mã van chỉ thuộc một nhánh. Mã controller/van mới là dự kiến; chưa tạo thiết bị AWS, các van mới có chế độ giám sát riêng. Hàng chờ có diễn tập và chuẩn bị phiên có xác nhận, chưa tự điều phối.</p>
   {error&&<p role="alert">{error}</p>}{data&&!fresh&&!error&&<p role="alert">Dữ liệu cấu hình đã cũ. Đọc lại trước khi lưu.</p>}{message&&<p role="status">{message}</p>}
   {pending&&<p>Nhánh cần đối chiếu: {pending.config.circuitId} <button className="underline" disabled={busy} onClick={()=>void reconcile()}>Đối chiếu theo mã nhánh</button></p>}
   <button className="underline mr-4" disabled={locked} onClick={()=>{setForm(blank());setEditing(false);setMessage('');}}>Thêm nhánh mới</button><button className="underline" disabled={busy} onClick={()=>setEpoch(v=>v+1)}>Đọc lại cấu hình nhánh</button>

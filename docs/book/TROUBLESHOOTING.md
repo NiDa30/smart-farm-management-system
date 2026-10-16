@@ -639,3 +639,20 @@ Phiên phải dài hơn grace; giữ giới hạn1–10giây, không kéo dài t
 chạy. Khi LOW/mưa/manual OFF claim trước, xem lịch sử tương ứng, không đợi
 một FLOW event thứ hai. RETURNED/EXECUTED không thay proof OFF hiện tại.
 Sáu ca live vẫn Chưa chạy ở [chương56](CHAPTER_56_SESSION_FLOW_SUPERVISION.md).
+
+## Hàng chờ không chuyển được sang phiên V43
+
+Kiểm tra flag handoff và profile phiên/route, đúng lượt đầu FIFO, chưa hết
+TTL5phút, không rehearsal/phiên khác và còn đúng snapshot vùng/nhánh/boot.
+Lượt không có nhánh hoặc>10s không chuyển được; FLOW grace phải nhỏ hơn thời
+hạn lượt. Không sửa cấu hình cũ hoặc rút ngắn ngầm để làm yêu cầu hợp lệ.
+
+HANDED_OFF chỉ chứng minh đã giao kế hoạch sang PREPARED; không phải đã
+tưới. Hủy queue sau khi handoff không tắt phiên. Khi chưa rõ POST, giữ UUID,
+GET đối chiếu đúng body; không tạo mã mới. Restart đưa phiên vào recovery,
+giữ liên kết, không phát lại. Chi tiết
+[chương57](CHAPTER_57_QUEUE_SESSION_HANDOFF.md).
+
+Khi phát triển đường GET mới, test PostgreSQL đã phát hiện SELECT FOR SHARE
+trong transaction read-only. Đã tách truy vấn đọc không khóa khỏi đường ghi
+có khóa; không bỏ read-only hoặc tắt test để né lỗi.

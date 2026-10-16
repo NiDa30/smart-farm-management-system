@@ -318,3 +318,15 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
   hysteresis, coordinator multi-route và queue dispatch chưa hoàn tất.
 
 [Bàn giao V42](LOCAL_SESSION_FLOW_STOP_REPORT.md).
+
+## Bước V43 — FIFO head sang PREPARED
+
+- [x] Profile opt-in, TTL/revision/snapshot/boot/readiness và duration/grace kiểm tra lại.
+- [x] Queue+session+link+manual hold atomic; idempotent, rollback, cancel race.
+- [x] UI GET-only review, explicit prepare, pending UUID qua reload, exact readback,
+  mở phiên liên kết; không auto OPEN/ON/next hoặc dùng queue cancel làm OFF.
+- [x] 663backend/123browser/17parser,lintbuild; native/fake transport→DB,
+  upgrade23bảng, full app/restart24bảng kiểm tra đạt.
+- [ ] Sáu ca live chương57, auto coordinator/multi-route/queue dispatch và hardware acceptance.
+
+[Bàn giao V43](LOCAL_QUEUE_SESSION_HANDOFF_REPORT.md).

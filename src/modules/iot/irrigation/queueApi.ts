@@ -1,19 +1,20 @@
 import {parseCircuit,type CircuitConfig} from './circuitApi';
 import {validZone,type ZoneConfig} from '../zones/zoneApi';
-export type QueueState='QUEUED'|'REHEARSING'|'REHEARSED'|'CANCELLED'|'EXPIRED'|'INVALIDATED'|'INTERRUPTED';
+export type QueueState='QUEUED'|'REHEARSING'|'REHEARSED'|'CANCELLED'|'EXPIRED'|'INVALIDATED'|'INTERRUPTED'|'HANDED_OFF';
 export interface QueueItem {requestId:string;ticket:number;zoneId:string;zoneRevision:number;zoneSnapshot:ZoneConfig;circuitSnapshot?:CircuitConfig|null;durationSeconds:number;requestedAt:string;enqueuedAt:string;expiresAt:string;state:QueueState;startedAt:string|null;plannedEndAt:string|null;finishedAt:string|null;reason:string}
 export interface QueueSnapshot {mode:'PREVIEW_ONLY';asOf:string;revision:number;capacity:50;waitTtlSeconds:300;active:QueueItem|null;waiting:QueueItem[];history:QueueItem[]}
 const object=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const positive=(v:unknown):v is number=>Number.isSafeInteger(v)&&Number(v)>0;
 const date=(v:unknown):v is string=>typeof v==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v));
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
-const reasons:Record<QueueState,string[]>={QUEUED:['WAITING'],REHEARSING:['PREVIEW_STARTED'],REHEARSED:['PREVIEW_FINISHED'],CANCELLED:['USER_CANCELLED'],EXPIRED:['WAIT_EXPIRED'],INVALIDATED:['ZONE_CHANGED','CIRCUIT_CHANGED'],INTERRUPTED:['ZONE_CHANGED','CIRCUIT_CHANGED','BACKEND_RESTARTED']};
+const reasons:Record<QueueState,string[]>={QUEUED:['WAITING'],REHEARSING:['PREVIEW_STARTED'],REHEARSED:['PREVIEW_FINISHED'],CANCELLED:['USER_CANCELLED'],EXPIRED:['WAIT_EXPIRED'],INVALIDATED:['ZONE_CHANGED','CIRCUIT_CHANGED'],HANDED_OFF:['OPERATOR_SESSION_PREPARED'],INTERRUPTED:['ZONE_CHANGED','CIRCUIT_CHANGED','BACKEND_RESTARTED']};
 export function parseQueueItem(value:unknown):QueueItem {
  if(!object(value))throw new Error('Yêu cầu hàng chờ không hợp lệ.');const v=value as QueueItem;
  if(!uuid(v.requestId)||!positive(v.ticket)||!validZone(v.zoneSnapshot)||v.zoneSnapshot.expectedSource!=='SIMULATOR'||v.zoneId!==v.zoneSnapshot.zoneId||v.zoneRevision!==v.zoneSnapshot.revision
   ||!positive(v.durationSeconds)||v.durationSeconds>30||!date(v.requestedAt)||!date(v.enqueuedAt)||!date(v.expiresAt)||Math.abs(Date.parse(v.expiresAt)-Date.parse(v.enqueuedAt)-300000)>1
   ||!Object.hasOwn(reasons,v.state)||!reasons[v.state].includes(v.reason))throw new Error('Dữ liệu hàng chờ không khớp.');
  if(v.circuitSnapshot!=null){const c=parseCircuit(v.circuitSnapshot);if(c.zoneId!==v.zoneId||c.zoneRevision!==v.zoneRevision||c.expectedSource!==v.zoneSnapshot.expectedSource)throw new Error('Bản chụp nhánh không khớp vùng.');}
+ if(v.state==='HANDED_OFF'&&(!v.circuitSnapshot||v.durationSeconds>10||v.startedAt!==null))throw new Error('Bản chuyển phiên không hợp lệ.');
  const started=v.startedAt!==null,finished=!['QUEUED','REHEARSING'].includes(v.state);
  if(started!==date(v.startedAt)||started!==date(v.plannedEndAt)||finished!==date(v.finishedAt)||!finished&&v.finishedAt!==null
   ||!started&&v.plannedEndAt!==null||v.state==='QUEUED'&&started||['REHEARSING','REHEARSED','INTERRUPTED'].includes(v.state)&&!started
@@ -30,4 +31,4 @@ export function parseQueue(value:unknown):QueueSnapshot {
  const all=[...(active?[active]:[]),...waiting,...history];if(new Set(all.map(v=>v.requestId)).size!==all.length||new Set(all.map(v=>v.ticket)).size!==all.length)throw new Error('Yêu cầu hàng chờ bị trùng.');
  return {...value,active,waiting,history} as QueueSnapshot;
 }
-export const queueLabels:Record<QueueState,string>={QUEUED:'Đang chờ',REHEARSING:'Đang diễn tập',REHEARSED:'Đã diễn tập',CANCELLED:'Đã hủy',EXPIRED:'Hết hạn chờ',INVALIDATED:'Cấu hình đã đổi',INTERRUPTED:'Diễn tập bị gián đoạn'};
+export const queueLabels:Record<QueueState,string>={QUEUED:'Đang chờ',REHEARSING:'Đang diễn tập',REHEARSED:'Đã diễn tập',CANCELLED:'Đã hủy',EXPIRED:'Hết hạn chờ',INVALIDATED:'Cấu hình đã đổi',HANDED_OFF:'Đã chuyển sang phiên chuẩn bị',INTERRUPTED:'Diễn tập bị gián đoạn'};

@@ -1017,3 +1017,17 @@ bảo vệ phần cứng; chưa hysteresis/multi-sample, coordinator multi-route
 queue dispatch, forecast/ET hoặc hoàn tất A2/A3/A4.
 [Chương56](../book/CHAPTER_56_SESSION_FLOW_SUPERVISION.md),
 [bàn giao](../implementation/LOCAL_SESSION_FLOW_STOP_REPORT.md).
+
+## Cập nhật17/10/2026 — A3 chuyển hàng chờ sang phiên chuẩn bị V43
+
+FIFO head có mapping/thời hạn1–10s được người dùng chuyển sang PREPARED,
+recheck TTL/full snapshot/boot/proof/admission. Lưu unique queue/session/link
+và manual hold cùngtransaction, không OPEN/ON hoặc tự chạyhead sau. Flag
+defaultfalse, preview vẫn có phần riêng; HANDED_OFF không chứng minh đã tưới.
+Mất phản hồi/reload GET đối chiếu, restart recovery, cancel queue không OFF.
+663backend/123browser/17parser/lintbuild đạt, native→DB không command/action,
+upgrade23bảng và full app/restart24bảng đạt. Sáu ca live Chưa chạy. A3 vẫn còn
+auto coordinator, multi-route/route switching, queue dispatch tự động và
+physical flow/actuator acceptance. Không coi handoff thủ công là hoàn tấtA3.
+[Chương57](../book/CHAPTER_57_QUEUE_SESSION_HANDOFF.md),
+[bàn giao](../implementation/LOCAL_QUEUE_SESSION_HANDOFF_REPORT.md).

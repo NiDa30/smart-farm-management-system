@@ -603,3 +603,28 @@ Nếu dừng, xem lịch sử FLOW và đối chiếu ACK/status/proof trước 
 Nếu LOW/mưa/manual OFF claim trước, lịch sử FLOW có thể rỗng. Không retry
 lệnh cũ khi mạng trở lại; restart chuyển recovery. Sáu ca live
 [chương56](CHAPTER_56_SESSION_FLOW_SUPERVISION.md) **Chưa chạy**.
+
+## Chuyển hàng chờ sang phiên có xác nhận V43
+
+Giữ volume/private files; pull, dừng backend cũ và restart áp FlywayV43.
+Trong Git Bash terminal backend, thêm vào profile LED theo nhánh/session
+đang dùng, legacy demo=false:
+
+```bash
+export SMARTFARM_IRRIGATION_QUEUE_HANDOFF_ENABLED=true
+bash tools/backend/run_backend_windows.sh
+```
+
+Lệnh này chỉ thêm flag handoff, không thay các flag control/fence/route/
+circuit/session cần có. Frontend/gateway/simulator ở terminal riêng.
+Khép phiên cũ, bơm OFF và van CLOSED có proof mới. Điều khiển Actuator →
+Mở hàng chờ tưới diễn tập → tạo lượt có nhánh/thời hạn1–10s → Chuẩn bị phiên
+từ lượt đầu hàng → đọc điều kiện → xác nhận → Mở phiên đã chuyển. Chỉ sau
+đó mới tự xác nhận từng OPEN/ON/OFF/CLOSE/FINISH. Không có command ở bước
+chuẩn bị, không tự chạy tiếp hàng chờ hoặc đổi route bơm.
+
+Mất phản hồi: giữ mã phiên, reload/mở bản chuyển rồi Đối chiếu bản chuyển
+phiên; không tự POST lại. Queue đã HANDED_OFF thì hủy queue không dừng phiên,
+phải dùng OFF/recovery trong phiên. Lượt diễn tập>10s cần lập lượt mới đúng
+thời hạn, không tự rút ngắn. Sáu ca live
+[chương57](CHAPTER_57_QUEUE_SESSION_HANDOFF.md) **Chưa chạy**.

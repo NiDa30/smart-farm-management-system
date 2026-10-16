@@ -383,3 +383,20 @@ lists20 immutable decisions plus independent current operation/command state.
 Station FLOW does not prove branch delivery; no hysteresis or multi-sample
 filter, no direct-ON/legacy-rule supervision, no hardware protection claim.
 [Chapter56](../docs/book/CHAPTER_56_SESSION_FLOW_SUPERVISION.md).
+
+### Explicit queue-to-session preparation (V43)
+
+SMARTFARM_IRRIGATION_QUEUE_HANDOFF_ENABLED defaults false. GET/POST
+/api/v1/irrigation-queue/requests/{id}/session-handoff reviews/prepares exactly
+the FIFO head. POST accepts queueRevision and nested IrrigationSession.Start;
+checks expiry, full zone/circuit snapshot, current boots/readiness, LOW/rain
+and FLOW grace/duration. Preview durations>10s are rejected, never clamped.
+
+One transaction creates PREPARED, links unique queue/session UUIDs, marks
+queue HANDED_OFF/OPERATOR_SESSION_PREPARED and pauses the old manual rule.
+Rollback covers all changes. No transport/OPEN/ON/automatic queue dispatch.
+Exact duplicate returns the same linkage/current session, other body rejected.
+GET and client reload never POST. Cancelling a handed-off queue is not OFF;
+use linked session recovery/explicit actions. Restart preserves the link,
+marks unfinished session RECOVERY_REQUIRED, no replay or automatic next head.
+[Chapter57](../docs/book/CHAPTER_57_QUEUE_SESSION_HANDOFF.md).

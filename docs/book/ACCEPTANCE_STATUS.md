@@ -411,3 +411,16 @@ Sáu ca live [chương56](CHAPTER_56_SESSION_FLOW_SUPERVISION.md) **Chưa chạy
 Chưa physical flow proof theo luống, hysteresis, coordinator multi-route hoặc
 bảo đảm OFF khi backend/network ngừng. Hai lượt test bị chồng schema không
 được tính;643 là lượt verify tuần tự sau đó.
+
+## V43 — chuyển FIFO sang phiên chuẩn bị,17/10/2026
+
+663backend(20mới),25queue browser(9mới)+98circuit browser,17parser(7mới),
+lint/build đạt, không skip. Recheck8browser phiên sau đổi back label, không
+cộng thêm vào123browser. Queue/session/link/manual hold trong cùngtransaction,
+không dispatch. Giữ đúnghead/config/boot/duration, TTL, profile và admission;
+reload/duplicate/rollback/cancel race/restart đã kiểm tra local.
+Native initial observations→queue→PREPARED với fake connectivity,0command/
+action/run; full app GET-only tới liên kết/recovery và quay lại đạt. Upgrade
+V42→V43 giữ23bảng chọn; restart23/24bảng không đổi, session recovery revision+1.
+Sáu ca live [chương57](CHAPTER_57_QUEUE_SESSION_HANDOFF.md) **Chưa chạy**.
+Chưa automated queue dispatch, coordinator multi-route hoặc physical acceptance.

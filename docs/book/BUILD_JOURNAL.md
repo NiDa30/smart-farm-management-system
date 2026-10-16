@@ -1363,3 +1363,18 @@ lượt verify tuần tự643 đạt. Không AWS/MQTT/GPIO thật, không sửa 
 không tăng hard limit. Sáu ca live Chưa chạy. Xem
 [chương56](CHAPTER_56_SESSION_FLOW_SUPERVISION.md) và
 [bàn giao](../implementation/LOCAL_SESSION_FLOW_STOP_REPORT.md).
+
+## 17/10/2026 — V43 nối hàng chờ và phiên có xác nhận
+
+Bổ sung chuyển FIFO head sang PREPARED với flag defaultfalse. Giữ toàn bộ
+snapshot/boot/duration đã duyệt, không tự rút ngắn preview>10s. Queue terminal
+HANDED_OFF lưu liên kết duy nhất, chưa có command; mỗi bước thiết bị vẫn cần
+người dùng. Client giữ request qua reload, exact GET readback tới microsecond,
+chặn poll cũ trước mutation. Hủy queue đến muộn không được coi là tắt phiên.
+
+663backend/123browser/17parser/lintbuild đạt; native→DB/fake connectivity
+không có publish, upgrade23bảng và full app/restart24bảng kiểm tra đạt. Trong
+phát triển đã sửa lỗi FOR SHARE trên GET read-only; smoke ban đầu locator
+trùng giữa active/recent đã chọn đúng phần tử, không tính lượt lỗi là pass.
+Sáu ca live Chưa chạy. Xem [chương57](CHAPTER_57_QUEUE_SESSION_HANDOFF.md) và
+[bàn giao](../implementation/LOCAL_QUEUE_SESSION_HANDOFF_REPORT.md).
