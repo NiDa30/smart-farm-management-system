@@ -1,5 +1,11 @@
 # Tài Liệu Hệ Thống Quản Lý Trang Trại Thông Minh (Smart Farm Management System)
 
+## Kiến thức và định hướng nghề nghiệp
+
+- [Bản đồ kiến thức Web / Cloud / AI cho vị trí PG・SE tại Nhật Bản](knowledge/code.md):
+  sơ đồ từ cơ bản đến nâng cao, stack ưu tiên, bài thực hành, kỹ năng SE/tiếng Nhật
+  và checklist tự đánh giá dựa trên JD được cung cấp.
+
 ## Định hướng IoT nông nghiệp đang ưu tiên
 
 - [Ý tưởng và lộ trình thiết bị 14/10/2026](plan/AGRICULTURAL_IOT_DEVICE_ROADMAP.md):
