@@ -248,3 +248,14 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Coordinator nhiều nhánh, flow proof xuyên controller, queue dispatch.
 
 [Bàn giao V36](LOCAL_SESSION_HISTORY_REPORT.md).
+
+## Bước V37 — giám sát mưa và ánh sáng
+
+- [x] WEATHER/v2 riêng, registry/two metrics/source/quality, history/CSV.
+- [x] Form/dashboard nhãn mưa đúng, stale/fault/skew/API lỗi không coi là khô.
+- [x] Project Wokwi riêng, native/ESP32/buildfs/merge, helper SDK giả lập.
+- [x] DB/browser/app thật/upgrade/restart giữ dữ liệu, không command/run.
+- [ ] Năm ca Windows/AWS/Wokwi [chương 51](../book/CHAPTER_51_WEATHER_NODE.md).
+- [ ] Weather gate theo vùng/chính sách unknown/dispatch và hiệu chuẩn thật.
+
+[Bàn giao V37](LOCAL_WEATHER_NODE_REPORT.md).

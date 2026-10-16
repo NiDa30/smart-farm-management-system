@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "deviceId": "WEATHER01",
+  "bootId": "85000000-0000-4000-8000-000000000001",
+  "sequence": 1,
+  "timestamp": "2026-10-16T00:00:00Z",
+  "uptimeMs": 5000,
+  "dataSource": "SIMULATOR",
+  "readings": [
+    {
+      "channelId": "RAIN",
+      "metric": "RAIN_DETECTED",
+      "unit": "boolean",
+      "quality": "VALID",
+      "value": false,
+      "calibrationVersion": null
+    },
+    {
+      "channelId": "LIGHT",
+      "metric": "LIGHT_ILLUMINANCE",
+      "unit": "lux",
+      "quality": "VALID",
+      "value": 200000,
+      "calibrationVersion": "SIM_LUX_V1"
+    }
+  ]
+}

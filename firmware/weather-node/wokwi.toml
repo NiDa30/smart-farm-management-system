@@ -1,0 +1,8 @@
+[wokwi]
+version = 1
+# Full flash image includes the partition table and private LittleFS data.
+# Generate locally with tools/wokwi/merge_flash.py; never publish this image.
+firmware = ".pio/build/esp32dev/wokwi-private/flash.bin"
+elf = ".pio/build/esp32dev/firmware.elf"
+[net]
+gateway = "ws://localhost:9011"

@@ -17,12 +17,13 @@ public class NodeController {
         return ResponseEntity.of(inventory.snapshot().nodes().stream().filter(n->n.nodeId().equals(id)).findFirst());
     }
     @PostMapping public ResponseEntity<NodeInventory.Node> create(@RequestBody byte[] input){
-        return create(input,false);
+        return create(input,"WATER");
     }
-    @PostMapping("/soil") public ResponseEntity<NodeInventory.Node> createSoil(@RequestBody byte[] input){return create(input,true);}
-    private ResponseEntity<NodeInventory.Node> create(byte[] input,boolean soil){
+    @PostMapping("/soil") public ResponseEntity<NodeInventory.Node> createSoil(@RequestBody byte[] input){return create(input,"SOIL");}
+    @PostMapping("/weather") public ResponseEntity<NodeInventory.Node> createWeather(@RequestBody byte[] input){return create(input,"WEATHER");}
+    private ResponseEntity<NodeInventory.Node> create(byte[] input,String type){
         String id;
-        try{id=soil?inventory.registerSoil(water.object(input)):inventory.registerWater(water.object(input));}
+        try{id=switch(type){case "SOIL"->inventory.registerSoil(water.object(input));case "WEATHER"->inventory.registerWeather(water.object(input));default->inventory.registerWater(water.object(input));};}
         catch(IllegalArgumentException error){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Invalid node declaration");}
         catch(DataIntegrityViolationException error){throw new ResponseStatusException(HttpStatus.CONFLICT,"Identity already exists or registry changed");}
         return ResponseEntity.created(URI.create("/api/v1/nodes/"+id)).body(inventory.snapshot().nodes().stream().filter(n->n.nodeId().equals(id)).findFirst().orElseThrow());

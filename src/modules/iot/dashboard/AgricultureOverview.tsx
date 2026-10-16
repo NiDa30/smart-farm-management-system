@@ -1,7 +1,7 @@
 import React from 'react';
 import type {Agriculture} from './agricultureApi';
 import {nodeSummary} from './agricultureApi';
-import {channelFreshness,metricLabels,sourceLabels,tankState,tankLabels} from '../nodes/nodeApi';
+import {channelFreshness,channelValue,metricLabels,sourceLabels,tankState,tankLabels} from '../nodes/nodeApi';
 import {displayedAssessment,assessmentLabels} from '../zones/zoneApi';
 const labels={EMPTY:'Chưa có mẫu',CLOCK_SKEW:'Lệch giờ nguồn',STALE:'Dữ liệu cũ',SENSOR_FAULT:'Cảm biến báo lỗi',FRESH:'Dữ liệu mới'};
 const alertLabels={LOW_WATER:'Nước thấp',INCONSISTENT_FLOATS:'Phao không nhất quán',DRY_SOIL:'Đất thấp',SENSOR_FAULT:'Cảm biến báo lỗi'};
@@ -9,16 +9,16 @@ export function AgricultureOverview({data,now,unavailable,navigate}:{data:Agricu
  const nodes=data.inventory.nodes.filter(n=>n.nodeType!=='ENVIRONMENT');
  return <section aria-label="Tổng quan nông nghiệp" className="space-y-4">
   <h2 className="font-bold text-lg">Node đất, trạm nước và vùng tưới</h2>
-  <p className="text-sm text-slate-500">{nodes.filter(n=>n.nodeType==='SOIL').length} node đất · {nodes.filter(n=>n.nodeType==='WATER').length} trạm nước · {data.zones.zones.length} vùng tưới. Nguồn đo do thiết bị khai báo, chưa chứng minh hiệu chuẩn phần cứng.</p>
+  <p className="text-sm text-slate-500">{nodes.filter(n=>n.nodeType==='SOIL').length} node đất · {nodes.filter(n=>n.nodeType==='WATER').length} trạm nước · {nodes.filter(n=>n.nodeType==='WEATHER').length} node thời tiết · {data.zones.zones.length} vùng tưới. Nguồn đo do thiết bị khai báo, chưa chứng minh hiệu chuẩn phần cứng.</p>
   <button className="text-emerald-700 underline" onClick={()=>navigate('/iot/realtime')}>Mở Sensor Realtime để quản lý node và vùng</button>
   <p className="text-xs text-slate-500">Trong Sensor Realtime chọn Node &amp; trạm nước → Vùng tưới. Dữ liệu mới không xác nhận thiết bị online hoặc cho phép bật bơm.</p>
   {!nodes.length&&<p>Chưa đăng ký node đất hoặc trạm nước.</p>}
   <div className="grid gap-3 md:grid-cols-2">{nodes.map(n=>{
    const summary=nodeSummary(n,now);
    return <article key={n.nodeId} aria-label={`Node ${n.nodeId}`} className="bg-white border rounded-xl p-4 space-y-2">
-    <h3 className="font-semibold">{n.name} · {n.nodeId}</h3><p className="text-sm">{n.nodeType==='SOIL'?'Node đất':'Trạm nước'} · {n.areaId} · {unavailable?'Chưa xác nhận độ mới':`${summary.fresh}/${summary.total} kênh có dữ liệu mới`}</p>
+    <h3 className="font-semibold">{n.name} · {n.nodeId}</h3><p className="text-sm">{n.nodeType==='SOIL'?'Node đất':n.nodeType==='WEATHER'?'Node thời tiết':'Trạm nước'} · {n.areaId} · {unavailable?'Chưa xác nhận độ mới':`${summary.fresh}/${summary.total} kênh có dữ liệu mới`}</p>
     {n.nodeType==='WATER'&&<p>{unavailable?tankLabels.UNKNOWN:tankLabels[tankState(n,now)]}</p>}
-    {n.channels.map(c=><div key={c.channelId} className="text-sm border-t pt-1"><p>{c.channelId} · {metricLabels[c.metric]}: {c.latest?.value==null?'—':typeof c.latest.value==='boolean'?(c.latest.value?'Có nước':'Không có nước'):c.latest.value.toLocaleString('vi-VN',{maximumFractionDigits:2})} {c.unit==='boolean'?'':c.unit}</p>
+    {n.channels.map(c=><div key={c.channelId} className="text-sm border-t pt-1"><p>{c.channelId} · {metricLabels[c.metric]}: {c.metric==='RAIN_DETECTED'&&(unavailable||channelFreshness(c.latest,now)!=='FRESH')?'Chưa xác định':channelValue(c.metric,c.latest?.value??null)} {c.unit==='boolean'?'':c.unit}</p>
      <p className="text-xs text-slate-500">{unavailable?'Bản chụp cũ, chưa xác nhận hiện tại':labels[channelFreshness(c.latest,now)]} · {sourceLabels[c.latest?.dataSource??'UNSPECIFIED']}</p></div>)}
    </article>;
   })}</div>

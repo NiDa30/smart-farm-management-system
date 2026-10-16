@@ -1265,3 +1265,19 @@ GET trước/sau giữ 11 bảng. Không thay firmware/AWS hoặc chạy live. B
 Windows/AWS/Wokwi [chương 50](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md) Chưa chạy;
 A3 coordinator/flow/queue chưa hoàn tất.
 [Bàn giao](../implementation/LOCAL_SESSION_HISTORY_REPORT.md).
+
+## 16/10/2026 — WEATHER/v2, mưa và độ rọi V37
+
+Bổ sung node thời tiết độc lập, registry/form mưa-ánh sáng, source/quality/
+calibration đúng kênh, history/CSV và dashboard. Firmware/project riêng,
+RAIN switch + LIGHT dial và hai fault input, SIMULATOR only, không actuator.
+Native serializer→router→PostgreSQL giữ 5 mẫu/10 readings, fault và phục hồi,
+command/run0. V36→V37 giữ 15 bảng cũ, không seed weather; JVM restart/GET giữ
+8 bảng fixture mới. Full app/hai CSV/source filter đạt.
+525 backend,37node browser,17dashboard,75circuit hồi quy,19unit,9Python weather
++17WATER+7SOIL, native/ESP32/FS rỗng/merge/lint/build đạt. Đã sửa clock poll
+reset độ mới khi asOf cũ; không nới TTL. Hai lỗi test timestamp microseconds
+và fixture giờ snapshot được sửa, giữ assertion; không skip.
+Không AWS/Wokwi mới; năm ca [chương 51](CHAPTER_51_WEATHER_NODE.md) Chưa chạy.
+Chưa rain gate/forecast hoặc hoàn tất A3/A4.
+[Bàn giao](../implementation/LOCAL_WEATHER_NODE_REPORT.md).

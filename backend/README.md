@@ -305,3 +305,15 @@ V36 adds pagination identities/indexes without changing V35 content. No
 control flag, transport, firmware or IAM change; historical views work with
 control disabled and without a current registry entry. See
 [chapter 50](../docs/book/CHAPTER_50_IRRIGATION_SESSION_HISTORY.md).
+
+## WEATHER monitor V37
+
+POST /api/v1/nodes/weather declares independent WEATHER/v2 nodes. The
+shared telemetry router accepts RAIN_DETECTED/boolean and LIGHT_ILLUMINANCE/lux
+0..200000 with strict source/quality/unit/calibration identity. Weather
+faults do not enter WATER/SOIL alert evaluators or irrigation dispatch.
+GET inventory and existing node/channel history keep false/zero/null
+separate; no node/device/sample is seeded by V37. Existing ENV/v1/WATER/SOIL
+contracts remain. The frontend does not label stale/fault rain as dry.
+[Chapter51](../docs/book/CHAPTER_51_WEATHER_NODE.md) covers the separate
+simulator board and private local project helpers. No weather decision gate yet.

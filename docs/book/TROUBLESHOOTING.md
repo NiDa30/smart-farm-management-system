@@ -567,3 +567,15 @@ Cursor sai bộ lọc/phiên hoặc revision đổi khi tải thêm: đọc lạ
 không ghép dữ liệu cũ. CSV bị khóa sau lỗi là có chủ ý. Lỗi test selector
 exact đã sửa vì đoạn văn có câu giải thích CSV; không sửa logic để test qua.
 [Chương 50](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md).
+
+## V37: mưa không hiện, dữ liệu không đổi hoặc bị ghi là lỗi
+
+Chọn node WEATHER/v2, RAIN_DETECTED/boolean và LIGHT_ILLUMINANCE/lux; không
+đổi rain thành WATER_PRESENT hoặc số 0/1. Packet phải đúng registry/calibration
+và client/topic, fault phải null. Mẫu quá 30giây/API lỗi hiện Unknown; không
+phát lại mẫu cũ với giờ mới. Đã sửa clock panel node để asOf cũ ở lần poll
+sau không giữ dữ liệu tươi giả. Kiểm thử aging vẫn giữ TTL 30giây.
+Nếu PIO cố ghi HOME read-only trong cloud, dùng core-dir /workspace/.platformio
+đã lưu và project public trong /tmp; không xin quyền HOME hoặc tắt TLS.
+SIM_LUX_V1 chỉ là thang dial; không xem là cảm biến lux thật.
+[Chương 51](CHAPTER_51_WEATHER_NODE.md).

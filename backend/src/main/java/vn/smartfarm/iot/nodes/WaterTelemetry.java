@@ -18,8 +18,11 @@ public class WaterTelemetry {
         "WATER_TEMPERATURE",new Metric("°C",false,-55,125),
         "WATER_PRESSURE",new Metric("kPa",false,0,Double.MAX_VALUE));
     public static final Map<String,Metric> SOIL_METRICS=Map.of("SOIL_MOISTURE",new Metric("%",false,0,100));
+    public static final Map<String,Metric> WEATHER_METRICS=Map.of(
+        "RAIN_DETECTED",new Metric("boolean",true,0,0),
+        "LIGHT_ILLUMINANCE",new Metric("lux",false,0,200000));
     private static final Map<String,Metric> CHANNEL_METRICS;
-    static {var values=new HashMap<>(METRICS);values.putAll(SOIL_METRICS);CHANNEL_METRICS=Map.copyOf(values);}
+    static {var values=new HashMap<>(METRICS);values.putAll(SOIL_METRICS);values.putAll(WEATHER_METRICS);CHANNEL_METRICS=Map.copyOf(values);}
     private final ObjectMapper mapper;
     private static final Set<String> ENVELOPE=Set.of("schemaVersion","deviceId","bootId","sequence","timestamp","uptimeMs","readings");
     private static final Set<String> READING=Set.of("channelId","metric","unit","quality","value","calibrationVersion");

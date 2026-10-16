@@ -66,6 +66,9 @@ public class NodeInventory {
     @Transactional
     public String registerSoil(JsonNode input) {return register(input,"SOIL",WaterTelemetry.SOIL_METRICS);}
 
+    @Transactional
+    public String registerWeather(JsonNode input) {return register(input,"WEATHER",WaterTelemetry.WEATHER_METRICS);}
+
     private String register(JsonNode input,String type,Map<String,WaterTelemetry.Metric> metrics) {
         WaterTelemetry.fields(input,Set.of("nodeId","name","areaId","channels"));
         String id=WaterTelemetry.code(WaterTelemetry.text(input,"nodeId")),area=WaterTelemetry.code(WaterTelemetry.text(input,"areaId"));
@@ -107,9 +110,11 @@ public class NodeInventory {
     @Transactional
     public boolean storeChannels(String topic,WaterTelemetry.Packet packet) {
         String type=typeOf(packet.deviceId());
-        if(!topic.equals("smartfarm/FARM001/"+packet.deviceId()+"/telemetry")||!Set.of("WATER","SOIL").contains(type))
+        if(!topic.equals("smartfarm/FARM001/"+packet.deviceId()+"/telemetry")||!Set.of("WATER","SOIL","WEATHER").contains(type))
             throw new IllegalArgumentException("Unknown channel node or topic mismatch");
+        var allowed=switch(type){case "WATER"->WaterTelemetry.METRICS;case "SOIL"->WaterTelemetry.SOIL_METRICS;default->WaterTelemetry.WEATHER_METRICS;};
         for(var reading:packet.readings()) {
+            if(!allowed.containsKey(reading.metric()))throw new IllegalArgumentException("Metric does not belong to this node type");
             Integer count=jdbc.queryForObject("""
                 SELECT COUNT(*) FROM iot_channel WHERE node_id=? AND channel_id=? AND metric=? AND unit=?
                  AND calibration_version IS NOT DISTINCT FROM ?

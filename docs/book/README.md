@@ -112,3 +112,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Phiên tưới có xác nhận từng bước](CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md): giữ một phiên, OPEN/ON/OFF/CLOSE có UUID/phase, khép bằng proof, restart yêu cầu phục hồi; chưa tự điều phối nhiều nhánh.
 
 - [Lịch sử phiên tưới và đối chiếu từng bước](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md): tìm phiên cũ, tách kết quả gọi với ACK hiện có, phân trang và CSV chỉ dòng đã tải.
+
+- [Node thời tiết mưa và ánh sáng](CHAPTER_51_WEATHER_NODE.md): WEATHER/v2, project Wokwi riêng, history/CSV, mưa cũ thành Unknown; chưa weather gate.

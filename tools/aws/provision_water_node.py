@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render narrow WATER/SOIL monitor-node policies; --apply provisions one monitor-only client.
+"""Render narrow WATER/SOIL/WEATHER monitor-node policies; --apply provisions one monitor-only client.
 Uses existing AWS profile. Never prints SDK responses, PEMs or credentials.
 """
 import argparse
@@ -42,7 +42,7 @@ def policies(region, account, device):
 
 
 def _provision(session, region, account, device, output, policy, node_type="WATER"):
-    if node_type not in ("WATER", "SOIL"): raise ValueError("Unsupported monitor type")
+    if node_type not in ("WATER", "SOIL", "WEATHER"): raise ValueError("Unsupported monitor type")
     from botocore.exceptions import ClientError
     from botocore.config import Config
     device = node_id(device)
@@ -110,7 +110,7 @@ def _provision(session, region, account, device, output, policy, node_type="WATE
 
 
 def provision(session, region, account, device, output, policy, node_type="WATER"):
-    if node_type not in ("WATER", "SOIL"): raise ValueError("Unsupported monitor type")
+    if node_type not in ("WATER", "SOIL", "WEATHER"): raise ValueError("Unsupported monitor type")
     node_id(device)
     lock = output / '.provisioning.lock'
     try:
@@ -128,12 +128,12 @@ def provision(session, region, account, device, output, policy, node_type="WATER
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--node-id')
-    parser.add_argument('--node-type', choices=('WATER', 'SOIL'), default='WATER')
+    parser.add_argument('--node-type', choices=('WATER', 'SOIL', 'WEATHER'), default='WATER')
     parser.add_argument('--region', default='ap-southeast-1')
     parser.add_argument('--account-id', required=True)
     parser.add_argument('--apply', action='store_true')
     args = parser.parse_args()
-    device = node_id(args.node_id or ("SOIL01" if args.node_type == "SOIL" else "WATER01"))
+    device = node_id(args.node_id or (args.node_type + "01"))
     device_policy, iam = policies(args.region, args.account_id, device)
     output = (ROOT / '.local/aws' / device).resolve()
     if output.name != device or not output.is_relative_to((ROOT / '.local').resolve()):

@@ -344,3 +344,13 @@ JVM startup không replay; full app GET-only/chi tiết/hai CSV/PC2 rỗng đạ
 không audit mọi chuyển phase, lượng nước hoặc GPIO hiện tại. Bốn ca live
 trong [chương 50](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md) **Chưa chạy**.
 A3 còn coordinator nhiều nhánh, proof xuyên controller và queue dispatch.
+
+## V37 — WEATHER monitor, 16/10/2026
+
+525 backend,37node browser,17dashboard,75circuit hồi quy,19unit,9Python weather,
+17WATER/7SOIL đạt, không skip; native/ESP32/emptyFS/merge/lint/build đạt.
+Native packet qua receiver/DB thật trong schema riêng, 5mẫu/10readings,
+0command/run; app/history/hai CSV/PHYSICAL rỗng và restart giữ dữ liệu đạt.
+Upgrade giữ 15 bảng V36, không tự thêm node. Đây là giám sát mưa/độ rọi,
+không weather gate hoặc chứng minh hiệu chuẩn phần cứng. Năm ca live ở
+[chương 51](CHAPTER_51_WEATHER_NODE.md) **Chưa chạy**. A3/A4 còn mở.

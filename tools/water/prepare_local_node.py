@@ -18,10 +18,12 @@ SOIL_FILES = ('platformio.ini', 'diagram.json', 'wokwi.toml', 'src/main.cpp',
               'include/SoilMeasurements.h', 'include/SoilPacket.h', 'config/config.example.h')
 
 def kind(node_type):
-    if node_type not in ('WATER', 'SOIL'): raise ValueError('Unsupported monitor type')
+    if node_type not in ('WATER', 'SOIL', 'WEATHER'): raise ValueError('Unsupported monitor type')
     return node_type
 
-def source_files(node_type): return SOIL_FILES if kind(node_type) == 'SOIL' else FILES
+WEATHER_FILES = ('platformio.ini', 'diagram.json', 'wokwi.toml', 'src/main.cpp',
+                 'include/WeatherMeasurements.h', 'include/WeatherPacket.h', 'config/config.example.h')
+def source_files(node_type): return {'WATER':FILES,'SOIL':SOIL_FILES,'WEATHER':WEATHER_FILES}[kind(node_type)]
 
 PRIVATE = runpy.run_path(str(ROOT / 'tools/aws/provision_day1.py'))
 
@@ -35,15 +37,15 @@ def identity(value):
 def public_sources(root, device, node_type="WATER"):
     result = {}
     for name in source_files(node_type):
-        text = (root / ('firmware/soil-node' if node_type == 'SOIL' else 'firmware/water-node') / name).read_text()
-        if name == 'diagram.json': text = text.replace('SOIL01' if node_type == 'SOIL' else 'WATER01', device)
+        text = (root / ('firmware/' + kind(node_type).lower() + '-node') / name).read_text()
+        if name == 'diagram.json': text = text.replace(kind(node_type)+'01', device)
         result[name] = text
     return result
 
 
 def refresh(root, device, node_type="WATER"):
     device = identity(device)
-    project = root / ('.local/soil-nodes' if kind(node_type) == 'SOIL' else '.local/water-nodes') / device
+    project = root / ('.local/' + kind(node_type).lower() + '-nodes') / device
     marker = project / 'project.json'
     if not marker.is_file() or marker.is_symlink(): raise ValueError('Missing generated project marker')
     state = json.loads(marker.read_text())
@@ -64,7 +66,14 @@ def prepare(root, device, registry, ca_file, pulses_per_litre=450.0, node_type="
     if registry.get('nodeId') != device or registry.get('nodeType') != kind(node_type) or registry.get('telemetryVersion') != 2:
         raise ValueError('Register this monitor/v2 node in the local API first')
     channels = {c['channelId']: c for c in registry.get('channels', [])}
-    if node_type == 'SOIL':
+    if node_type == 'WEATHER':
+        if len(registry.get('channels', [])) != 2 or set(channels) != {'RAIN','LIGHT'}:
+            raise ValueError('WEATHER simulator needs exactly RAIN/LIGHT')
+        for channel,metric,unit,calibration in [('RAIN','RAIN_DETECTED','boolean',None),('LIGHT','LIGHT_ILLUMINANCE','lux','SIM_LUX_V1')]:
+            c=channels[channel]
+            if (c.get('metric'),c.get('unit'),c.get('calibrationVersion')) != (metric,unit,calibration):
+                raise ValueError('WEATHER simulator metric/unit/calibration mismatch')
+    elif node_type == 'SOIL':
         if len(registry.get('channels', [])) != 3 or set(channels) != {'SOIL1','SOIL2','SOIL3'}:
             raise ValueError('SOIL simulator needs exactly SOIL1/SOIL2/SOIL3')
         for channel in channels.values():
@@ -90,7 +99,7 @@ def prepare(root, device, registry, ca_file, pulses_per_litre=450.0, node_type="
     endpoint = (origin / 'endpoint.txt').read_text().strip()
     if not re.fullmatch(r'[a-z0-9-]+\.iot\.' + re.escape(region) + r'\.amazonaws\.com', endpoint):
         raise ValueError('Endpoint/manifest region mismatch')
-    project = root / ('.local/soil-nodes' if kind(node_type) == 'SOIL' else '.local/water-nodes') / device
+    project = root / ('.local/' + kind(node_type).lower() + '-nodes') / device
     if project.exists(): raise ValueError('Project already exists; build it or use --refresh-source, not overwrite config')
     # Check pair/CA before writing a project. Only local files, no TLS/network call.
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -110,6 +119,7 @@ def prepare(root, device, registry, ca_file, pulses_per_litre=450.0, node_type="
         if node_type == 'WATER': overrides = {'WATER_NODE_ID': json.dumps(device), 'WATER_AWS_ENDPOINT': json.dumps(endpoint),
                      'WATER_PULSES_PER_LITRE': repr(pulses_per_litre), 'WATER_FLOW_CALIBRATION_VERSION': json.dumps(calibration or '')}
         if node_type == 'SOIL': overrides = {'SOIL_NODE_ID': json.dumps(device), 'SOIL_AWS_ENDPOINT': json.dumps(endpoint)}
+        if node_type == 'WEATHER': overrides = {'WEATHER_NODE_ID': json.dumps(device), 'WEATHER_AWS_ENDPOINT': json.dumps(endpoint)}
         for key, value in overrides.items():
             config, count = re.subn(r'^#define ' + key + r' .*$', lambda _: '#define ' + key + ' ' + value, config, flags=re.M)
             if count != 1: raise ValueError('Template configuration must define each setting exactly once')
@@ -128,11 +138,11 @@ def prepare(root, device, registry, ca_file, pulses_per_litre=450.0, node_type="
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--node-id')
-    parser.add_argument('--node-type', choices=('WATER', 'SOIL'), default='WATER')
+    parser.add_argument('--node-type', choices=('WATER', 'SOIL', 'WEATHER'), default='WATER')
     parser.add_argument('--ca-file', type=Path, help='Public AmazonRootCA1.pem obtained over verified TLS')
     parser.add_argument('--pulses-per-litre', type=float, default=450.0)
     parser.add_argument('--refresh-source', action='store_true')
-    args = parser.parse_args();device = identity(args.node_id or ("SOIL01" if args.node_type == "SOIL" else "WATER01"))
+    args = parser.parse_args();device = identity(args.node_id or (args.node_type + "01"))
     if args.refresh_source: refresh(ROOT, device, args.node_type);return
     if not args.ca_file or not args.ca_file.is_file(): parser.error('--ca-file is required for initial preparation')
     try:

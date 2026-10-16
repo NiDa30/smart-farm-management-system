@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Weather monitor telemetry v2",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "deviceId": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_-]{1,31}$"
+    },
+    "bootId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "uptimeMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "readings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "channelId",
+          "metric",
+          "unit",
+          "quality",
+          "value",
+          "calibrationVersion"
+        ],
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_-]{1,31}$"
+          },
+          "metric": {
+            "enum": [
+              "RAIN_DETECTED",
+              "LIGHT_ILLUMINANCE"
+            ]
+          },
+          "unit": {
+            "enum": [
+              "boolean",
+              "lux"
+            ]
+          },
+          "quality": {
+            "enum": [
+              "VALID",
+              "SENSOR_FAULT"
+            ]
+          },
+          "value": {
+            "type": [
+              "boolean",
+              "number",
+              "null"
+            ]
+          },
+          "calibrationVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 40,
+            "pattern": "\\S"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "metric": {
+                  "const": "RAIN_DETECTED"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "const": "boolean"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "metric": {
+                  "const": "LIGHT_ILLUMINANCE"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "const": "lux"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "quality": {
+                  "const": "SENSOR_FAULT"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "value": {
+                  "type": "null"
+                }
+              }
+            },
+            "else": {
+              "if": {
+                "properties": {
+                  "metric": {
+                    "const": "RAIN_DETECTED"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "value": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "value": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 200000
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "dataSource": {
+      "enum": [
+        "UNSPECIFIED",
+        "SIMULATOR",
+        "PHYSICAL"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "timestamp",
+    "uptimeMs",
+    "readings"
+  ]
+}

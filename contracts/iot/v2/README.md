@@ -133,3 +133,14 @@ không trước receipt quá2s, receipt trễ≤30s. Không ngoại suy mép ho�
 No valid interval→null; valid zero→0; nhiều calibration→groups riêng,totalnull.
 Cap25k packet, quá cap/numeric range422, sai phạm vi400/nonFLOW404. Read-only
 RR, không thay telemetry/policy/command; [chương31](../../../docs/book/CHAPTER_31_WATER_VOLUME.md).
+
+## WEATHER/v2
+
+WEATHER is an independent monitor node, registered via POST /api/v1/nodes/weather.
+RAIN_DETECTED/boolean and LIGHT_ILLUMINANCE/lux (finite 0..200000) use the
+existing envelope/source/quality/calibration fields. SENSOR_FAULT requires
+null, not false or zero. This is rain detection, not rainfall mm or forecast;
+lux is illuminance, not energy/radiation. See
+[weather schema](weather-telemetry.schema.json) and
+[native example](examples/weather-telemetry.json). Registry/topic/node type
+must match. No command/status/actuator or automatic weather gate is defined.

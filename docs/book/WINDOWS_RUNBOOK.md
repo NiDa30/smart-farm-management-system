@@ -511,3 +511,14 @@ sử phiên; khoảng dựa trên giờ tạo, tối đa 31 ngày. Xem chi tiế
 hai CSV riêng. CSV chỉ dòng đã tải; khi lỗi cần đọc lại. Không bấm điều
 khiển từ trang lịch sử vì đây là trang chỉ xem.
 [Chương 50](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md) có bốn ca live Chưa chạy.
+
+## WEATHER node riêng V37
+
+Giữ database volume, pull/restart backend để áp V37. Sensor Realtime →
+Node & trạm nước → Khai báo node thời tiết, nhập WEATHER01 hoặc ID riêng.
+Form dùng RAIN/boolean/calibration null, LIGHT/lux/SIM_LUX_V1. Registry không
+thêm board vào simulator cũ. Helpers provision_water_node.py và
+prepare_local_node.py hỗ trợ --node-type WEATHER; project riêng ở
+.local/weather-nodes/WEATHER01. Cần cert/clientId riêng, build/buildfs/merge
+trên máy bạn rồi mở project đó với Wokwi. Không chia sẻ key hoặc commit flash.
+Lệnh cụ thể và năm ca Chưa chạy: [chương 51](CHAPTER_51_WEATHER_NODE.md).

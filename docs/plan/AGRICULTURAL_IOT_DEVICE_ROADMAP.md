@@ -929,3 +929,17 @@ chỉ thêm identity/index; không đổi firmware, dispatch, topic hoặc IAM.
 full app GET-only/CSV đạt. Bốn ca live Chưa chạy. Chưa audit từng chuyển
 phase/user identity, retention hoặc điều phối nhiều vùng. A3 còn mở.
 [Chương 50](../book/CHAPTER_50_IRRIGATION_SESSION_HISTORY.md).
+
+## Cập nhật 16/10/2026 — A4 bước giám sát thời tiết V37
+
+WEATHER/v2 riêng có RAIN_DETECTED/boolean và LIGHT_ILLUMINANCE/lux, form/
+history/CSV/dashboard. Firmware Wokwi mới có switch mưa, dial lux và fault
+độc lập; không actuator. Source/quality/calibration, dữ liệu cũ không coi là
+không mưa; đã sửa monotonic clock panel node. Provision/prepare helpers
+hỗ trợ cert/project riêng, chưa chạy AWS/Wokwi thật. V37 không seed node.
+525backend/37nodeBrowser/17dashboard/75circuit/19unit/9Pythonweather+17WATER+
+7SOIL/native/ESP32/FSrỗng/merge/lintbuild đạt; pipeline native→DB→app/CSV và
+restart, upgrade giữ 15 bảng đạt. Năm ca live Chưa chạy.
+[Chương 51](../book/CHAPTER_51_WEATHER_NODE.md).
+A4 mới giám sát: chưa weather gate, ánh sáng vào quyết định tưới, forecast
+hoặc calibration thật. A3 coordinator/multi-route/flow-proof/queue còn mở.

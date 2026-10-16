@@ -34,3 +34,9 @@ firmware/irrigation-node/.pio/
 firmware/irrigation-node/config/config.local.h
 firmware/irrigation-node/data/*
 !firmware/irrigation-node/data/.gitkeep
+
+# Private independent weather monitor and generated build output
+firmware/weather-node/.pio/
+firmware/weather-node/config/config.local.h
+firmware/weather-node/data/*
+!firmware/weather-node/data/.gitkeep

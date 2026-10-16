@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "author": "Smart Farm",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 180,
+      "left": 80,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "light",
+      "top": 0,
+      "left": 340,
+      "attrs": {
+        "value": "500"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "rain",
+      "top": 110,
+      "left": 0,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "rainFault",
+      "top": 110,
+      "left": 170,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "lightFault",
+      "top": 110,
+      "left": 340,
+      "attrs": {
+        "value": "1",
+        "bounce": "0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label0",
+      "top": -65,
+      "left": 0,
+      "attrs": {
+        "text": "RAIN GPIO27: LEFT=rain, RIGHT=no rain"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label1",
+      "top": -65,
+      "left": 230,
+      "attrs": {
+        "text": "RAIN FAULT GPIO14: LEFT=fault, RIGHT=normal"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "label2",
+      "top": -65,
+      "left": 460,
+      "attrs": {
+        "text": "LIGHT GPIO34: dial sets 0..200000 lux\nLIGHT FAULT GPIO25: LEFT=fault, RIGHT=normal"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "scope",
+      "top": 460,
+      "left": 0,
+      "attrs": {
+        "text": "WEATHER01 - simulator only; no actuator output\nSIM_LUX_V1 is not a physical light calibration. Switch is not rain amount."
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "light:SIG",
+      "esp:34",
+      "green",
+      []
+    ],
+    [
+      "light:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "light:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rain:2",
+      "esp:27",
+      "blue",
+      []
+    ],
+    [
+      "rain:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "rainFault:2",
+      "esp:14",
+      "blue",
+      []
+    ],
+    [
+      "rainFault:1",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "lightFault:2",
+      "esp:25",
+      "blue",
+      []
+    ],
+    [
+      "lightFault:1",
+      "esp:GND.2",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}
