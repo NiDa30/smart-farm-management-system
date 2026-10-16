@@ -290,3 +290,18 @@ never publishes/replays; completed sessions remain unchanged. CLOSE recovery
 may target a fresh new valve boot; ON never resumes on another boot.
 No new wire protocol, credentials, firmware or IAM. See
 [chapter49](../docs/book/CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md).
+
+## V36 irrigation session history (read only)
+
+GET /api/v1/irrigation-session-history accepts from/to (half-open creation
+range, at most 31 days), optional circuitId, ALL/UNFINISHED/CLOSED/RECOVERY,
+limit 1–100 and a filter-scoped cursor. GET /{circuitId}/{sessionId}/steps
+lists all stored actions with session-scoped pagination and matching current
+command ledger. Each response is read-only/repeatable-read; pages are not a
+cross-request snapshot. Saved dispatch results remain distinct from later
+ACK evidence. FINISH never has a command. Valve ACK sequence does not invent
+an ACK timestamp or GPIO state; route-free OFF may be ACKed by a newer boot.
+V36 adds pagination identities/indexes without changing V35 content. No
+control flag, transport, firmware or IAM change; historical views work with
+control disabled and without a current registry entry. See
+[chapter 50](../docs/book/CHAPTER_50_IRRIGATION_SESSION_HISTORY.md).

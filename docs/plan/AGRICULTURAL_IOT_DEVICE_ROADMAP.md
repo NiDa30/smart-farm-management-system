@@ -917,3 +917,15 @@ Flag mặc địnhfalse, không MQTT/firmware/IAM mới, không tự lấy việ
 A3 vẫn còn coordinator tự chuyển bước/multi-route, flow proof xuyên
 controller, queue dispatch và nghiệm thu phần cứng. Phiên này giữ nguyên
 một route tĩnh mỗi boot, không tự phối hợp nhiều vùng.
+
+## Cập nhật 16/10/2026 — lịch sử phiên tưới V36
+
+Sau quy trình có người xác nhận V35, đã thêm tra cứu phiên cũ theo giờ tạo,
+nhánh/trạng thái, xem tất cả bước bằng phân trang và hai CSV chỉ dòng đã
+tải. Giữ config snapshot, kết quả gọi ban đầu và ACK ledger lúc đọc riêng;
+không suy ra lượng nước/thời gian thực chạy hoặc bơm hiện đang bật. Migration
+chỉ thêm identity/index; không đổi firmware, dispatch, topic hoặc IAM.
+512 backend/75 browser nhánh/10 unit mới, lint/build, upgrade giữ 11 bảng,
+full app GET-only/CSV đạt. Bốn ca live Chưa chạy. Chưa audit từng chuyển
+phase/user identity, retention hoặc điều phối nhiều vùng. A3 còn mở.
+[Chương 50](../book/CHAPTER_50_IRRIGATION_SESSION_HISTORY.md).

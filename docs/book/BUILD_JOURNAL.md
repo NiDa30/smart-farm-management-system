@@ -1249,3 +1249,19 @@ nguyên, không command mới. V34→V35 giữ9bảng không tự session. Full 
 GET/đối chiếu/loại trừ nhánh khác. Native OPEN/ON model được dùng lại,
 OFF/CLOSE là callback synthetic; không AWS/GPIO hoặc bộ hẹn giờ thật mới.
 Sáu ca live Chưa chạy. [Bàn giao](../implementation/LOCAL_IRRIGATION_SESSION_REPORT.md).
+
+## 16/10/2026 — Lịch sử phiên tưới V36
+
+Thêm tra cứu phiên theo giờ tạo/nhánh/trạng thái, chi tiết tất cả bước có
+phân trang và hai CSV. Kết quả gọi ban đầu khác bản lưu ACK lúc đọc; không
+suy ra GPIO/thời gian thực chạy/lít. GET không sửa phiên hoặc gửi command.
+V36 chỉ thêm identity/index, giữ nguyên 11 bảng nội dung V35. Startup giữ
+closed, tăng revision active recovery theo chính sách cũ; không replay.
+512 backend + 75 browser nhánh + 10 unit mới đạt; lint/build đạt. Targeted
+đầu lỗi int/Long trong test, sửa literal; browser có một selector exact sai
+vì đoạn văn có thêm câu CSV, sửa và chạy lại 13 mới + toàn bộ 75 đạt.
+Full app menu/chi tiết/hai CSV/PC2 rỗng đạt, 0 write/ngoại mạng/page error.
+GET trước/sau giữ 11 bảng. Không thay firmware/AWS hoặc chạy live. Bốn ca
+Windows/AWS/Wokwi [chương 50](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md) Chưa chạy;
+A3 coordinator/flow/queue chưa hoàn tất.
+[Bàn giao](../implementation/LOCAL_SESSION_HISTORY_REPORT.md).

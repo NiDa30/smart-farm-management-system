@@ -555,3 +555,15 @@ Nếu lệnh OFF cũ không rõ, chủ động yêu cầu OFF mới khi kết n�
 CLOSE phục hồi có thể dùng boot van mới đúng config, không dùng ON cũ cho
 boot mới. Profile/NVS bị khóa cần xử lý theo [chương49](CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md),
 không force-unlock hoặc xóa ledger/phiên.
+
+## V36: không thấy phiên hoặc chi tiết ACK khác kết quả gửi
+
+Lịch sử lọc theo giờ tạo phiên, không theo giờ bật/kết thúc; đổi khoảng giờ
+hoặc bỏ mã nhánh rồi bấm Đọc lịch sử phiên. Chỉ các session đã lưu từ V35
+xuất hiện, lệnh manual/rule/queue cũ không tự được nhập thành phiên.
+SENT ban đầu và EXECUTED ở ledger có thể cùng đúng khi ACK đến sau. Ledger
+thiếu thì chưa có bằng chứng khớp; không gửi lại lệnh để làm đầy lịch sử.
+Cursor sai bộ lọc/phiên hoặc revision đổi khi tải thêm: đọc lại lượt mới,
+không ghép dữ liệu cũ. CSV bị khóa sau lỗi là có chủ ý. Lỗi test selector
+exact đã sửa vì đoạn văn có câu giải thích CSV; không sửa logic để test qua.
+[Chương 50](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md).

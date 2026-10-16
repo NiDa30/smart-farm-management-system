@@ -238,3 +238,13 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Coordinator tự chuyển bước/multi-route, flow xuyên node và queue dispatch.
 
 [Bàn giao V35](LOCAL_IRRIGATION_SESSION_REPORT.md).
+
+## Bước V36 — lịch sử phiên tưới
+
+- [x] Lọc thời gian tạo/nhánh/trạng thái, phân trang phạm vi và chi tiết mọi bước.
+- [x] Phân biệt kết quả gửi/ACK, ledger khớp định nghĩa, GET không thay điều khiển.
+- [x] UI/CSV chỉ dòng đã tải, kiểm thử DB/browser/full app/upgrade giữ dữ liệu.
+- [ ] Bốn ca Windows/AWS/Wokwi [chương 50](../book/CHAPTER_50_IRRIGATION_SESSION_HISTORY.md).
+- [ ] Coordinator nhiều nhánh, flow proof xuyên controller, queue dispatch.
+
+[Bàn giao V36](LOCAL_SESSION_HISTORY_REPORT.md).

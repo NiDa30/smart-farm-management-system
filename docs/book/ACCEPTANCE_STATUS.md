@@ -334,3 +334,13 @@ không replay;9bảng cũ giữ qua nâng cấp/restart. Không AWS/GPIO/firmwar
 sáu ca live Chưa chạy. [Chương49](CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md),
 [bàn giao](../implementation/LOCAL_IRRIGATION_SESSION_REPORT.md).
 Không coi operator steps là coordinator tự động nhiều nhánh hoặc hoàn tất A3.
+
+## V36 — lịch sử phiên tưới, 16/10/2026
+
+512 backend (15 mới), 75 browser nhánh (13 mới), 10 unit parser/CSV đạt,
+không skip; lint/build đạt. Upgrade giữ 11 bảng V35, migrate lần hai no-op.
+JVM startup không replay; full app GET-only/chi tiết/hai CSV/PC2 rỗng đạt,
+11 bảng không đổi sau đọc. Đây là history quy trình và ledger lúc đọc,
+không audit mọi chuyển phase, lượng nước hoặc GPIO hiện tại. Bốn ca live
+trong [chương 50](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md) **Chưa chạy**.
+A3 còn coordinator nhiều nhánh, proof xuyên controller và queue dispatch.

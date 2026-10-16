@@ -500,3 +500,14 @@ phải xác nhận riêng. Chờ đúng proof, không lấy HTTP/ACK làm status
 hiện RECOVERY_REQUIRED: dừng và xác nhận OFF/CLOSED, không tiếp tục ON cũ.
 Tắt khẩn vẫn có khi API đọc lỗi hoặc bước đang treo. Kết thúc ở OFF/CLOSED;
 không xóa DB/NVS để bỏ phiên giữ chỗ.
+
+## Xem lại phiên tưới V36
+
+Pull nhánh feat/day1-iot-foundation, restart backend bằng terminal Git Bash
+đã dùng, giữ PostgreSQL volume để Flyway áp V36. Không có flag/AWS/firmware
+mới cho lịch sử. Vào Điều khiển Actuator → Cấu hình nhánh tưới → Lịch sử
+mọi phiên tưới hoặc Lịch sử phiên của nhánh. Chọn bộ lọc rồi bấm Đọc lịch
+sử phiên; khoảng dựa trên giờ tạo, tối đa 31 ngày. Xem chi tiết/tải thêm và
+hai CSV riêng. CSV chỉ dòng đã tải; khi lỗi cần đọc lại. Không bấm điều
+khiển từ trang lịch sử vì đây là trang chỉ xem.
+[Chương 50](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md) có bốn ca live Chưa chạy.

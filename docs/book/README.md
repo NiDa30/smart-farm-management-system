@@ -110,3 +110,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Lịch sử bơm theo nhánh và CSV](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md): status có route lưu từ V34, lệnh/ACK riêng, lọc/phân trang/CSV; không suy ra thời gian chạy hoặc lượng nước.
 
 - [Phiên tưới có xác nhận từng bước](CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md): giữ một phiên, OPEN/ON/OFF/CLOSE có UUID/phase, khép bằng proof, restart yêu cầu phục hồi; chưa tự điều phối nhiều nhánh.
+
+- [Lịch sử phiên tưới và đối chiếu từng bước](CHAPTER_50_IRRIGATION_SESSION_HISTORY.md): tìm phiên cũ, tách kết quả gọi với ACK hiện có, phân trang và CSV chỉ dòng đã tải.
