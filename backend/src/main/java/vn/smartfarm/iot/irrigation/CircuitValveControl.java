@@ -53,7 +53,7 @@ public class CircuitValveControl {
   if(!enabled)throw bad(HttpStatus.FORBIDDEN,"Circuit LED control disabled");
   boolean[] send={false};Command command=tx.execute(status->{lock();Command old=find(r.requestId());
    if(old!=null){if(!old.config().circuitId().equals(id)||old.config().revision()!=r.expectedRevision()||old.config().zoneRevision()!=r.expectedZoneRevision()||!old.bootId().equals(r.expectedBootId())||!old.action().equals(r.action())||!Objects.equals(old.durationSeconds(),r.durationSeconds())||!old.requestedAt().equals(r.requestedAt().truncatedTo(ChronoUnit.MICROS)))throw bad(HttpStatus.CONFLICT,"Request ID reused");return old;}
-   vn.smartfarm.iot.control.PumpCircuitRoute.requireIdle(jdbc);var c=circuits.find(id);if(!eligible(c)||!dedicated(c))throw bad(HttpStatus.CONFLICT,"Separate simulator controller required");if(!connected(c.valveId()))throw bad(HttpStatus.SERVICE_UNAVAILABLE,"Circuit MQTT unavailable");
+   IrrigationSessionGuard.valve(jdbc,r.requestId(),r.action());vn.smartfarm.iot.control.PumpCircuitRoute.requireIdle(jdbc);var c=circuits.find(id);if(!eligible(c)||!dedicated(c))throw bad(HttpStatus.CONFLICT,"Separate simulator controller required");if(!connected(c.valveId()))throw bad(HttpStatus.SERVICE_UNAVAILABLE,"Circuit MQTT unavailable");
    Instant now=Instant.now();Status s=latest(c.valveId());
    if(c.revision()!=r.expectedRevision()||c.zoneRevision()!=r.expectedZoneRevision()||r.requestedAt().isBefore(now.minusSeconds(10))||r.requestedAt().isAfter(now.plusSeconds(2))||s==null||!s.config().equals(c)||!s.bootId().equals(r.expectedBootId()))throw bad(HttpStatus.CONFLICT,"Stale request, boot or mapping");
    Instant f=fence(c.valveId());if(r.action().equals("OPEN")&&(!ready(c,s,now)||f!=null&&!r.requestedAt().isAfter(f)))throw bad(HttpStatus.CONFLICT,"Fresh CLOSED position and command fence required");
@@ -96,6 +96,7 @@ public class CircuitValveControl {
   for(var c:jdbc.query("SELECT * FROM irrigation_circuit WHERE zone_id=?",IrrigationCircuits::map,zone))requireEditable(jdbc,c);
  }
  static void requireEditable(JdbcTemplate jdbc,IrrigationCircuits.Config old){
+  IrrigationSessionGuard.editable(jdbc);
   vn.smartfarm.iot.control.PumpCircuitRoute.requireIdle(jdbc);
   var rows=jdbc.queryForList("SELECT *,position_feedback::text AS feedback_text FROM circuit_demo_status WHERE valve_id=?",old.valveId());long count=jdbc.queryForObject("SELECT COUNT(*) FROM circuit_demo_command WHERE valve_id=?",Long.class,old.valveId());if(rows.isEmpty()){if(count>0)throw bad(HttpStatus.CONFLICT,"Prior circuit commands need CLOSED confirmation");return;}
   var s=rows.getFirst();Instant now=Instant.now();String f=(String)s.get("feedback_text");

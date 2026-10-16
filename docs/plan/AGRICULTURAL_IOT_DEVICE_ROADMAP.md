@@ -900,3 +900,20 @@ full-app/CSV, nâng V33→V34 và restart giữ dữ liệu. Năm ca live Chưa 
 [bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_HISTORY_REPORT.md).
 Đây là nền Verify/Learn; A3 vẫn còn coordinator chuyển nhánh, interlock/flow
 xuyên controller, dispatch queue và nghiệm thu phần cứng.
+
+## Cập nhật 16/10/2026 — phiên tưới có người xác nhận V35
+
+OPERATOR_STEPS giữ một phiên lưu bền: tạo không gửi, mỗi OPEN/ON/OFF/CLOSE/
+FINISH cần xác nhận mới, identity/payload commit trước dispatch. Van OPEN30s,
+bơm1–10s trong cửa sổ V33; chỉ khép khi OFF/CLOSED mới. Lệnh ngoài phiên và
+sửa nhánh bị chặn, OFF khẩn vẫn dùng; restart chỉ RECOVERY_REQUIRED, không
+replay/resume. UI có GET đối chiếu ý định chưa rõ và tắt khẩn độc lập.
+Flag mặc địnhfalse, không MQTT/firmware/IAM mới, không tự lấy việc từ queue.
+
+497backend/62browser nhánh/5unit parser,lint/build đạt; fixture synthetic5bước,
+4command→DB, JVM restart PREPARED→RECOVERY, full-app GET-only; V34→V35 giữ
+9bảng. Sáu ca live Chưa chạy. [Chương49](../book/CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md),
+[bàn giao](../implementation/LOCAL_IRRIGATION_SESSION_REPORT.md).
+A3 vẫn còn coordinator tự chuyển bước/multi-route, flow proof xuyên
+controller, queue dispatch và nghiệm thu phần cứng. Phiên này giữ nguyên
+một route tĩnh mỗi boot, không tự phối hợp nhiều vùng.

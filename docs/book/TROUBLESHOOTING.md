@@ -543,3 +543,15 @@ mẫu. Có hasMore ở ledger thì thu hẹp khoảng giờ/nhánh; CSV không t
 Mẫu OFF/TIMER_EXPIRED có thể liên kết commandId của ON qua ordinal; không
 đồng nghĩa đã có lệnh OFF riêng. Không trừ timestamp để kết luận runtime
 hoặc lượng nước, nhất là khi mất gateway. Xem [chương48](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md).
+
+## Control trả409 do có phiên tưới đang giữ
+
+Mở Phiên tưới có xác nhận của đúng nhánh. PREPARED vẫn giữ quy trình dù chưa
+ON; các panel mở/bật/reset ngoài phiên bị chặn. Tắt khẩn luôn có thể yêu
+cầu, nhưng HTTP202 chưa xác nhận OFF. Dừng, nhận status phủ mọi command rồi
+CLOSE và xác nhận CLOSED mới trước khép phiên. Sau restart là RECOVERY_REQUIRED,
+không replay; thiếu ACK/status thì GET đối chiếu, không tự gửi lại OPEN/ON.
+Nếu lệnh OFF cũ không rõ, chủ động yêu cầu OFF mới khi kết nối đã khôi phục.
+CLOSE phục hồi có thể dùng boot van mới đúng config, không dùng ON cũ cho
+boot mới. Profile/NVS bị khóa cần xử lý theo [chương49](CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md),
+không force-unlock hoặc xóa ledger/phiên.

@@ -24,6 +24,7 @@ smartfarm:
     circuit-route-required: ${SMARTFARM_PUMP_CIRCUIT_ROUTE_REQUIRED:false}
     pump-fencing-enabled: ${SMARTFARM_PUMP_FENCING_ENABLED:false}
   irrigation:
+    session-enabled: ${SMARTFARM_IRRIGATION_SESSION_ENABLED:false}
     circuit-demo-enabled: ${SMARTFARM_IRRIGATION_CIRCUIT_DEMO_ENABLED:false}
     monitor-enabled: ${SMARTFARM_IRRIGATION_MONITOR_ENABLED:false}
     demo-enabled: ${SMARTFARM_IRRIGATION_DEMO_ENABLED:false}

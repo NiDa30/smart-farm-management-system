@@ -227,3 +227,14 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Coordinator nhiều nhánh/flow proof xuyên controller/queue dispatch.
 
 [Bàn giao V34](LOCAL_PUMP_CIRCUIT_HISTORY_REPORT.md).
+
+## Bước V35 — phiên tưới có người xác nhận
+
+- [x] Một session lưu bền, mỗi bước UUID/revision/review và commit trước IO;
+  giữ cấu hình/boots, khép bằng OFF/CLOSED mới, không auto retry/resume.
+- [x] Chặn thao tác ngoài phiên/sửa cấu hình; OFF khẩn vẫn dùng và interrupt.
+- [x] UI/pending GET lookup, startup RECOVERY, kiểm thử DB/browser/actualJVM.
+- [ ] Sáu ca Windows/AWS/Wokwi trong [chương49](../book/CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md).
+- [ ] Coordinator tự chuyển bước/multi-route, flow xuyên node và queue dispatch.
+
+[Bàn giao V35](LOCAL_IRRIGATION_SESSION_REPORT.md).

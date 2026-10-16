@@ -274,3 +274,19 @@ not expire commands or infer status. Emergency OFF is route-free and may be
 linked by a reported sample's ordinal, not invented as a route-selected intent.
 No new MQTT topic/firmware/flags, no retention policy or coordinator.
 [Chapter48](../docs/book/CHAPTER_48_PUMP_CIRCUIT_HISTORY.md).
+
+## V35 operator-confirmed irrigation sessions
+
+SMARTFARM_IRRIGATION_SESSION_ENABLED defaults false. Mode OPERATOR_STEPS,
+not an automatic scheduler. /api/v1/irrigation-circuits/{id}/session provides
+GET snapshot, POST start, GET /{UUID}, POST /{UUID}/actions and GET /actions/{UUID}.
+Start reserves one global unfinished session without sending; each explicit
+OPEN/ON/OFF/CLOSE/FINISH action commits its identity/payload before dispatch.
+Existing route/fence/ownership/proof gates remain authoritative. Outside ON/
+reset/valve movements/config edits are blocked while active; emergency OFF
+interrupts the session without being blocked. Late returns cannot overwrite
+interruption. Startup moves all unfinished sessions to RECOVERY_REQUIRED and
+never publishes/replays; completed sessions remain unchanged. CLOSE recovery
+may target a fresh new valve boot; ON never resumes on another boot.
+No new wire protocol, credentials, firmware or IAM. See
+[chapter49](../docs/book/CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md).

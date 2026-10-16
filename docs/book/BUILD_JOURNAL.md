@@ -1226,3 +1226,26 @@ OFF/ON/OFF và1ACK ledger, không AWS/GPIO; logical millis nhanh. Full app
 GET-only/detail/CSV/circuit khác rỗng; V33→V34 giữ8bảng, history mới0;
 restart giữ9bảng, không replay/refresh timestamp. Không đổi firmware/deps.
 Năm ca live Chưa chạy. [Bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_HISTORY_REPORT.md).
+
+## 16/10/2026 — phiên tưới có xác nhận V35
+
+Thêm một session lưu bền giữ quy trình từ chuẩn bị đến OFF/CLOSED, UUID mỗi
+bước và commit trước network. Operator xác nhận từng bước, không scheduler.
+Guard tại đường lệnh cũ chặn thao tác ngoài phiên, OFF luôn có thể yêu cầu;
+late return không xóa interruption. Startup chuyển active sang RECOVERY,
+không phát lại. [Chương49](CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md).
+
+497backend (20mới),62browser (8mới),5unit mới,lint/build đạt. Targeted đầu
+phát hiện JSONB số nguyên khác JsonNode type khi so definition; dùng typed
+record trước so, giữ kiểm tra input. Assertion mock ban đầu cấm cả GET
+connected trong test restart; chỉ cấm publish đúng mục tiêu. Không dùng các
+lượt lỗi hoặc cộng lượt test vào số cuối. Sau capacity guard UI,8browser
+session/lintbuild cuối đạt,54luồng cũ giữ kết quả full62.
+
+Fixture riêng5explicit steps/4synthetic commands→receiver/DB, một phiên
+CLOSED_CONFIRMED và một PREPARED. JVM thật chuyển phiên chuẩn bị sang
+RECOVERY revision+1, phiên closed/operations và9bảng control/history giữ
+nguyên, không command mới. V34→V35 giữ9bảng không tự session. Full app chỉ
+GET/đối chiếu/loại trừ nhánh khác. Native OPEN/ON model được dùng lại,
+OFF/CLOSE là callback synthetic; không AWS/GPIO hoặc bộ hẹn giờ thật mới.
+Sáu ca live Chưa chạy. [Bàn giao](../implementation/LOCAL_IRRIGATION_SESSION_REPORT.md).

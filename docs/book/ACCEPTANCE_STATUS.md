@@ -324,3 +324,13 @@ thành history. Firmware không thay; năm ca Windows/AWS/Wokwi Chưa chạy.
 [Chương48](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md),
 [bàn giao](../implementation/LOCAL_PUMP_CIRCUIT_HISTORY_REPORT.md).
 Chưa coordinator/dispatch queue/flow xuyên controller hoặc nghiệm thu A3.
+
+## Phiên tưới có xác nhận V35 — 16/10/2026
+
+497backend/62browser nhánh/5unit mới/lintbuild đạt; guard ngoài phiên,
+commit trước IO, OFF chen callback, idempotence, bằng chứng OFF/CLOSED và
+restart được kiểm tra. Fixture5bước/4command synthetic, JVM PREPARED→RECOVERY,
+không replay;9bảng cũ giữ qua nâng cấp/restart. Không AWS/GPIO/firmware mới,
+sáu ca live Chưa chạy. [Chương49](CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md),
+[bàn giao](../implementation/LOCAL_IRRIGATION_SESSION_REPORT.md).
+Không coi operator steps là coordinator tự động nhiều nhánh hoặc hoàn tất A3.

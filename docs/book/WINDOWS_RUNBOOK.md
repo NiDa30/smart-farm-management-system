@@ -488,3 +488,15 @@ CSV trạng thái và CSV lệnh là hai file, chỉ xuất dòng đã tải. Ch
 certificate hoặc topic mới. Muốn có mẫu live phải thử LED theo chương47
 và xác nhận OFF khi xong, không replay fixture cloud hoặc bỏ chốt an toàn.
 [Chương48](CHAPTER_48_PUMP_CIRCUIT_HISTORY.md).
+
+## Phiên tưới có xác nhận V35
+
+Theo [chương49](CHAPTER_49_OPERATOR_IRRIGATION_SESSION.md), dùng các board/
+flag của chương47 và thêm SMARTFARM_IRRIGATION_SESSION_ENABLED=true tại
+terminal Git Bash backend, legacy demo=false. Pull/restart áp V35, giữ volume;
+không cần certificate/role/topic mới. Vào Cấu hình nhánh → Phiên tưới có
+xác nhận,5giây để thử. Tạo phiên chưa gửi lệnh; mỗi OPEN/ON/OFF/CLOSE/FINISH
+phải xác nhận riêng. Chờ đúng proof, không lấy HTTP/ACK làm status. Restart
+hiện RECOVERY_REQUIRED: dừng và xác nhận OFF/CLOSED, không tiếp tục ON cũ.
+Tắt khẩn vẫn có khi API đọc lỗi hoặc bước đang treo. Kết thúc ở OFF/CLOSED;
+không xóa DB/NVS để bỏ phiên giữ chỗ.

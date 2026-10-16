@@ -78,6 +78,7 @@ public class PumpCommandFencing {
     Instant now=Instant.now();if(http.reviewedAt().isBefore(now.minusSeconds(10))||http.reviewedAt().isAfter(now.plusSeconds(2)))throw bad(HttpStatus.CONFLICT,"HTTP review expired; read current intent");
     if(!http.action().equals("OFF")&&http.intentRevision()!=revision())throw bad(HttpStatus.CONFLICT,"Pump intent changed; review again");
    }
+   vn.smartfarm.iot.irrigation.IrrigationSessionGuard.pump(jdbc,http==null?null:http.requestId(),request.action());
    boolean unavailable=transport==null||!transport.controlConnected();
    if(unavailable&&!request.action().equals("OFF"))throw bad(HttpStatus.SERVICE_UNAVAILABLE,"MQTT control unavailable");
    jdbc.update("UPDATE pump_command SET state='TIMED_OUT' WHERE state IN ('PENDING','SENT','PUBLISH_UNCERTAIN') AND expires_at<CURRENT_TIMESTAMP-INTERVAL '5 seconds'");

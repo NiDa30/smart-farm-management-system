@@ -78,6 +78,7 @@ public class PumpService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Invalid command/duration");
         if(fencing.required())return fencing.create(request,beforePublish);
         if((fencing.view().deviceEnabled()||fencing.view().circuitRouteRequired())&&!request.action().equals("OFF"))throw new ResponseStatusException(HttpStatus.CONFLICT,"Enable backend pump fencing to match device");
+        vn.smartfarm.iot.irrigation.IrrigationSessionGuard.pump(jdbc,null,request.action());
         var transport=transports.getIfAvailable();
         if (transport==null || !transport.controlConnected()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"MQTT control unavailable");
         Status status=status();
