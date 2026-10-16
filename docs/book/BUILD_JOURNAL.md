@@ -1315,3 +1315,19 @@ CLOSE; chưa AWS/Wokwi thật. Upgrade giữ12bảng, restart giữ12bảng và 
 full app GET-only đạt. Sáu ca live Chưa chạy ở chương53. Không sửa firmware,
 không đọc/cấp secrets, không chạy broker/AWS thật.
 [Bàn giao](../implementation/LOCAL_SESSION_WEATHER_STOP_REPORT.md).
+
+## 17/10/2026 — V40 chốt nguồn nước theo nhánh trước ON
+
+Thêm policy theo revision nhánh và calibration LOW, opt-in không seed. Mẫu
+đúng source/calibration, hai clock<30s và true mới qua; không refresh từ trạm
+khác, FLOW hoặc duplicate. Create/OPEN/proof/ON reservation cùng điều kiện,
+water_gate evidence giữ nguyên khi reconcile; OFF/RESET riêng. UI metadata,
+monotonic expiry, calibration review/conflict/lost-save GET-only.
+
+592backend/84circuitBrowser/51nodeBrowser/17pump/36unit/lintbuild đạt.
+Harness hai ca đầu vi phạm FK/check, đã đổi cách mô phỏng registry drift hợp
+lệ; không nới constraint. Native4packets→12readings đúng missing/present/
+empty/fault/recovery,0command/run/session. Upgrade giữ13bảng cũ trừfield mới
+null, full app/restart giữ14bảng, mẫu vẫn cũ. Không firmware/AWS/GPIO thật;
+LOW admission chưa tự OFF sau ON hoặc chứng minh flow. Sáu ca live Chưa chạy.
+[Bàn giao](../implementation/LOCAL_CIRCUIT_WATER_GATE_REPORT.md).

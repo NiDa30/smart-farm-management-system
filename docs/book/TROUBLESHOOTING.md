@@ -602,3 +602,15 @@ không replay khi mạng trở lại/restart; dùng OFF thủ công mới nếu 
 khép đúng bước. Backend không hoạt động thì không thể bảo đảm gửi OFF;
 thiết bị vẫn cần timer/interlock cục bộ.
 [Chương53](CHAPTER_53_SESSION_WEATHER_STOP.md).
+
+## LOW báo có nước nhưng không qua chốt nguồn nước (V40)
+
+Mở Chốt nguồn nước của đúng nhánh: kiểm tra waterNodeId/lowChannelId trong
+cấu hình, nguồn và hiệu chuẩn, observedAt/receivedAt dưới30giây. Trạm khác
+hoặc FLOW mới không làm mới LOW đã cũ. null/fault không phải true; LOW=false
+không khẳng định bồn hết hoàn toàn, vẫn chặn lượt bật mới. Config/revision
+hoặc calibration đổi cần đọc và rà soát lại khi phiên đã khép/bơm nghỉ;
+không bỏ khóa ngoại hoặc sửa DB sample để vượt điều kiện. Dùng hiệu chuẩn
+kênh hiện tại chỉ sau khi đã kiểm tra. OFF/RESET giữ luồng an toàn riêng,
+không có nghĩa gate sẽ tự OFF nếu nguồn thay đổi sau ON.
+[Chương54](CHAPTER_54_CIRCUIT_WATER_ADMISSION.md).

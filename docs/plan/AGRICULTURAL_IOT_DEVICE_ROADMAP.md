@@ -973,3 +973,17 @@ dữ liệu đạt. Sáu ca live **Chưa chạy**. A3/A4 chưa hoàn tất: mult
 flow xuyên controller, queue dispatch, forecast/ET và nghiệm thu phần cứng.
 [Chương53](../book/CHAPTER_53_SESSION_WEATHER_STOP.md),
 [bàn giao](../implementation/LOCAL_SESSION_WEATHER_STOP_REPORT.md).
+
+## Cập nhật17/10/2026 — A2/A3 chốt nguồn nước trước ON, V40
+
+Mỗi nhánh opt-in policy LOW từ trạm/kênh đã gán; cùng trạm dùng được cho nhiều
+vùng với policy riêng. Bool true hợp lệ, đúng nguồn/calibration, cả source và
+receipt<30s mới qua; unknown/fault/stale/false/config drift chặn, không dùng
+FLOW/trạm khác làm mới LOW. Create/OPEN/proof và ON reservation kiểm tra lại,
+water_gate lưu bằng chứng riêng. OFF/RESET/duplicate không bị chốt nước ngăn.
+592backend/84circuitBrowser/51nodeBrowser/17pump/36unit/lintbuild đạt, native
+WaterPacket→DB/full app/upgrade/restart giữ dữ liệu. Sáu ca live Chưa chạy.
+Đây là admission, chưa dừng LOW/flow khi đang tưới, không phần trăm bồn/flow
+proof hoặc hoàn tất A2/A3. Coordinator multi-route/queue và physical acceptance
+vẫn mở. [Chương54](../book/CHAPTER_54_CIRCUIT_WATER_ADMISSION.md),
+[bàn giao](../implementation/LOCAL_CIRCUIT_WATER_GATE_REPORT.md).

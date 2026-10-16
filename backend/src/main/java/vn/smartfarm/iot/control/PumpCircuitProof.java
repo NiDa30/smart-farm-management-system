@@ -13,9 +13,11 @@ public class PumpCircuitProof {
   // Two seconds on each device's clock bound the latest application of ON.
   int max=check.valveDeadline()==null?0:(int)Math.max(0,Math.min(30,java.time.Duration.between(now,check.valveDeadline()).getSeconds()-3));boolean ready=reason.equals("READY");
   if(ready&&!s.safetyLockout()&&max<1)reason="VALVE_WINDOW_TOO_SHORT";
+  var water=vn.smartfarm.iot.nodes.CircuitWaterGate.inspect(jdbc,c.circuitId(),now);boolean waterAllowed=water.allowed();
+  if(ready&&!s.safetyLockout()&&!waterAllowed)reason="WATER_"+water.state();
   var weather=vn.smartfarm.iot.nodes.ZoneRainGate.inspect(jdbc,c.zoneId(),now);boolean weatherAllowed=weather.allowed();
   if(ready&&!s.safetyLockout()&&!weatherAllowed)reason="WEATHER_"+weather.state();
-  return new View(c,r,now,reason,connected,ready&&!s.safetyLockout()&&max>=1&&weatherAllowed,ready&&s.safetyLockout(),max,s);
+  return new View(c,r,now,reason,connected,ready&&!s.safetyLockout()&&max>=1&&weatherAllowed&&waterAllowed,ready&&s.safetyLockout(),max,s);
  }
 }
 @RestController

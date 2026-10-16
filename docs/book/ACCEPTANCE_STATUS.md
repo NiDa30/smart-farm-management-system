@@ -375,3 +375,14 @@ Scheduler thật/native packet + fake transport/DB đạt một OFF có ACK/stat
 không auto CLOSE. Upgrade giữ12bảng cũ, restart giữ12bảng và chỉ tăng revision phiên RECOVERY,
 full app GET-only đạt. Sáu ca live [chương53](CHAPTER_53_SESSION_WEATHER_STOP.md)
 **Chưa chạy**; không thay timer cục bộ hoặc hoàn tất A3/A4.
+
+## V40 — chốt nguồn nước theo nhánh,17/10/2026
+
+592backend(25mới),84browser nhánh(9mới,9recheck),51node/vùng,17pump,36unit
+parser(5mới),lint/build đạt, không skip. LOW/v2 đúng binding/source/calibration
+và hai clock<30s mới qua gate; ON reservation lưu water_gate riêng, OFF/RESET
+không đòi mẫu nước. Native4packet→DB tạo12readings, missing/present/empty/
+fault/recovery,0command/run/session. Upgrade giữ13bảng cũ (trừ field mới null),
+full app GET-only/restart giữ14bảng đạt. Chỉ admission; chưa continuous LOW/
+flow protection hoặc coordinator. Sáu ca live
+[chương54](CHAPTER_54_CIRCUIT_WATER_ADMISSION.md) **Chưa chạy**.

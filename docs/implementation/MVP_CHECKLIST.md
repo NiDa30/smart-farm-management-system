@@ -283,3 +283,14 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Đa route, flow proof xuyên node, queue dispatch, dự báo/ET/nông học.
 
 [Bàn giao V39](LOCAL_SESSION_WEATHER_STOP_REPORT.md).
+
+## Bước V40 — nguồn nước sẵn sàng trước ON theo nhánh
+
+- [x] Policy opt-in theo revision nhánh, LOW/source/calibration đúng binding.
+- [x] EMPTY/unknown/fault/stale chặn create/OPEN/ON; dispatch recheck/evidence.
+- [x] Generic/legacy không bypass; OFF/RESET/duplicate giữ semantics riêng.
+- [x] UI conflict/readback/calibration, DB/browser/native/full-app/upgrade/restart.
+- [ ] Sáu ca AWS/Wokwi [chương54](../book/CHAPTER_54_CIRCUIT_WATER_ADMISSION.md).
+- [ ] Giám sát LOW/flow khi đang tưới, cross-controller proof, multi-route/queue.
+
+[Bàn giao V40](LOCAL_CIRCUIT_WATER_GATE_REPORT.md).

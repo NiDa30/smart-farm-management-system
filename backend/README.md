@@ -333,3 +333,19 @@ device timers/interlocks. GET /{id}/weather/stops lists20 decision records with
 operation and command states separately; neither proves current physical OFF.
 [Chapter53](../docs/book/CHAPTER_53_SESSION_WEATHER_STOP.md) covers Windows flags,
 limits and six live AWS/Wokwi cases that remain unrun.
+
+## Circuit water admission V40
+
+GET/PUT /api/v1/irrigation-circuits/{id}/water-gate use the circuit's bound
+waterNodeId/lowChannelId and expectedSource. Opt-in policy captures circuit
+revision and declared LOW calibration; existing circuits remain unconfigured.
+Only VALID true with matching source/calibration and both sample clocks
+under30s admits a new start. Missing/fault/stale/skew/empty/config drift blocks.
+Partial FLOW, duplicate or another station cannot refresh LOW. Session create/
+OPEN/proof and fenced ON reservation recheck; command water_gate evidence is
+immutable on duplicate reconciliation. OFF/RESET remain independent. Generic/
+legacy route-free ON cannot bypass any enabled water policy. Policy edits
+require idle pump/no active session and current revisions. UI supports explicit
+calibration review and GET-only uncertain-save readback. No new global flag,
+MQTT topic/IAM/firmware or continuous water stop. Weather stop V39 does not
+supervise LOW. See [chapter54](../docs/book/CHAPTER_54_CIRCUIT_WATER_ADMISSION.md).

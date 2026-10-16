@@ -547,3 +547,16 @@ Lịch sử dừng do thời tiết tách kết quả gọi và command: RETURNE
 thay proof OFF. Mất mạng không tự gửi lại; recovery thủ công, OFF mới nếu
 cần, xác nhận OFF rồi CLOSE/FINISH. Không có firmware/cert/IAM mới cho worker.
 Sáu ca live **Chưa chạy**, chi tiết [chương53](CHAPTER_53_SESSION_WEATHER_STOP.md).
+
+## Chốt nguồn nước theo nhánh V40
+
+Pull/restart backend, giữ volume để áp V40; restart frontend. Giữ profile
+control/fence/route/circuit LED của chương47, không có flag mới riêng cho
+water gate. Điều khiển Actuator → Cấu hình nhánh tưới → Chốt nguồn nước <mã>.
+Khép phiên cũ, xác nhận bơm nghỉ rồi kiểm tra trạm/phao/source/calibration,
+bật và lưu. Chỉ LOW đúng nhánh true và mới mới qua điều kiện; FLOW mới không
+làm mới LOW hộ. Policy cũ không tự bật. Mất phản hồi lưu chỉ GET đối chiếu.
+Chính gate không thêm certificate/topic/IAM, nhưng trạm vẫn phải gửi telemetry
+đúng theo chương23. Không tự dừng khi LOW đổi sau ON, chưa flow proof xuyên
+node; giữ edge timer/guard. Sáu ca live **Chưa chạy** ở
+[chương54](CHAPTER_54_CIRCUIT_WATER_ADMISSION.md).

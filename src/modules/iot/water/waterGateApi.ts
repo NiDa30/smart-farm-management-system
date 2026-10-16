@@ -1,0 +1,20 @@
+import {parseChannelReading,type ChannelReading} from '../nodes/nodeApi';import {parseCircuit,type CircuitConfig} from '../irrigation/circuitApi';
+export const waterGateLabels={NOT_CONFIGURED:'Chưa cấu hình chốt nguồn nước',DISABLED:'Chốt nguồn nước đang tắt',CONFIG_CHANGED:'Cấu hình nhánh, vùng hoặc hiệu chuẩn đã đổi',CHANNEL_UNAVAILABLE:'Kênh phao LOW không còn phù hợp',MISSING:'Chưa có mẫu phao LOW',CLOCK_SKEW:'Đồng hồ mẫu phao không hợp lệ',STALE:'Mẫu phao LOW đã cũ',SENSOR_FAULT:'Phao LOW báo lỗi',SOURCE_MISMATCH:'Nguồn mẫu phao không khớp',CALIBRATION_MISMATCH:'Hiệu chuẩn mẫu phao không khớp',EMPTY:'LOW báo không có nước · chặn lượt bật mới',AVAILABLE:'LOW báo có nước · qua chốt nguồn nước',UNKNOWN:'Chưa xác nhận dữ liệu mới'};
+export interface WaterGateRequest {expectedRevision:number;circuitRevision:number;calibrationVersion:string|null;enabled:boolean}
+export interface WaterGatePolicy extends Omit<WaterGateRequest,'expectedRevision'>{circuitId:string;revision:number}
+export interface WaterGateView {config:CircuitConfig;asOf:string;calibrationVersion:string|null;policy:WaterGatePolicy|null;state:Exclude<keyof typeof waterGateLabels,'UNKNOWN'>;allowed:boolean;validUntil:string|null;sample:ChannelReading|null}
+const object=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v);
+const date=(v:unknown):v is string=>typeof v==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v));
+const calibration=(v:unknown)=>v===null||typeof v==='string'&&v.trim().length>0&&v.length<=40;
+export function parseWaterPolicy(v:unknown):WaterGatePolicy {if(!object(v)||typeof v.circuitId!=='string'||!/^[A-Z][A-Z0-9_-]{1,31}$/.test(v.circuitId)||!Number.isSafeInteger(v.revision)||v.revision<1||!Number.isSafeInteger(v.circuitRevision)||v.circuitRevision<1||!calibration(v.calibrationVersion)||typeof v.enabled!=='boolean')throw new Error('Cấu hình chốt nguồn nước không hợp lệ.');return v as WaterGatePolicy;}
+export function parseWaterGate(v:unknown,id:string):WaterGateView {
+ if(!object(v)||!date(v.asOf)||!calibration(v.calibrationVersion)||!Object.hasOwn(waterGateLabels,v.state)||v.state==='UNKNOWN'||typeof v.allowed!=='boolean')throw new Error('Phản hồi chốt nguồn nước không hợp lệ.');
+ const c=parseCircuit(v.config),p=v.policy===null?null:parseWaterPolicy(v.policy),s=v.sample===null?null:parseChannelReading(v.sample,'WATER_PRESENT');
+ if(c.circuitId!==id||p&&p.circuitId!==id||s&&s.dataSource===undefined||v.allowed!==['NOT_CONFIGURED','DISABLED','AVAILABLE'].includes(v.state)||v.state==='NOT_CONFIGURED'&&p!==null||v.state==='DISABLED'&&(!p||p.enabled)||!['NOT_CONFIGURED','DISABLED'].includes(v.state)&&!p?.enabled)throw new Error('Chốt nguồn nước sai nhánh hoặc không nhất quán.');
+ if(['AVAILABLE','EMPTY'].includes(v.state)){
+  if(!p||!s||s.quality!=='VALID'||s.value!==(v.state==='AVAILABLE')||p.circuitRevision!==c.revision||p.calibrationVersion!==v.calibrationVersion||s.calibrationVersion!==p.calibrationVersion||s.dataSource!==c.expectedSource||!date(v.validUntil))throw new Error('Mẫu phao không khớp cấu hình.');
+  const at=Date.parse(v.asOf),a=Date.parse(s.observedAt),b=Date.parse(s.receivedAt);if(a>at+2000||b>at+2000||Math.min(a,b)+30000<=at||Math.abs(Date.parse(v.validUntil)-(Math.min(a,b)+30000))>1)throw new Error('Mẫu phao chưa đủ mới.');
+ }else if(v.validUntil!==null)throw new Error('Không suy diễn thời hạn mẫu phao.');return v as WaterGateView;
+}
+export function waterGateState(v:WaterGateView,now:number,unavailable:boolean):keyof typeof waterGateLabels {return unavailable?'UNKNOWN':v.validUntil&&now>=Date.parse(v.validUntil)?'STALE':v.state;}
+export function waterPolicyMatches(p:WaterGatePolicy,r:WaterGateRequest,id:string){return p.circuitId===id&&p.revision===r.expectedRevision+1&&p.circuitRevision===r.circuitRevision&&p.calibrationVersion===r.calibrationVersion&&p.enabled===r.enabled;}
