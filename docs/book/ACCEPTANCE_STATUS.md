@@ -398,3 +398,16 @@ Scheduler/native packets→fake OFF/ACK/status→DB đạt, không auto CLOSE. U
 đổi và phiên RECOVERY chỉ revision+1. Sáu ca live
 [chương55](CHAPTER_55_SESSION_WATER_STOP.md) **Chưa chạy**. Chưa flow proof,
 physical dry-run protection hoặc coordinator nhiều route.
+
+## V42 — giám sát FLOW trong phiên,17/10/2026
+
+643backend(28mới),98browser nhánh/phiên(7mới,7recheck),46unit parser(7mới),
+lint/build đạt, không skip. Ngưỡng/grace theo nhánh opt-in, sau server ON
+intent; mẫu đo/nhận sau ON, đúng nguồn/hiệu chuẩn và<10s. LOW/FLOW/mưa cùng
+stop latch, không replay/resume/auto CLOSE, không dùng flow0 trước ON làm
+proof. Scheduler/native→fake OFF/ACK/status→DB và full app GET-only đạt.
+Nâng V41→V42 giữ15bảng; restart16/17bảng không đổi, phiên RECOVERY revision+1.
+Sáu ca live [chương56](CHAPTER_56_SESSION_FLOW_SUPERVISION.md) **Chưa chạy**.
+Chưa physical flow proof theo luống, hysteresis, coordinator multi-route hoặc
+bảo đảm OFF khi backend/network ngừng. Hai lượt test bị chồng schema không
+được tính;643 là lượt verify tuần tự sau đó.

@@ -576,3 +576,30 @@ replay; yêu cầu OFF mới nếu cần, chờ proof rồi CLOSE/FINISH. Không
 topic/IAM/firmware cho riêng worker; vẫn cần edge timer/interlock khi backend
 hoặc mạng dừng. Sáu ca live **Chưa chạy** ở
 [chương55](CHAPTER_55_SESSION_WATER_STOP.md).
+
+## Giám sát lưu lượng trong phiên V42
+
+Giữ volume và dữ liệu; pull/restart backend để Flyway thêm policy/event FLOW.
+Trong **Git Bash terminal backend**, thêm vào profile LED theo nhánh/session
+đã dùng (giữ legacy demo=false):
+
+```bash
+export SMARTFARM_IRRIGATION_FLOW_STOP_ENABLED=true
+bash tools/backend/run_backend_windows.sh
+```
+
+Không mở backend thứ hai trên8080. Frontend/gateway/simulator dùng terminal
+riêng. Cần các flag control/fence/route/circuit/session đã bật đúng profile;
+lệnh trên chỉ thêm flow-stop, không thay cả profile. Chưa bật policy thì
+worker không tự gửi OFF.
+
+Khép phiên cũ, xác nhận bơm nghỉ → Cấu hình nhánh tưới → Giám sát FLOW của
+nhánh → duyệt calibration/ngưỡng/grace → lưu. Chọn phiên10giây nếu grace5giây,
+giữ timer van30giây. FLOW phải đo **và nhận** sau mốc ON, mới dưới10giây;
+LOW mới không thay thế FLOW. Không có mẫu mới kịp sau grace sẽ yêu cầu OFF.
+Cần chọn tham số theo chu kỳ mẫu, chưa hiệu chuẩn thực tế.
+
+Nếu dừng, xem lịch sử FLOW và đối chiếu ACK/status/proof trước CLOSE/FINISH.
+Nếu LOW/mưa/manual OFF claim trước, lịch sử FLOW có thể rỗng. Không retry
+lệnh cũ khi mạng trở lại; restart chuyển recovery. Sáu ca live
+[chương56](CHAPTER_56_SESSION_FLOW_SUPERVISION.md) **Chưa chạy**.

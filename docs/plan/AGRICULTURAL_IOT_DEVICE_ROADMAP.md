@@ -1002,3 +1002,18 @@ coordinator multi-route/queue hoặc đảm bảo dừng khi backend/network ch�
 A2/A3 vẫn cần hardware/flow/physical acceptance.
 [Chương55](../book/CHAPTER_55_SESSION_WATER_STOP.md),
 [bàn giao](../implementation/LOCAL_SESSION_WATER_STOP_REPORT.md).
+
+## Cập nhật17/10/2026 — A2/A3 giám sát FLOW sau ON, V42
+
+Policy minimumLpm/graceSeconds theo nhánh và flag/backend defaultfalse.
+Server ON intent khởi grace1–8s; phiên vẫn1–10s và phải dài hơn grace.
+Sau grace cần mẫu FLOW đo/nhận sau ON, đúng nguồn/calibration, cả hai clock
+<10s. Low/unknown/fault/stale/drift giữ OFF/evidence trước IO. FLOW/LOW/mưa
+chung claim, manual OFF/restart không replay/resume hoặc auto CLOSE.
+643backend/98circuitBrowser/46unit/lintbuild đạt, scheduler native→fake
+OFF/ACK/status→DB, upgrade15bảng và full app/restart17bảng kiểm tra đạt.
+Sáu ca live Chưa chạy. FLOW tại trạm chưa chứng minh nước tới luống hoặc
+bảo vệ phần cứng; chưa hysteresis/multi-sample, coordinator multi-route,
+queue dispatch, forecast/ET hoặc hoàn tất A2/A3/A4.
+[Chương56](../book/CHAPTER_56_SESSION_FLOW_SUPERVISION.md),
+[bàn giao](../implementation/LOCAL_SESSION_FLOW_STOP_REPORT.md).

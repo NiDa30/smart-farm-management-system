@@ -364,3 +364,22 @@ with operation/command states separately; neither proves physical OFF. No
 direct ON/legacy-rule supervision, flow proof or automatic CLOSE/FINISH.
 Device timers/interlocks still protect when backend/network is unavailable.
 [Chapter55](../docs/book/CHAPTER_55_SESSION_WATER_STOP.md).
+
+### Session FLOW supervision (V42)
+
+SMARTFARM_IRRIGATION_FLOW_STOP_ENABLED defaults false, no policy seeded.
+GET/PUT /api/v1/irrigation-circuits/{id}/flow-guard configures declared station
+FLOW minimum (>0..1000 L/min), grace1..8s, current revision/calibration.
+Enable only with fenced route/circuit/operator-session profile and idle pump,
+no unfinished session. Session duration must exceed grace, still1..10s.
+
+During reserved-ON operator sessions only, server-side ON action created_at
+anchors grace; this is intent time, not physical start. After grace, both
+sample clocks must be strictly after ON and fresh<10s, correct source/cal.
+Missing/fault/stale/pre-ON/mismatch/low flow requests one OFF with durable
+evidence before IO. FLOW, LOW and rain share the stop latch; manual OFF,
+restart or uncertainty never replay/resume/auto-close. GET /flow-guard/stops
+lists20 immutable decisions plus independent current operation/command state.
+Station FLOW does not prove branch delivery; no hysteresis or multi-sample
+filter, no direct-ON/legacy-rule supervision, no hardware protection claim.
+[Chapter56](../docs/book/CHAPTER_56_SESSION_FLOW_SUPERVISION.md).

@@ -1347,3 +1347,19 @@ restart,14bảng giữ nguyên/RECOVERY revision+1, không command/event mới.
 Không firmwarebuild/AWS/GPIO thật. Chương55 có sáu ca live Chưa chạy; LOW
 không chứng minh flow và không thay bảo vệ edge khi backend/network down.
 [Bàn giao](../implementation/LOCAL_SESSION_WATER_STOP_REPORT.md).
+
+## 17/10/2026 — V42 giám sát lưu lượng tại trạm trong phiên
+
+Sau LOW supervisor, thêm policy FLOW ngưỡng/grace và flag mặc địnhfalse,
+worker chung stop claim với LOW/mưa. ON action created_at là mốc server,
+không suy ra thời điểm bơm vật lý bật. Mẫu trước ON/LOW-only không chứng minh
+flow, source/quality/calibration/độ mới vẫn tách. Form theo từng nhánh, đọc
+lại chính xác ngưỡng/grace khi mất phản hồi lưu; history không có retry.
+
+643backend,98browser,46unit/lintbuild đạt; scheduler thật với native packet
+và transport giả, upgrade15bảng và full app/restart17bảng đã kiểm tra. Hai
+lượt backend chồng schema vô ý gây xung đột test, đã dừng và loại kết quả;
+lượt verify tuần tự643 đạt. Không AWS/MQTT/GPIO thật, không sửa firmware,
+không tăng hard limit. Sáu ca live Chưa chạy. Xem
+[chương56](CHAPTER_56_SESSION_FLOW_SUPERVISION.md) và
+[bàn giao](../implementation/LOCAL_SESSION_FLOW_STOP_REPORT.md).

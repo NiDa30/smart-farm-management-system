@@ -626,3 +626,16 @@ RETURNED có thể chứa FAILED/MQTT_UNAVAILABLE hoặc PUBLISH_UNCERTAIN; đ�
 status/proof, không lấy lịch sử làm bằng chứng bơm vật lý đã tắt. Worker không
 replay khi có nước/mạng lại; backend down vẫn cần bảo vệ edge.
 [Chương55](CHAPTER_55_SESSION_WATER_STOP.md).
+
+## FLOW không đạt dù LOW đang báo có nước (V42)
+
+LOW và FLOW là hai kênh độc lập. Sau grace, FLOW phải mới hơn mốc giữ ý định
+ON ở cả giờ đo và giờ nhận, mới dưới10giây, đúng binding/source/calibration.
+FLOW trước ON hoặc LOW-only không làm mới kênh. GRACE hết trên giao diện
+chưa chứng minh backend đã gửi OFF; cần đọc quyết định/evidence mới.
+
+Phiên phải dài hơn grace; giữ giới hạn1–10giây, không kéo dài timer thiết bị
+để né lỗi. Khi flag/backend tắt, policy đã lưu không chứng minh giám sát đang
+chạy. Khi LOW/mưa/manual OFF claim trước, xem lịch sử tương ứng, không đợi
+một FLOW event thứ hai. RETURNED/EXECUTED không thay proof OFF hiện tại.
+Sáu ca live vẫn Chưa chạy ở [chương56](CHAPTER_56_SESSION_FLOW_SUPERVISION.md).

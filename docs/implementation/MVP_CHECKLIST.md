@@ -305,3 +305,16 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Flow proof/grace xuyên controller, coordinator/multi-route/queue, nghiệm thu thật.
 
 [Bàn giao V41](LOCAL_SESSION_WATER_STOP_REPORT.md).
+
+## Bước V42 — giám sát FLOW sau ý định ON
+
+- [x] Policy theo nhánh/current FLOW calibration, ngưỡng/grace và flag opt-in.
+- [x] Mốc ON server, mẫu đo/nhận sau ON; grace đúng biên, unknown/low dừng.
+- [x] Shared claim LOW/FLOW/mưa, evidence commit trước IO, không replay/resume.
+- [x] UI cấu hình và history, exact readback khi PUT chưa rõ, không claim OFF.
+- [x] 643backend,98browser,46unit/lint/build; scheduler/native fake transport,
+  upgrade15bảng và full app/restart17bảng đã kiểm tra.
+- [ ] Sáu ca live AWS/Wokwi chương56; hiệu chuẩn/physical branch flow proof,
+  hysteresis, coordinator multi-route và queue dispatch chưa hoàn tất.
+
+[Bàn giao V42](LOCAL_SESSION_FLOW_STOP_REPORT.md).
