@@ -8,7 +8,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/irrigation-session-history")
 public class IrrigationSessionHistoryController {
     private final IrrigationSessionHistory service;
-    public IrrigationSessionHistoryController(IrrigationSessionHistory service) { this.service = service; }
+    private final SessionWaterUsage water;
+    public IrrigationSessionHistoryController(IrrigationSessionHistory service, SessionWaterUsage water) { this.service = service; this.water=water; }
+    @GetMapping("/{circuitId}/{sessionId}/water-usage")
+    public SessionWaterUsage.Report water(@PathVariable String circuitId, @PathVariable UUID sessionId) {
+        return water.read(circuitId,sessionId);
+    }
     @GetMapping
     public IrrigationSessionHistory.Page list(@RequestParam Instant from, @RequestParam Instant to,
         @RequestParam(required=false) String circuitId, @RequestParam(required=false) String condition,

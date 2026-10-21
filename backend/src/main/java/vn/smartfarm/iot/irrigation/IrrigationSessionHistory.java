@@ -90,7 +90,7 @@ public class IrrigationSessionHistory {
         return new Steps(run, Instant.now(), ceiling, visible, next);
     }
 
-    private Command command(IrrigationSession.Operation op, IrrigationSession.Run run) {
+    Command command(IrrigationSession.Operation op, IrrigationSession.Run run) {
         if (op.action().equals("FINISH")) return null;
         if (Set.of("ON", "OFF").contains(op.action())) {
             var rows = jdbc.query("SELECT * FROM pump_command WHERE command_id=? AND http_intent_revision IS NOT NULL", (r, n) -> {

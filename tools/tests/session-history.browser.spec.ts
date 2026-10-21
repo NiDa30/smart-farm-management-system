@@ -1,6 +1,7 @@
 import {test,expect,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 import {historyConfig,historyRun,historyStep,historySession} from './fixtures/session-history-data';
+import {sessionWaterData} from './fixtures/session-water-data';
 const origin='http://127.0.0.1:4189';
 const second='86000000-0000-4000-8000-000000000004';
 async function fixture(page:Page){
@@ -45,3 +46,36 @@ test('empty all-circuit history and invalid filter do not offer export or issue 
 test('step pagination includes earlier confirmations without replay',async({page})=>{const s=await fixture(page);s.stepMore=true;await open(page);await detail(page);await page.getByRole('button',{name:'Tải thêm bước',exact:true}).click();await expect(page.getByText('Đã tải 2 bước, mới nhất trước.',{exact:false})).toBeVisible();await expect(page.getByText('Bước kết thúc không phát lệnh.',{exact:true})).toBeVisible();expect(s.writes).toEqual([]);});
 test('changing session revision while paging requires a new detail read',async({page})=>{const s=await fixture(page);s.stepMore=s.stepChanged=true;await open(page);await detail(page);await page.getByRole('button',{name:'Tải thêm bước',exact:true}).click();await expect(page.getByRole('alert')).toContainText('Phiên đã đổi');await expect(page.getByRole('button',{name:'CSV bước đã tải',exact:true})).toBeDisabled();});
 test('late detail cannot replace a subsequently selected session',async({page})=>{const s=await fixture(page);s.more=true;let release!:()=>void;s.stepGate=new Promise<void>(r=>release=r);await open(page);await page.getByRole('button',{name:'Tải thêm phiên',exact:true}).click();await detail(page);await page.getByRole('button',{name:'Xem phiên '+second,exact:true}).click();await expect(page.getByRole('region',{name:'Chi tiết phiên tưới',exact:true}).getByRole('heading',{name:'Phiên '+second,exact:true})).toBeVisible();await expect(page.getByText('Bản lưu lệnh lúc đọc: EXECUTED',{exact:false})).toBeVisible();release();await page.waitForTimeout(150);await expect(page.getByRole('region',{name:'Chi tiết phiên tưới',exact:true}).getByRole('heading',{name:'Phiên '+second,exact:true})).toBeVisible();});
+
+async function waterFixture(page:Page,edit:(r:any)=>void=()=>{}){
+ const s=await fixture(page);let fail=false,gate:Promise<void>|null=null;
+ await page.route('**/water-usage',async r=>{
+  const id=new URL(r.request().url()).pathname.split('/').at(-2)!,data=sessionWaterData(new Date(Date.now()-60000).toISOString(),id);edit(data);
+  if(gate&&id===historySession)await gate;
+  await r.fulfill({status:fail?503:200,json:data});
+ });
+ return Object.assign(s,{setFail:(value:boolean)=>fail=value,setGate:(value:Promise<void>)=>gate=value});
+}
+async function water(page:Page){await page.getByRole('button',{name:'Đọc lượng nước phiên',exact:true}).click();}
+test('water report is on demand, scoped to stored station with coverage and no control writes',async({page})=>{
+ const s=await waterFixture(page);await open(page);await detail(page);await expect(page.getByText('0,5 lít',{exact:true})).toHaveCount(0);await water(page);
+ const panel=page.getByRole('region',{name:'Lượng nước theo phiên',exact:true});await expect(panel.getByText('0,5 lít',{exact:true})).toBeVisible();await expect(panel).toContainText('chưa được phủ 5 giây');await expect(panel).toContainText('Nguồn mô phỏng');await expect(panel).toContainText('Chưa xác nhận thời gian bơm thực chạy');expect(s.writes).toEqual([]);expect(s.external).toEqual([]);
+});
+test('water CSV carries station scope, identities and uncovered seconds',async({page})=>{
+ await waterFixture(page);await open(page);await detail(page);await water(page);await expect(page.getByRole('button',{name:'CSV lượng nước phiên',exact:true})).toBeEnabled();
+ const [file]=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'CSV lượng nước phiên',exact:true}).click()]);const csv=await readFile((await file.path())!,'utf8');expect(csv).toContain('STATION_FLOW_NOT_BED_ALLOCATION');expect(csv).toContain('uncoveredSeconds');expect(csv).toContain(historySession);expect(csv).toContain('SIMULATOR');expect(csv.split('\r\n')).toHaveLength(3);
+});
+test('unconfirmed command water report is unknown rather than zero litres',async({page})=>{
+ await waterFixture(page,r=>{r.state='UNAVAILABLE';r.reason='COMMAND_EVIDENCE_UNCONFIRMED';r.volume=null;});await open(page);await detail(page);await water(page);
+ await expect(page.getByRole('region',{name:'Lượng nước theo phiên',exact:true})).toContainText('Chưa đủ ACK');await expect(page.getByText('Chưa xác định',{exact:true})).toBeVisible();await expect(page.getByText('0 lít',{exact:true})).toHaveCount(0);
+});
+test('wrong station or broken coverage is rejected with export disabled',async({page})=>{
+ await waterFixture(page,r=>r.waterNodeId='OTHER');await open(page);await detail(page);await water(page);await expect(page.getByRole('alert')).toContainText('không khớp');await expect(page.getByRole('button',{name:'CSV lượng nước phiên',exact:true})).toBeDisabled();
+});
+test('water API recovery clears the old error and obtains a fresh report',async({page})=>{
+ const s=await waterFixture(page);s.setFail(true);await open(page);await detail(page);await water(page);await expect(page.getByRole('alert')).toContainText('Không đọc được báo cáo');s.setFail(false);await page.getByRole('button',{name:'Đọc lại lượng nước',exact:true}).click();await expect(page.getByText('0,5 lít',{exact:true})).toBeVisible();await expect(page.getByRole('alert')).toHaveCount(0);
+});
+test('late water response cannot overwrite the next selected session',async({page})=>{
+ const s=await waterFixture(page);s.more=true;let release!:()=>void;s.setGate(new Promise<void>(r=>release=r));await open(page);await page.getByRole('button',{name:'Tải thêm phiên',exact:true}).click();await detail(page);await water(page);
+ await page.getByRole('button',{name:'Xem phiên '+second,exact:true}).click();await water(page);await expect(page.getByText('0,5 lít',{exact:true})).toBeVisible();release();await page.waitForTimeout(150);await expect(page.getByRole('heading',{name:'Phiên '+second,exact:true})).toBeVisible();await expect(page.getByRole('alert')).toHaveCount(0);
+});

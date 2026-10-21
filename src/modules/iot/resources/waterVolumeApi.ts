@@ -5,9 +5,11 @@ const nonnegative=(v:unknown):v is number=>typeof v==='number'&&Number.isFinite(
 const integer=(v:unknown):v is number=>nonnegative(v)&&Number.isSafeInteger(v);
 const date=(v:unknown):v is string=>typeof v==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v));
 const near=(a:number,b:number)=>Math.abs(a-b)<=Math.max(1e-6,Math.abs(b)*1e-10);
+const micros=(s:string)=>BigInt(Date.parse(s))*1000n+BigInt((s.match(/\.(\d+)(?:Z|[+-]\d\d:\d\d)$/)?.[1]??'').padEnd(6,'0').slice(3,6));
 export function parseVolume(value:unknown,q:VolumeQuery):VolumeReport {
- const v=value as VolumeReport,duration=(Date.parse(q.to)-Date.parse(q.from))/1000;
- if(!v||v.nodeId!==q.nodeId||v.channelId!==q.channelId||v.dataSource!==q.dataSource||!date(v.from)||!date(v.to)||Date.parse(v.from)!==Date.parse(q.from)||Date.parse(v.to)!==Date.parse(q.to)
+ if(!date(q.from)||!date(q.to))throw new Error('Khoảng giờ tính nước không hợp lệ.');
+ const v=value as VolumeReport,duration=Number(micros(q.to)-micros(q.from))/1e6;
+ if(!v||v.nodeId!==q.nodeId||v.channelId!==q.channelId||v.dataSource!==q.dataSource||!date(v.from)||!date(v.to)||micros(v.from)!==micros(q.from)||micros(v.to)!==micros(q.to)
   ||v.method!=='TRAPEZOID_V1'||v.maxGapSeconds!==15||!integer(v.packetCount)||v.packetCount>25000||!integer(v.sourcePacketCount)||v.sourcePacketCount>v.packetCount
   ||!integer(v.acceptedIntervals)||v.acceptedIntervals>Math.max(0,v.packetCount-1)||!v.excluded||typeof v.excluded!=='object'||Array.isArray(v.excluded)
   ||!Object.entries(v.excluded).every(([k,n])=>Object.hasOwn(exclusionLabels,k)&&integer(n)&&n>0)
@@ -23,4 +25,4 @@ export function parseVolume(value:unknown,q:VolumeQuery):VolumeReport {
  return v;
 }
 export function volumeUrl(q:VolumeQuery){const params=new URLSearchParams({from:q.from,to:q.to,dataSource:q.dataSource});return `/api/v1/nodes/${encodeURIComponent(q.nodeId)}/channels/${encodeURIComponent(q.channelId)}/water-volume?${params}`;}
-export function sameVolumeScope(a:VolumeQuery,b:VolumeQuery){return a.nodeId===b.nodeId&&a.channelId===b.channelId&&Date.parse(a.from)===Date.parse(b.from)&&Date.parse(a.to)===Date.parse(b.to)&&a.dataSource===b.dataSource;}
+export function sameVolumeScope(a:VolumeQuery,b:VolumeQuery){return date(a.from)&&date(a.to)&&date(b.from)&&date(b.to)&&a.nodeId===b.nodeId&&a.channelId===b.channelId&&micros(a.from)===micros(b.from)&&micros(a.to)===micros(b.to)&&a.dataSource===b.dataSource;}

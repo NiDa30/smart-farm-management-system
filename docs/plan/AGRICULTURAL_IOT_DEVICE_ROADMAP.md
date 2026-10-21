@@ -1044,3 +1044,17 @@ Sáu ca live Chưa chạy. A3 vẫn cần coordinator toàn chu kỳ, multi-rout
 và physical actuator/flow acceptance; không coi auto-close là tưới tự động
 hoàn chỉnh. [Chương58](../book/CHAPTER_58_POST_OFF_SESSION_CLOSURE.md),
 [bàn giao](../implementation/LOCAL_SESSION_CLOSURE_REPORT.md).
+
+
+## Cập nhật 21/10/2026 — Verify/Learn: báo cáo nước phiên
+
+GET và lịch sử/CSV dùng FLOW tại trạm gốc theo cửa sổ server ON→OFF đầu
+tiên, ACK đúng identity/boot, độ phủ và nhóm hiệu chuẩn. Chưa phải actual
+runtime hoặc phân bổ nước tới vùng, không cộng phiên dùng chung trạm.
+Không migration/firmware/dispatch/flag mới. 705backend/128browser/26parser/
+lintbuild, synthetic SQL history→DB/full-app/CSV đạt. GET giữ53bảng, restart52bảng giữ nguyên,
+watering_rule chỉ startup epoch+1/pause. Năm ca
+live Chưa chạy. A3 vẫn còn full coordinator/multi-route/auto queue; chưa
+daily rollup/ngân sách lít/volume-stop/physical acceptance.
+[Chương59](../book/CHAPTER_59_SESSION_WATER_USAGE.md),
+[bàn giao](../implementation/LOCAL_SESSION_WATER_USAGE_REPORT.md).

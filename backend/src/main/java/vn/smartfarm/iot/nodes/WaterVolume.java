@@ -21,7 +21,8 @@ public class WaterVolume {
  private record Point(UUID boot,long sequence,Instant at,Instant received,String source,String quality,Double flow,String calibration) {}
  private final JdbcTemplate jdbc;
  public WaterVolume(JdbcTemplate jdbc){this.jdbc=jdbc;}
- @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
+ // Read-only domain rejections can be rendered as unavailable by a composite historical report.
+ @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ,noRollbackFor=ResponseStatusException.class)
  public Report estimate(String node,String channel,Instant from,Instant to,String source){
   if(node==null||!node.matches("[A-Z][A-Z0-9_-]{1,31}")||channel==null||!channel.matches("[A-Z][A-Z0-9_-]{1,31}")
    ||from==null||to==null||from.isBefore(Instant.EPOCH)||from.getNano()%1000!=0||to.getNano()%1000!=0||!from.isBefore(to)||Duration.between(from,to).compareTo(Duration.ofDays(1))>0||to.isAfter(Instant.now().plusSeconds(2))

@@ -417,3 +417,14 @@ same arm/OFF/deadline/session. Pause cannot retract a reserved/sent command.
 Missing/uncertain/expired outcomes stop automation, never replay CLOSE.
 Existing command/position proof rules remain; no firmware/IAM/topic change.
 [Chapter58](../docs/book/CHAPTER_58_POST_OFF_SESSION_CLOSURE.md).
+
+
+## Session station water report (read-only, schema V44)
+
+GET `/api/v1/irrigation-session-history/{circuit}/{session}/water-usage`
+uses the stored station/source and server ON → first OFF intent window after
+matching command ACKs. It reuses trapezoidal FLOW integration with coverage,
+exclusions and separate calibration groups. This is station flow, not bed
+allocation or actual pump runtime. No new flag, dispatch or migration.
+History UI offers on-demand report/CSV. See [chapter59](../docs/book/CHAPTER_59_SESSION_WATER_USAGE.md)
+and [handoff](../docs/implementation/LOCAL_SESSION_WATER_USAGE_REPORT.md).

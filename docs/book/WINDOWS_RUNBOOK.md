@@ -651,3 +651,15 @@ kế tiếp, không thu hồi CLOSE đã giữ/gửi. Nếu chưa rõ POST/pause
 chiếu; không coi là đã dừng hoặc bật lại. Hết hạn/restart/uncertainty dùng
 recovery và OFF thủ công nếu cần. Sáu ca live
 [chương58](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md) **Chưa chạy**.
+
+
+## 21/10/2026 — báo cáo nước theo phiên
+
+Giữ DB/volume và profile đã dùng. Pull feat/day1-iot-foundation, dừng backend
+cũ rồi chạy lại `bash tools/backend/run_backend_windows.sh` trong Git Bash
+backend; frontend terminal riêng chạy `npm run dev`. Không cần cờ hoặc
+certificate mới cho báo cáo chỉ đọc. Từ cấu hình nhánh → lịch sử phiên →
+chọn phiên → Đọc lượng nước phiên. CSV ghi nguồn, nhóm hiệu chuẩn và thời
+gian chưa phủ; Chưa xác định không phải 0 lít. FLOW tại trạm chung chưa là
+số lít tới từng luống. Năm ca live [chương59](CHAPTER_59_SESSION_WATER_USAGE.md)
+**Chưa chạy**. Không xóa lịch sử/NVS để bỏ bằng chứng thiếu.

@@ -669,3 +669,14 @@ Pause/manual action/restart ngăn bước tiếp theo nhưng không thu hồi CL
 phiên hoặc replay identity sau UNRESOLVED. Mất phản hồi pause phải GET thấy
 bản quyền kết thúc mới xác nhận không còn bước tự động; không dựa vào HTTP
 chưa rõ. Xem [chương58](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md).
+
+
+## Báo cáo nước phiên hiện Chưa xác định
+
+Đọc lý do và đối chiếu lịch sử bước: cần ON và OFF đầu tiên sau ON có kết
+quả gọi/ACK khớp boot gốc. OFF retry không che lần OFF đầu chưa rõ. Một mẫu
+FLOW không tạo khoảng đo, lỗi/nguồn/hiệu chuẩn khác không được nối qua.
+Đã khép phiên không tự có đủ mẫu; không đổi nguồn sang PHYSICAL để có số.
+CSV nhóm khác hiệu chuẩn không được cộng thành tổng hoặc phân bổ tới luống.
+Đọc lại có thể thấy ACK/mẫu đến muộn; không gửi lại ON để làm đẹp báo cáo.
+Xem [chương59](CHAPTER_59_SESSION_WATER_USAGE.md).

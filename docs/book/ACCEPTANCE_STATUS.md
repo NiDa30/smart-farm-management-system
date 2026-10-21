@@ -436,3 +436,14 @@ COMPLETE, một OFF/CLOSE/FINISH,0ON/OPEN/queue. Nâng V43→V44 giữ24bảng c
 full app GET-only/restart giữ25bảng của fixture đã hoàn tất.
 Sáu ca live [chương58](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md) **Chưa chạy**;
 chưa coordinator toàn chu kỳ/multi-route/auto queue hoặc physical acceptance.
+
+
+## Báo cáo nước phiên — 21/10/2026, schema vẫn V44
+
+705backend/128browser/26parser/lintbuild đạt; synthetic stored SQL history →
+service/DB/full-app/CSV, read-only giữ53bảng, completed fixture restart52bảng giữ nguyên; watering_rule
+chỉ startup epoch +1, vẫn pause.
+Đây là FLOW tại trạm trong cửa sổ ý định, chưa actual runtime/bed allocation.
+Không migration, firmware, control flag hoặc dispatch mới. Năm ca live
+[chương59](CHAPTER_59_SESSION_WATER_USAGE.md) **Chưa chạy**. Chưa volume stop/
+daily aggregation/coordinator/multi-route/auto queue/hardware acceptance.

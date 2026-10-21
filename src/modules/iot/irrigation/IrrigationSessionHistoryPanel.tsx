@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {fetchSessionHistory,fetchSessionSteps,historyFollows,sessionsCsv,sessionStepsCsv,sessionConditions,sessionPhases,type SessionQuery,type SessionCondition,type SessionEntry,type SessionHistoryStep,type Loaded} from './sessionHistoryApi';
 // SessionRun is owned by the workflow API; this panel performs GETs only.
 import type {SessionRun as Run} from './irrigationSessionApi';
+import {SessionWaterPanel} from './SessionWaterPanel';
 const time=(s:string)=>new Date(s).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
 const windowQuery=(hours:number,circuitId:string,condition:SessionCondition):SessionQuery=>{
  const to=new Date();return {from:new Date(to.getTime()-hours*3600000).toISOString(),to:to.toISOString(),circuitId,condition};
@@ -66,6 +67,7 @@ export function IrrigationSessionHistoryPanel({onBack,initialCircuitId=''}:{onBa
    <p>{sessionPhases[selected.phase]} · {selected.durationSeconds} giây yêu cầu · {selected.stopRequested?'Đã yêu cầu dừng':'Chưa ghi yêu cầu dừng'} · {selected.reason}</p>
    <p>Tạo {time(selected.createdAt)} · kết thúc {selected.finishedAt?time(selected.finishedAt):'Chưa khép'} · boot bơm {selected.pumpBootId} · boot van gốc {selected.valveBootId}</p>
    <p>Cấu hình được giữ tại lúc tạo phiên. Kết quả gọi ban đầu và bản lưu ACK lúc đọc là hai nguồn riêng. Thiếu lệnh hoặc ACK không được coi là đã tắt. Trang này chỉ xem, không gửi lại bước.</p>
+   <SessionWaterPanel key={selected.sessionId} run={selected}/>
    {stepBusy&&<p role="status">Đang đọc các bước…</p>}{stepError&&<p role="alert">{stepError} Chưa coi chi tiết đã đầy đủ.</p>}
    <button className="border p-2" disabled={!steps.length||stepBusy||!!stepError} onClick={()=>download(sessionStepsCsv(selected,steps),'irrigation-session-steps-loaded.csv')}>CSV bước đã tải</button>
    {!stepBusy&&!stepError&&!steps.length&&<p>Phiên chưa lưu bước nào.</p>}

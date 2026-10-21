@@ -17,3 +17,5 @@ test('query explicitly scopes source, range and channel',()=>{
 });
 
 test('canonical Java timestamps match the same applied scope',()=>{assert.equal(sameVolumeScope({...q,from:"2026-01-01T00:00:00.000Z"},q),true);});
+test('incomplete date drafts never throw during scope comparison',()=>{for(const from of ['', 'invalid'])assert.equal(sameVolumeScope({...q,from},q),false);});
+test('same millisecond but different microseconds cannot share report scope',()=>{assert.equal(sameVolumeScope({...q,from:'2026-01-01T00:00:00.000001Z'},q),false);});

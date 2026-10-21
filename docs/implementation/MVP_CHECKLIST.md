@@ -343,3 +343,14 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Sáu ca live chương58, tự điều phối toàn chu kỳ/multi-route/queue và hardware acceptance.
 
 [Bàn giao V44](LOCAL_SESSION_CLOSURE_REPORT.md).
+
+
+## Báo cáo lượng nước phiên — schema V44, 21/10/2026
+
+- [x] GET-only config gốc, server ON→OFF đầu tiên, ledger/ACK đúng identity/boot.
+- [x] FLOW estimate/coverage/exclusions/calibration groups, unknown khác measured0.
+- [x] On-demand UI/CSV, exact microsecond scope, abort stale response và recovery API.
+- [x] 705backend/128browser/26parser/lintbuild, full app/read-only giữ53bảng; restart52bảng giữ nguyên, rule chỉ epoch+1/pause.
+- [ ] Năm ca live chương59; daily rollup/volume stop/physical allocation/coordinator.
+
+[Bàn giao](LOCAL_SESSION_WATER_USAGE_REPORT.md).

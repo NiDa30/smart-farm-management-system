@@ -1397,3 +1397,16 @@ production route guard. Upgrade giữ24bảng, completed fixture full app/restar
 25bảng không đổi. Sáu ca live Chưa chạy.
 [Chương58](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md),
 [bàn giao](../implementation/LOCAL_SESSION_CLOSURE_REPORT.md).
+
+
+## 21/10/2026 — Báo cáo FLOW tại trạm theo phiên
+
+Bổ sung GET/report/CSV từ lịch sử phiên: config gốc, ON → OFF đầu tiên, ACK
+đúng identity/boot, độ phủ và nhóm hiệu chuẩn. Không đổi control, firmware,
+migration hoặc mặc định. Sửa read-only domain rollback và microsecond/date
+draft handling bằng ca kiểm thử tái hiện. 705 backend,128 browser,26 parser,
+lint/build đạt; synthetic SQL history → DB/full-app/CSV và restart52bảng
+không đổi, watering_rule chỉ startup epoch +1 và vẫn pause. Không dùng native/live cho tính năng này. Năm ca AWS/Wokwi Chưa
+chạy; coordinator/multi-route/queue vẫn mở.
+[Chương59](CHAPTER_59_SESSION_WATER_USAGE.md),
+[bàn giao](../implementation/LOCAL_SESSION_WATER_USAGE_REPORT.md).
