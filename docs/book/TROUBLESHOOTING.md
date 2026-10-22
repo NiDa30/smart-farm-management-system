@@ -680,3 +680,14 @@ FLOW không tạo khoảng đo, lỗi/nguồn/hiệu chuẩn khác không đư�
 CSV nhóm khác hiệu chuẩn không được cộng thành tổng hoặc phân bổ tới luống.
 Đọc lại có thể thấy ACK/mẫu đến muộn; không gửi lại ON để làm đẹp báo cáo.
 Xem [chương59](CHAPTER_59_SESSION_WATER_USAGE.md).
+
+
+## Lịch vùng không tạo lượt chờ
+
+Đọc status backend/plan/cursor và occurrence: cần flag/plan bật, đúng giờ
+Việt Nam và binding SIMULATOR còn khớp. CONFIG_CHANGED cần duyệt mapping
+mới; ZONE_ALREADY_WAITING/QUEUE_FULL không retry mốc đó. Startup hoặc gap
+>30s không tạo bù và không ghi occurrence cho từng mốc downtime. nextDueAt
+là kế hoạch, lastTick là mốc lưu chứ không bảo đảm worker còn sống. Lượt cũ
+TTL5phút không tự có quyền thực thi; đọc hàng chờ. Lost PUT/reload chỉ GET
+đối chiếu, không gửi lại tự động. Xem [chương60](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md).

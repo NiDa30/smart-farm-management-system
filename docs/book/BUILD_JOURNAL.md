@@ -1410,3 +1410,17 @@ không đổi, watering_rule chỉ startup epoch +1 và vẫn pause. Không dùn
 chạy; coordinator/multi-route/queue vẫn mở.
 [Chương59](CHAPTER_59_SESSION_WATER_USAGE.md),
 [bàn giao](../implementation/LOCAL_SESSION_WATER_USAGE_REPORT.md).
+
+
+## 22/10/2026 — lịch theo vùng lập queue, V45
+
+Weekly UTC+7,8dòng tối đa,1–10s; opt-in từng plan/backend, FIFO/TTL cũ.
+Freeze snapshot, unique zone/due, queue+occurrence+cursor cùngtransaction;
+startup/gap>30s không catchup, disable không cancel request cũ. UI exact
+GET readback sau lost PUT, pending qua reload. Scheduler đăng ký riêng khi
+MQTT/maintenance tắt, thực thi wall-clock21:22tạo đúng1lượt,0command/session.
+731backend/84browser/12parser/lintbuild đạt, Flyway-only giữ52data tables
+cũ; full app/read-only và restart có đối chiếu riêng trong báo cáo.
+Sáu ca live Chưa chạy, chưa auto coordinator/multi-route/queue dispatch.
+[Chương60](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md),
+[bàn giao](../implementation/LOCAL_ZONE_QUEUE_SCHEDULE_REPORT.md).

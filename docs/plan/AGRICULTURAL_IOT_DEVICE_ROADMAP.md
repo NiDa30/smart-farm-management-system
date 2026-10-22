@@ -1058,3 +1058,16 @@ live Chưa chạy. A3 vẫn còn full coordinator/multi-route/auto queue; chưa
 daily rollup/ngân sách lít/volume-stop/physical acceptance.
 [Chương59](../book/CHAPTER_59_SESSION_WATER_USAGE.md),
 [bàn giao](../implementation/LOCAL_SESSION_WATER_USAGE_REPORT.md).
+
+
+## Cập nhật22/10/2026 — lịch theo vùng lập hàng chờ V45
+
+Mỗi vùng SIMULATOR opt-in ngày/giờ UTC+7 và1–10s, đến giờ lập một queue
+request để người dùng duyệt. Binding snapshot, occurrence+queue+cursor
+atomic/unique, skipfull/waiting/drift; startup/gap>30s không tạo bù. Không
+auto handoff hoặc MQTT, disable không cancel request/phiên cũ. 731backend/
+84browser/12parser/lintbuild, real wall-clock scheduler/DB một lượt và
+upgrade giữ52data tables đạt. Sáu ca live Chưa chạy. A3 còn full-cycle
+coordinator/multi-route/auto queue dispatch; chưa physical flow/actuator
+acceptance hoặc volume-stop. [Chương60](../book/CHAPTER_60_ZONE_QUEUE_SCHEDULE.md),
+[bàn giao](../implementation/LOCAL_ZONE_QUEUE_SCHEDULE_REPORT.md).

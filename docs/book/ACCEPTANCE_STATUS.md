@@ -447,3 +447,12 @@ chỉ startup epoch +1, vẫn pause.
 Không migration, firmware, control flag hoặc dispatch mới. Năm ca live
 [chương59](CHAPTER_59_SESSION_WATER_USAGE.md) **Chưa chạy**. Chưa volume stop/
 daily aggregation/coordinator/multi-route/auto queue/hardware acceptance.
+
+
+## V45 — lịch vùng tạo lượt,22/10/2026
+
+731backend(26mới),59node/zone+25queue browser,12parser,lintbuild đạt. Real
+wall-clock scheduler/DB chỉ tạo1queue link;0command/session/run. Upgrade
+V44→V45 giữ52data tables và no-op lần2; full app GET-only/linked queue đạt.
+Đây chưa tưới tự động: defaultfalse, không catchup/start session/dispatch.
+Sáu ca live [chương60](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md) **Chưa chạy**.

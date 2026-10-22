@@ -428,3 +428,15 @@ exclusions and separate calibration groups. This is station flow, not bed
 allocation or actual pump runtime. No new flag, dispatch or migration.
 History UI offers on-demand report/CSV. See [chapter59](../docs/book/CHAPTER_59_SESSION_WATER_USAGE.md)
 and [handoff](../docs/implementation/LOCAL_SESSION_WATER_USAGE_REPORT.md).
+
+
+## Weekly zone queue schedule (V45)
+
+GET/PUT `/api/v1/irrigation-zones/{zone}/queue-schedule` stores reviewed weekly
+Vietnam-time plans and exposes20recent occurrences. Opt-in
+`SMARTFARM_IRRIGATION_QUEUE_SCHEDULE_ENABLED=false` by default. Worker creates
+queue requests only; current simulator binding, capacity/dedup, atomic
+occurrence/link/cursor, startup and >30s gaps skip missed times. No session,
+MQTT, auto handoff or catch-up. Disabling a plan does not cancel old queue
+requests. [Chapter60](../docs/book/CHAPTER_60_ZONE_QUEUE_SCHEDULE.md),
+[handoff](../docs/implementation/LOCAL_ZONE_QUEUE_SCHEDULE_REPORT.md).

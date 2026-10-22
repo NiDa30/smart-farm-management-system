@@ -354,3 +354,14 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Năm ca live chương59; daily rollup/volume stop/physical allocation/coordinator.
 
 [Bàn giao](LOCAL_SESSION_WATER_USAGE_REPORT.md).
+
+
+## V45 — lịch tưới theo vùng lập queue
+
+- [x] Weekly UTC+7,1–10s,8dòng tối đa, revision/review và frozen binding.
+- [x] Queue-only occurrence/link/cursor atomic, unique due, no startup/gap catchup.
+- [x] Skip config/full/waiting, disable không cancel; không session/MQTT.
+- [x] UI pending reload/GET readback, 731backend/84browser/12parser/lintbuild, real clock/DB.
+- [ ] Sáu ca live chương60, coordinator toàn chu kỳ/multi-route/auto queue/physical acceptance.
+
+[Bàn giao](LOCAL_ZONE_QUEUE_SCHEDULE_REPORT.md).

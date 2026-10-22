@@ -94,7 +94,7 @@ public class IrrigationQueue {
   var c=configs.getFirst();return Objects.equals(mapper.valueToTree(c),item.circuitSnapshot())&&IrrigationCircuits.configurationState(jdbc,c).equals("CURRENT");
  }
  private JsonNode zoneConfig(String id){return zoneConfig(id,true);}
- private JsonNode zoneConfig(String id,boolean locking){return jdbc.query("SELECT * FROM irrigation_zone WHERE zone_id=?"+(locking?" FOR SHARE":""),(rs,n)->{
+ JsonNode zoneConfig(String id,boolean locking){return jdbc.query("SELECT * FROM irrigation_zone WHERE zone_id=?"+(locking?" FOR SHARE":""),(rs,n)->{
   var c=mapper.createObjectNode().put("zoneId",id).put("name",rs.getString("name")).put("areaId",rs.getString("area_id")).put("soilNodeId",rs.getString("soil_node_id")).put("expectedSource",rs.getString("expected_source")).put("dryThreshold",rs.getInt("dry_threshold")).put("wetThreshold",rs.getInt("wet_threshold")).put("revision",rs.getInt("revision"));
   c.set("channelIds",mapper.valueToTree(jdbc.query("SELECT channel_id FROM irrigation_zone_channel WHERE zone_id=? ORDER BY position",(r,i)->r.getString(1),id)));return (JsonNode)c;
  },id).stream().findFirst().orElse(null);}

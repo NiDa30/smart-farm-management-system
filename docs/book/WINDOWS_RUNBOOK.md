@@ -663,3 +663,20 @@ chọn phiên → Đọc lượng nước phiên. CSV ghi nguồn, nhóm hiệu 
 gian chưa phủ; Chưa xác định không phải 0 lít. FLOW tại trạm chung chưa là
 số lít tới từng luống. Năm ca live [chương59](CHAPTER_59_SESSION_WATER_USAGE.md)
 **Chưa chạy**. Không xóa lịch sử/NVS để bỏ bằng chứng thiếu.
+
+
+## 22/10/2026 — lịch vùng lập lượt chờ V45
+
+Pull nhánh, giữ DB/volume, dừng backend cũ. Git Bash backend profile hiện có:
+
+```bash
+export SMARTFARM_IRRIGATION_QUEUE_SCHEDULE_ENABLED=true
+bash tools/backend/run_backend_windows.sh
+```
+
+Frontend terminal riêng `npm run dev`. Vào Sensor Realtime → Node & trạm
+nước → Vùng tưới → Lịch tưới từng vùng. Chọn thứ/giờ UTC+7,1–10s, enable
+và lưu. Đến giờ chỉ có lượt chờ TTL5phút, chưa có phiên hoặc lệnh thiết bị.
+Tắt lịch không cancel request cũ/OFF bơm; dùng hàng chờ/phiên tương ứng.
+Restart/lỡ vòng>30s không tạo bù. Sáu ca live
+[chương60](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md) **Chưa chạy**.

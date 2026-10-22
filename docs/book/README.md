@@ -123,3 +123,5 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Tự khép phiên sau OFF](CHAPTER_58_POST_OFF_SESSION_CLOSURE.md): opt-in một lần, ACK/status OFF trước CLOSE, CLOSED trước FINISH; pause/restart/uncertainty không phát lại.
 
 - [Lượng nước ước tính theo phiên](CHAPTER_59_SESSION_WATER_USAGE.md): FLOW tại trạm theo cửa sổ ý định ON/OFF, độ phủ, hiệu chuẩn và CSV; chưa phân bổ nước tới luống.
+
+- [Lịch tưới theo vùng tạo lượt chờ](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md): giờ/tuần Việt Nam, queue-only opt-in, chống trùng, không tạo bù hoặc tự bật bơm.

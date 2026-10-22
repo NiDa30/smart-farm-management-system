@@ -1,16 +1,18 @@
 import {ZoneRainGatePanel} from './ZoneRainGatePanel';
+import {ZoneQueueSchedulePanel} from './ZoneQueueSchedulePanel';
 import React,{useEffect,useRef,useState} from 'react';
 import {parseNodes,sourceLabels,type FarmNode} from '../nodes/nodeApi';
 import {assessmentLabels,displayedAssessment,parseZone,parseZones,pointLabels,sameZone,saveZone,ZoneSaveError,type ZoneConfig,type ZoneSnapshot} from './zoneApi';
 export function IrrigationZonesPanel({onBack}:{onBack:()=>void}){
  const [selectedWeather,setSelectedWeather]=useState<string|null>(null);
+ const [selectedSchedule,setSelectedSchedule]=useState<string|null>(null);
  const [data,setData]=useState<ZoneSnapshot|null>(null),[nodes,setNodes]=useState<FarmNode[]>([]),[areas,setAreas]=useState<{id:string;name:string}[]>([]);
  const [error,setError]=useState(''),[message,setMessage]=useState(''),[reload,setReload]=useState(0),[now,setNow]=useState(performance.now());
  const [draft,setDraft]=useState<ZoneConfig|null>(null),[editing,setEditing]=useState(false),[saving,setSaving]=useState(false),[uncertain,setUncertain]=useState(false),[conflict,setConflict]=useState(false),[formError,setFormError]=useState('');
  const receipt=useRef(0),inFlight=useRef(false),mounted=useRef(true),pending=useRef<{config:ZoneConfig;editing:boolean}|null>(null),request=useRef<AbortController|null>(null);
  useEffect(()=>{mounted.current=true;const tick=setInterval(()=>setNow(performance.now()),1000);return()=>{mounted.current=false;clearInterval(tick);request.current?.abort();};},[]);
  useEffect(()=>{
-  if(draft||selectedWeather)return;
+  if(draft||selectedWeather||selectedSchedule)return;
   let active=true,timer:ReturnType<typeof setTimeout>,controller:AbortController;
   async function poll(){controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),8000);
    try{
@@ -21,7 +23,7 @@ export function IrrigationZonesPanel({onBack}:{onBack:()=>void}){
    }catch{if(active)setError('Không tải được vùng tưới. Dữ liệu đã lưu có thể cũ; chưa xác nhận khảo sát mới.');}
    finally{clearTimeout(timeout);if(active)timer=setTimeout(poll,5000);}
   }void poll();return()=>{active=false;controller?.abort();clearTimeout(timer);};
- },[reload,!!draft,selectedWeather]);
+ },[reload,!!draft,selectedWeather,selectedSchedule]);
  const serverNow=data?Date.parse(data.asOf)+Math.max(0,now-receipt.current):0;
  const eligible=nodes.filter(n=>n.nodeType==='SOIL'&&n.telemetryVersion===2&&n.channels.length>=3);
  const used=(node:string,id:string)=>data?.zones.some(z=>z.config.zoneId!==draft?.zoneId&&z.config.soilNodeId===node&&z.config.channelIds.includes(id))??false;
@@ -52,6 +54,7 @@ export function IrrigationZonesPanel({onBack}:{onBack:()=>void}){
  }
  const selected=draft?nodes.find(n=>n.nodeId===draft.soilNodeId):undefined;
  if(selectedWeather)return <ZoneRainGatePanel key={selectedWeather} zoneId={selectedWeather} onBack={()=>setSelectedWeather(null)}/>;
+ if(selectedSchedule)return <ZoneQueueSchedulePanel key={selectedSchedule} zoneId={selectedSchedule} onBack={()=>setSelectedSchedule(null)}/>;
  return <section aria-label="Quản lý vùng tưới" className="space-y-4">
   <button onClick={onBack} disabled={saving||uncertain} className="underline disabled:opacity-40">Quay lại danh sách node</button>
   <header className="flex flex-wrap justify-between gap-3"><div><h2 className="text-xl font-bold">Vùng tưới & ba điểm đất</h2><p className="text-sm text-slate-500">Gán ba kênh của một node đất cho mỗi vùng trong cùng khu vực.</p></div><button disabled={!data||!!error||!!draft||!eligible.length} onClick={()=>open()} className="border rounded p-2 disabled:opacity-40">Thêm vùng tưới</button></header>
@@ -69,7 +72,7 @@ export function IrrigationZonesPanel({onBack}:{onBack:()=>void}){
     <p className="text-sm">{error?'Chưa xác nhận dữ liệu mới':pointLabels[expired?'STALE':p.state]}</p><p className="text-xs">{r?sourceLabels[r.dataSource??'UNSPECIFIED']:'Chưa có nguồn'} · {r?.calibrationVersion??'Chưa khai báo hiệu chuẩn'}</p>
     <p className="text-xs">Đo: {r?new Date(r.observedAt).toLocaleString('vi-VN'):'—'} · Seq {r?.sequence??'—'}</p>
    </div>;})}</div>
-   <button disabled={!!error||!!draft} onClick={()=>open(c)} className="border rounded p-2 disabled:opacity-40">Sửa vùng {c.zoneId}</button> <button className="border rounded p-2" disabled={!!error||!!draft} onClick={()=>setSelectedWeather(c.zoneId)}>Chốt mưa {c.zoneId}</button>
+   <button disabled={!!error||!!draft} onClick={()=>open(c)} className="border rounded p-2 disabled:opacity-40">Sửa vùng {c.zoneId}</button> <button className="border rounded p-2" disabled={!!error||!!draft} onClick={()=>setSelectedWeather(c.zoneId)}>Chốt mưa {c.zoneId}</button> <button className="border rounded p-2" disabled={!!error||!!draft} onClick={()=>setSelectedSchedule(c.zoneId)}>Lịch tưới {c.zoneId}</button>
   </article>;})}
   {draft&&<form aria-label="Cấu hình vùng tưới" onSubmit={save} className="border bg-white rounded-xl p-5 space-y-3">
    <h3 className="font-bold">{editing?'Sửa':'Thêm'} vùng tưới</h3><fieldset disabled={saving||uncertain} className="space-y-3">
