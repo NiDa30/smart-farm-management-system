@@ -128,3 +128,6 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 
 
 - [Tự điều phối một phiên trên một nhánh](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md): duyệt một lần OPEN/ON/OFF/CLOSE, proof từng bước, ngắt không replay; chưa tự chạy queue hoặc đổi route.
+
+
+- [Tự nhận lượt mới theo route hiện tại](CHAPTER_62_FUTURE_QUEUE_DISPATCH.md): quyền riêng cho queue mới, FIFO→handoff+cycle atomic; restart/manual/unknown ngừng, chưa đổi nhiều route.

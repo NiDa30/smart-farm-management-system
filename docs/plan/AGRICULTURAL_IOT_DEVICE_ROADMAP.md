@@ -1087,3 +1087,20 @@ actuator/flow safety acceptance và sáu ca Windows/AWS/Wokwi mới chưa chạy
 Lịch V45 vẫn chỉ tạo lượt; không tự nối lịch tới ON. Chưa volume-stop.
 [Chương61](../book/CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md),
 [bàn giao](../implementation/LOCAL_IRRIGATION_CYCLE_REPORT.md).
+
+
+## Cập nhật22/10/2026 — A3 nhận queue mới cùng route V47/V48
+
+Nối lịch/queue tới chu trình một phiên qua explicit quyền riêng, defaultfalse.
+Freeze config/boots/watermark, đúng FIFO/current route/TTL5phút và duration1–10s; handoff+arm+
+link atomic, no IO trước commit. Chỉ lấy tiếp sau COMPLETE bình thường và
+proof/chốt nghỉ mới. Không nhận bù queue cũ, skip head hoặc đổi route.
+Restart/manual/gap/drift/cycle ngắt/dừng sớm tắt quyền; stop nhận không OFF.
+795backend/154browser/18parser/lintbuild, real schedulers/native/DB một phiên,
+foreign head chặn; upgrade56data tables/full app/read/restart đạt.
+
+A3 còn chọn/chuyển nhiều route và điều phối nhiều vùng thực, physical
+actuator/flow safety acceptance; sáu ca Windows/AWS/Wokwi mới chưa chạy.
+Chưa tưới theo lít hoặc tự quyết định nhu cầu đất/weather.
+[Chương62](../book/CHAPTER_62_FUTURE_QUEUE_DISPATCH.md),
+[bàn giao](../implementation/LOCAL_QUEUE_DISPATCH_REPORT.md).

@@ -14,6 +14,7 @@ public class IrrigationCycle {
  public record View(String mode,String circuitId,UUID sessionId,Instant asOf,long sessionRevision,String phase,int durationSeconds,boolean enabled,boolean canArm,String reason,Cycle cycle) {}
  private final JdbcTemplate jdbc;private final ObjectMapper mapper;private final IrrigationSession sessions;private final TransactionTemplate tx;private final boolean enabled;
  public IrrigationCycle(JdbcTemplate jdbc,ObjectMapper mapper,IrrigationSession sessions,PlatformTransactionManager manager,@Value("${smartfarm.irrigation.cycle-enabled:false}")boolean enabled){this.jdbc=jdbc;this.mapper=mapper;this.sessions=sessions;this.tx=new TransactionTemplate(manager);this.enabled=enabled;}
+ boolean available(){return enabled&&sessions.closureReady();}
  private void gates(){jdbc.queryForObject("SELECT singleton FROM pump_dispatch_gate WHERE singleton=1 FOR UPDATE",Integer.class);jdbc.queryForObject("SELECT revision FROM irrigation_circuit_state WHERE singleton=1 FOR UPDATE",Long.class);}
  private String json(Object value){try{return mapper.writeValueAsString(value);}catch(Exception e){throw new IllegalStateException(e);}}
  private Arm decode(String text){try{return mapper.readValue(text,Arm.class);}catch(Exception e){throw new IllegalStateException(e);}}

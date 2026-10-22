@@ -703,3 +703,26 @@ Ngừng tự chuyển bước chỉ ngừng quyền, không OFF; nút OFF khẩn
 proof. Restart không resume/auto OFF. Hết hạn, unknown IO hoặc boot/config
 đổi cần phục hồi thủ công. Sáu ca live
 [chương61](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md) **Chưa chạy**.
+
+
+## 22/10/2026 — tự nhận queue mới theo route V47/V48
+
+Giữ DB/volume/private files và profile LED theo nhánh/session đã dùng; pull
+nhánh, dừng backend cũ. Git Bash backend:
+
+```bash
+export SMARTFARM_IRRIGATION_QUEUE_HANDOFF_ENABLED=true
+export SMARTFARM_IRRIGATION_CYCLE_ENABLED=true
+export SMARTFARM_IRRIGATION_QUEUE_DISPATCH_ENABLED=true
+bash tools/backend/run_backend_windows.sh
+```
+
+Frontend riêng `npm run dev`. Hàng chờ → Tự nhận lượt mới theo route →
+kiểm tra nhánh/boot → Bật tự nhận lượt mới. Chỉ nhận ticket sau lúc bật;
+head cũ phải hủy/xử lý riêng, không tự bỏ qua. Muốn tạo lượt theo giờ, thêm
+flag QUEUE_SCHEDULE và bật lịch vùng; quyền nhận vẫn phải bật riêng trước
+giờ đến hạn. Không tự xét đất khô hoặc đổi route bơm.
+
+Ngừng nhận không OFF/pause phiên đã tạo; mở liên kết chu trình để OFF nếu
+cần. Restart/mất quyền cần phục hồi và bật lại; không adopt queue cũ.
+Sáu ca live [chương62](CHAPTER_62_FUTURE_QUEUE_DISPATCH.md) **Chưa chạy**.

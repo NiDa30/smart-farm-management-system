@@ -468,3 +468,15 @@ giữ56/57, watering_rule chỉ startup epoch+1/disabled. Full-app GET-only và
 restart đạt. Defaultfalse, explicit one-shot PREPARED, không route switch/
 auto queue/next. Sáu ca live [chương61](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md)
 **Chưa chạy**; chưa AWS/Wokwi/GPIO hoặc hardware safety acceptance.
+
+
+## V47/V48 — tự nhận queue mới trên một route,22/10/2026
+
+795backend(30mới),34queue+120circuit/session browser,18parser,lintbuild đạt,
+không skip. Queue/cycle scheduler thật→native retained models/receivers/DB
+COMPLETE,4commands/5actions/1link, next foreign head bị chặn. Upgrade giữ
+56data tables; GET59bảng giữ nguyên, restart58/59giữ nguyên, rule chỉ epoch+1
+và disabled. Full-app linked cycle/back đạt. Defaultfalse, watermark chỉ
+queue mới, không route switch/catchup; ngừng nhận không OFF. Sáu ca live
+[chương62](CHAPTER_62_FUTURE_QUEUE_DISPATCH.md) **Chưa chạy**. Chưa nhiều
+route, volume-stop hoặc AWS/Wokwi/GPIO/hardware safety acceptance.

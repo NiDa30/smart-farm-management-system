@@ -1443,3 +1443,21 @@ bảng không đổi; restart56/57giữ nguyên, rule chỉ epoch+1/disabled. S�
 live Chưa chạy; multi-route/auto queue và phần cứng vẫn mở.
 [Chương61](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md),
 [bàn giao](../implementation/LOCAL_IRRIGATION_CYCLE_REPORT.md).
+
+
+## 22/10/2026 — nối queue mới tới chu trình, V47/V48
+
+Explicit quyền theo route/config/boot hiện tại; ticket watermark, FIFO và
+TTL cũ. Handoff/PREPARED/cycle arm/link cùngtransaction, no IO trước commit.
+Restart/manual/gap/drift/ngắt/dừng sớm ngừng quyền, không catchup/route switch.
+Stop riêng tăng revision ngay cả khi đang disabled để chặn enable muộn;
+UI generation/pending readback và discard có điều kiện, stop không OFF.
+
+Test ban đầu thiếu throws, TTL sửa sai CHECK, tên fixture mapping sai đã
+sửa. Ca nhận tiếp lộ close fence2s đang chặn đúng; giữ guard và sửa fixture
+để kiểm tra hai thời điểm.795backend/154browser/18parser/lintbuild đạt. Hai
+scheduler thật/native models/real receivers khép một phiên5s,4commands/5steps,
+foreign head không chạy; không AWS/GPIO thật. Upgrade56data tables, GET59
+bảng và restart58/59giữ nguyên(rule chỉ epoch+1/disabled), full app đạt.
+Sáu ca live Chưa chạy. [Chương62](CHAPTER_62_FUTURE_QUEUE_DISPATCH.md),
+[bàn giao](../implementation/LOCAL_QUEUE_DISPATCH_REPORT.md).

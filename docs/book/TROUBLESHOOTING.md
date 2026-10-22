@@ -707,3 +707,18 @@ Pause/HTTP lỗi/đếm ngược hết không chứng minh OFF. Dùng OFF riêng
 chiếu thiết bị. Pending ARM/PAUSE qua reload chỉ GET đúng bản; active sau
 unknown pause chưa là ngừng. Restart không auto OFF/resume hoặc chạy lượt
 khác. Xem [chương61](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md).
+
+
+## Tự nhận hàng chờ không chạy hoặc đã ngừng
+
+Cần ba profile dispatch/handoff/cycle và profile session/control/fence/route
+đúng; còn phải bật quyền trong UI. EXISTING_HEAD_REQUIRES_REVIEW là head có
+trước watermark; HEAD_ROUTE_MISMATCH là nhánh khác; không skip để lấy lượt
+sau. Lượt quá10s không bị rút ngắn. TTL/proof/config/idle được kiểm tra lại;
+chốt nghỉ2s sau CLOSE vẫn giữ. Không sửa timestamp để ép chạy.
+
+RESTART_DISABLED/BINDING_CHANGED/MANUAL_TAKEOVER/CLOCK_OR_WORKER_GAP hoặc
+cycle ngắt/dừng sớm cần xử lý phục hồi rồi duyệt quyền mới. Tắt quyền không
+OFF/pause cycle. Pending bật chưa rõ vẫn có thể ngừng riêng; chỉ bỏ pending
+sau GET disabled ở revision cao hơn ý định. Không tự gửi lại enable.
+Xem [chương62](CHAPTER_62_FUTURE_QUEUE_DISPATCH.md).

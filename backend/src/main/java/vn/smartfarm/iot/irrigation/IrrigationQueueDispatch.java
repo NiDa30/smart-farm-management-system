@@ -1,0 +1,64 @@
+package vn.smartfarm.iot.irrigation;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.*;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.*;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.server.ResponseStatusException;
+import vn.smartfarm.iot.control.PumpCircuitRoute;
+import vn.smartfarm.iot.control.PumpService;
+
+/** Future FIFO requests on one frozen simulator route; atomic handoff + cycle arm, no IO here. */
+@Service
+public class IrrigationQueueDispatch {
+ public record Change(UUID changeId,long expectedRevision,Instant reviewedAt,boolean enabled,IrrigationCircuits.Config config,UUID pumpBootId,UUID valveBootId) {}
+ public record Policy(long revision,boolean enabled,Change definition,long afterTicket,long afterPumpOrdinal,long afterValveOrdinal,Instant updatedAt,Instant lastTickAt,String result) {}
+ public record Review(IrrigationCircuits.Config config,UUID pumpBootId,UUID valveBootId) {}
+ public record Link(UUID requestId,long policyRevision,Change policyDefinition,UUID sessionId,UUID armId,Instant createdAt,String circuitId,String cycleState,String stopReason,String sessionPhase) {}
+ public record View(String mode,Instant asOf,boolean workerEnabled,Policy policy,boolean canEnable,String enableReason,Review review,UUID headId,String headReason,List<Link> recent) {}
+ private final JdbcTemplate jdbc;private final ObjectMapper mapper;private final TransactionTemplate tx;
+ private final IrrigationQueue queue;private final IrrigationQueueHandoff handoff;private final IrrigationSession sessions;private final IrrigationCycle cycles;private final IrrigationCircuits circuits;private final PumpService pump;
+ private final boolean enabled,handoffEnabled;private volatile boolean ready;
+ public IrrigationQueueDispatch(JdbcTemplate jdbc,ObjectMapper mapper,PlatformTransactionManager manager,IrrigationQueue queue,IrrigationQueueHandoff handoff,IrrigationSession sessions,IrrigationCycle cycles,IrrigationCircuits circuits,PumpService pump,@Value("${smartfarm.irrigation.queue-dispatch-enabled:false}")boolean enabled,@Value("${smartfarm.irrigation.queue-handoff-enabled:false}")boolean handoffEnabled){this.jdbc=jdbc;this.mapper=mapper;tx=new TransactionTemplate(manager);this.queue=queue;this.handoff=handoff;this.sessions=sessions;this.cycles=cycles;this.circuits=circuits;this.pump=pump;this.enabled=enabled;this.handoffEnabled=handoffEnabled;}
+ private void gates(){jdbc.queryForObject("SELECT singleton FROM pump_dispatch_gate WHERE singleton=1 FOR UPDATE",Integer.class);jdbc.queryForObject("SELECT revision FROM irrigation_queue_state WHERE singleton=1 FOR UPDATE",Long.class);jdbc.queryForObject("SELECT revision FROM irrigation_circuit_state WHERE singleton=1 FOR UPDATE",Long.class);jdbc.queryForObject("SELECT revision FROM irrigation_queue_dispatch_state WHERE singleton=1 FOR UPDATE",Long.class);}
+ private String json(Object v){try{return mapper.writeValueAsString(v);}catch(Exception e){throw new IllegalStateException(e);}}
+ private Change change(String v){if(v==null)return null;try{return mapper.readValue(v,Change.class);}catch(Exception e){throw new IllegalStateException(e);}}
+ private static Instant instant(ResultSet r,String name)throws SQLException{var t=r.getTimestamp(name);return t==null?null:t.toInstant();}
+ private Policy policy(){return jdbc.queryForObject("SELECT * FROM irrigation_queue_dispatch_state WHERE singleton=1",(r,n)->new Policy(r.getLong("revision"),r.getBoolean("enabled"),change(r.getString("definition")),r.getLong("after_ticket"),r.getLong("after_pump_ordinal"),r.getLong("after_valve_ordinal"),instant(r,"updated_at"),instant(r,"last_tick_at"),r.getString("result")));}
+ private List<Link> links(){return jdbc.query("SELECT l.*,s.circuit_id,s.phase,c.state,c.stop_reason FROM irrigation_queue_dispatch_link l JOIN irrigation_session_cycle c USING(session_id) JOIN irrigation_session s USING(session_id) ORDER BY l.created_at DESC,l.request_id DESC LIMIT 20",(r,n)->new Link(r.getObject("request_id",UUID.class),r.getLong("policy_revision"),change(r.getString("policy_definition")),r.getObject("session_id",UUID.class),r.getObject("arm_id",UUID.class),instant(r,"created_at"),r.getString("circuit_id"),r.getString("state"),r.getString("stop_reason"),r.getString("phase")));}
+ private boolean worker(){return enabled&&handoffEnabled&&ready&&cycles.available();}
+ private Review review(){var route=pump.status().commandFence().circuitRoute();if(route==null)return null;try{var v=sessions.snapshot(route.circuitId());if(!v.canStart()||!v.pump().commandFence().circuitRouteRequired()||!v.valve().config().expectedSource().equals("SIMULATOR")||!PumpCircuitRoute.from(v.valve().config()).equals(route))return null;return new Review(v.valve().config(),v.pump().commandFence().intent().bootId(),v.valve().latest().bootId());}catch(ResponseStatusException e){return null;}}
+ private boolean binding(Change d){try{var v=sessions.snapshot(d.config().circuitId());var p=v.pump().commandFence();return v.enabled()&&v.valve().enabled()&&v.pump().controlEnabled()&&p.required()&&p.compatible()&&!p.restartRequired()&&p.circuitRouteRequired()&&d.config().equals(v.valve().config())&&v.valve().configurationState().equals("CURRENT")&&PumpCircuitRoute.from(d.config()).equals(p.circuitRoute())&&p.intent()!=null&&d.pumpBootId().equals(p.intent().bootId())&&v.valve().latest()!=null&&d.config().equals(v.valve().latest().config())&&d.valveBootId().equals(v.valve().latest().bootId());}catch(ResponseStatusException e){return false;}}
+ private boolean takeover(Policy p){
+  // All command reservations hold pump_dispatch_gate. Only linked cycle steps are authorized.
+  if(jdbc.queryForObject("SELECT count(*) FROM pump_command c WHERE c.fence_ordinal>? AND NOT EXISTS(SELECT 1 FROM irrigation_queue_dispatch_link l JOIN irrigation_session_cycle x USING(session_id) WHERE c.command_id IN(x.on_id,x.off_id))",Long.class,p.afterPumpOrdinal())>0)return true;
+  if(jdbc.queryForObject("SELECT count(*) FROM circuit_demo_command c WHERE c.ordinal>? AND NOT EXISTS(SELECT 1 FROM irrigation_queue_dispatch_link l JOIN irrigation_session_cycle x USING(session_id) WHERE c.command_id IN(x.open_id,x.close_id))",Long.class,p.afterValveOrdinal())>0)return true;
+  return jdbc.queryForObject("SELECT count(*) FROM irrigation_session s WHERE s.created_at>=? AND NOT EXISTS(SELECT 1 FROM irrigation_queue_dispatch_link l WHERE l.session_id=s.session_id)",Long.class,Timestamp.from(p.updatedAt()))>0;
+ }
+ private String headReason(Policy p,IrrigationQueue.Snapshot q){if(!worker())return "PROFILE_DISABLED";if(!p.enabled())return "DISABLED";if(!binding(p.definition()))return "BINDING_CHANGED";if(q.active()!=null)return "REHEARSAL_ACTIVE";if(q.waiting().isEmpty())return "NO_WAITING_REQUEST";var h=q.waiting().getFirst();if(h.ticket()<=p.afterTicket())return "EXISTING_HEAD_REQUIRES_REVIEW";if(!h.expiresAt().isAfter(Instant.now()))return "HEAD_EXPIRED";if(h.circuitSnapshot()==null||!h.circuitSnapshot().equals(mapper.valueToTree(p.definition().config())))return "HEAD_ROUTE_MISMATCH";var v=handoff.snapshot(h.requestId());return v.canPrepare()?"READY":v.reason();}
+ @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
+ public View snapshot(){var p=policy();var r=worker()?review():null;var q=queue.snapshot();return new View("FUTURE_FIFO_SINGLE_ROUTE",Instant.now(),worker(),p,r!=null,!worker()?"PROFILE_DISABLED":r==null?"CURRENT_ROUTE_NOT_READY":"READY",r,q.waiting().isEmpty()?null:q.waiting().getFirst().requestId(),headReason(p,q),links());}
+ public Policy save(Change raw){if(raw==null||raw.changeId()==null||raw.expectedRevision()<1||raw.expectedRevision()>9007199254740991L||raw.reviewedAt()==null||raw.enabled()&&(raw.config()==null||raw.pumpBootId()==null||raw.valveBootId()==null)||!raw.enabled()&&(raw.config()!=null||raw.pumpBootId()!=null||raw.valveBootId()!=null))throw bad(HttpStatus.BAD_REQUEST,"Invalid dispatch authorization");var d=new Change(raw.changeId(),raw.expectedRevision(),raw.reviewedAt().truncatedTo(ChronoUnit.MICROS),raw.enabled(),raw.config(),raw.pumpBootId(),raw.valveBootId());return tx.execute(t->{gates();var p=policy();if(p.definition()!=null&&p.definition().changeId().equals(d.changeId())){if(!p.definition().equals(d))throw bad(HttpStatus.CONFLICT,"Change identity reused");return p;}var now=Instant.now().truncatedTo(ChronoUnit.MICROS);if(p.revision()!=d.expectedRevision()||d.reviewedAt().isBefore(now.minusSeconds(10))||d.reviewedAt().isAfter(now.plusSeconds(2)))throw bad(HttpStatus.CONFLICT,"Review current dispatch policy");if(d.enabled()){var r=worker()?review():null;if(r==null||!r.config().equals(d.config())||!r.pumpBootId().equals(d.pumpBootId())||!r.valveBootId().equals(d.valveBootId()))throw bad(HttpStatus.CONFLICT,"Review ready simulator route and boots");}
+  jdbc.update("UPDATE irrigation_queue_dispatch_state SET revision=revision+1,enabled=?,definition=?::jsonb,after_ticket=(SELECT COALESCE(max(ticket),0) FROM irrigation_queue_request),after_pump_ordinal=(SELECT COALESCE(max(fence_ordinal),0) FROM pump_command),after_valve_ordinal=(SELECT COALESCE(max(ordinal),0) FROM circuit_demo_command),updated_at=?,last_tick_at=?,result=? WHERE singleton=1",d.enabled(),json(d),Timestamp.from(now),Timestamp.from(now),d.enabled()?"ENABLED_FOR_NEW_REQUESTS":"OPERATOR_DISABLED");return policy();});}
+ public Policy stop(UUID stopId){if(stopId==null)throw bad(HttpStatus.BAD_REQUEST,"Stop identity required");return tx.execute(t->{gates();var previous=jdbc.queryForObject("SELECT last_stop_id FROM irrigation_queue_dispatch_state WHERE singleton=1",UUID.class);if(!stopId.equals(previous))jdbc.update("UPDATE irrigation_queue_dispatch_state SET enabled=false,revision=revision+1,result='OPERATOR_STOPPED',last_stop_id=? WHERE singleton=1",stopId);return policy();});}
+ @EventListener(ApplicationReadyEvent.class)
+ public void interruptOnStartup(){tx.executeWithoutResult(t->{gates();jdbc.update("UPDATE irrigation_queue_dispatch_state SET enabled=false,revision=revision+1,result='RESTART_DISABLED' WHERE singleton=1 AND enabled");});ready=true;}
+ private void disable(String reason){jdbc.update("UPDATE irrigation_queue_dispatch_state SET enabled=false,revision=revision+1,result=? WHERE singleton=1 AND enabled",reason);}
+ public void poll(){if(!worker())return;tx.executeWithoutResult(t->{gates();var p=policy();if(!p.enabled())return;var now=Instant.now();if(now.isBefore(p.lastTickAt())||p.lastTickAt().isBefore(now.minusSeconds(30))){disable("CLOCK_OR_WORKER_GAP");return;}if(!binding(p.definition())){disable("BINDING_CHANGED");return;}if(takeover(p)){disable("MANUAL_TAKEOVER");return;}
+  var recent=links().stream().filter(l->l.policyRevision()==p.revision()).toList();if(!recent.isEmpty()){var last=recent.getFirst();if(!last.cycleState().equals("COMPLETE")){if(Set.of("PAUSED","EXPIRED","INTERRUPTED","UNRESOLVED").contains(last.cycleState()))disable("CYCLE_INTERRUPTED");else tick(now,"SESSION_ACTIVE");return;}if(!last.sessionPhase().equals("CLOSED_CONFIRMED")||!Objects.equals(last.stopReason(),"DURATION_REACHED")){disable("CYCLE_STOPPED_EARLY");return;}}
+  var q=queue.snapshot();String reason=headReason(p,q);tick(now,reason);if(!reason.equals("READY"))return;var item=q.waiting().getFirst();var v=handoff.snapshot(item.requestId());var r=v.review();var start=new IrrigationSession.Start(UUID.randomUUID(),r.circuitRevision(),r.zoneRevision(),r.pumpBootId(),r.valveBootId(),item.durationSeconds(),v.asOf());var receipt=handoff.prepare(item.requestId(),new IrrigationQueueHandoff.Request(v.queueRevision(),start));var run=receipt.session();var cycle=cycles.arm(run.config().circuitId(),run.sessionId(),new IrrigationCycle.Arm(UUID.randomUUID(),run.revision(),Instant.now()));
+  jdbc.update("INSERT INTO irrigation_queue_dispatch_link(request_id,policy_revision,policy_definition,session_id,arm_id) VALUES(?,?,?::jsonb,?,?)",item.requestId(),p.revision(),json(p.definition()),run.sessionId(),cycle.armId());tick(now,"CYCLE_ARMED");
+ });}
+ private void tick(Instant now,String reason){jdbc.update("UPDATE irrigation_queue_dispatch_state SET last_tick_at=?,result=? WHERE singleton=1",Timestamp.from(now),reason);}
+ private static ResponseStatusException bad(HttpStatus status,String text){return new ResponseStatusException(status,text);}
+}

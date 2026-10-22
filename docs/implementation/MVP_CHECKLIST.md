@@ -377,3 +377,15 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Sáu ca live chương61, multi-route/auto queue/volume-stop/physical acceptance.
 
 [Bàn giao](LOCAL_IRRIGATION_CYCLE_REPORT.md).
+
+
+## V47/V48 — tự nhận queue mới cùng route
+
+- [x] Defaultfalse; explicit config/boot review, watermark, FIFO/current route/TTL5phút và duration1–10s.
+- [x] Handoff+PREPARED+cycle arm+link atomic/no IO; race/rollback, no skip/catchup.
+- [x] Restart/manual/boot/gap/failure/early-stop ngừng; stop không OFF, chặn enable muộn.
+- [x] UI pending reload/GET exact/discard sau stop; linked cycle/back navigation.
+- [x]795backend/154browser/18parser/lintbuild; scheduler native/DB; upgrade/read/restart.
+- [ ] Sáu ca live chương62, multi-route firmware/coordinator, volume-stop/hardware acceptance.
+
+[Bàn giao](LOCAL_QUEUE_DISPATCH_REPORT.md).

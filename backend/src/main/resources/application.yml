@@ -24,6 +24,7 @@ smartfarm:
     circuit-route-required: ${SMARTFARM_PUMP_CIRCUIT_ROUTE_REQUIRED:false}
     pump-fencing-enabled: ${SMARTFARM_PUMP_FENCING_ENABLED:false}
   irrigation:
+    queue-dispatch-enabled: ${SMARTFARM_IRRIGATION_QUEUE_DISPATCH_ENABLED:false}
     cycle-enabled: ${SMARTFARM_IRRIGATION_CYCLE_ENABLED:false}
     queue-schedule-enabled: ${SMARTFARM_IRRIGATION_QUEUE_SCHEDULE_ENABLED:false}
     session-closure-enabled: ${SMARTFARM_IRRIGATION_SESSION_CLOSURE_ENABLED:false}

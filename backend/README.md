@@ -455,3 +455,18 @@ Pause is not OFF; restart interrupts without resume/replay/automatic OFF.
 No route switching, automatic queue handoff or next session. See
 [chapter61](../docs/book/CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md) and
 [handoff](../docs/implementation/LOCAL_IRRIGATION_CYCLE_REPORT.md).
+
+
+## Future FIFO queue dispatch on one route (V47/V48)
+
+`SMARTFARM_IRRIGATION_QUEUE_DISPATCH_ENABLED=false` by default; requires
+queue-handoff/cycle and existing session/control/fence/route profiles.
+GET/PUT `/api/v1/irrigation-queue/dispatch`, POST `/dispatch/stop` with stopId.
+Explicit review freezes config/boots and ticket watermark. Only new FIFO
+requests matching current route, TTL and1–10s can atomically prepare a
+session, arm its cycle and persist a link; no IO until cycle worker runs.
+No head skipping, route switching or old-request catch-up. Startup disables
+authority; manual takeover, binding drift, >30s gap/backclock and interrupted
+or early-stop cycle disable it. Stop new dispatch is not pump OFF or cycle
+pause. [Chapter62](../docs/book/CHAPTER_62_FUTURE_QUEUE_DISPATCH.md),
+[handoff](../docs/implementation/LOCAL_QUEUE_DISPATCH_REPORT.md).
