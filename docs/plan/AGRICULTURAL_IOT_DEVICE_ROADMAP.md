@@ -1071,3 +1071,19 @@ upgrade giữ52data tables đạt. Sáu ca live Chưa chạy. A3 còn full-cycle
 coordinator/multi-route/auto queue dispatch; chưa physical flow/actuator
 acceptance hoặc volume-stop. [Chương60](../book/CHAPTER_60_ZONE_QUEUE_SCHEDULE.md),
 [bàn giao](../implementation/LOCAL_ZONE_QUEUE_SCHEDULE_REPORT.md).
+
+
+## Cập nhật22/10/2026 — A3 điều phối một phiên V46
+
+Hoàn thành phần software opt-in một phiên SIMULATOR đã duyệt: PREPARED→
+OPEN/proof→ON1–10s→OFF proof→CLOSE proof→FINISH. Freeze năm UUID/cutoff
+trước IO, fixed30s toàn chu trình, không replay/resume/rearm; shared OFF
+latch với supervisor/manual. Pause không OFF, COMPLETE không chứng minh
+tưới vật lý.765backend/145browser/16parser/lintbuild/native, actual scheduler
+model/DB→COMPLETE và full-app/restart/upgrade55data tables đạt.
+
+A3 còn auto handoff/queue dispatch, chọn/chuyển nhiều route, physical
+actuator/flow safety acceptance và sáu ca Windows/AWS/Wokwi mới chưa chạy.
+Lịch V45 vẫn chỉ tạo lượt; không tự nối lịch tới ON. Chưa volume-stop.
+[Chương61](../book/CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md),
+[bàn giao](../implementation/LOCAL_IRRIGATION_CYCLE_REPORT.md).

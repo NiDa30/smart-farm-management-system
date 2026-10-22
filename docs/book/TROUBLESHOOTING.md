@@ -691,3 +691,19 @@ mới; ZONE_ALREADY_WAITING/QUEUE_FULL không retry mốc đó. Startup hoặc g
 là kế hoạch, lastTick là mốc lưu chứ không bảo đảm worker còn sống. Lượt cũ
 TTL5phút không tự có quyền thực thi; đọc hàng chờ. Lost PUT/reload chỉ GET
 đối chiếu, không gửi lại tự động. Xem [chương60](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md).
+
+
+## Chu trình một phiên không ON/CLOSE hoặc ngắt V46
+
+Cần flag cycle và profile session/control/fence/route đúng, một phiên
+PREPARED chưa có bước, review/config/boot mới. Cửa sổ30s không gia hạn;
+chờ OPEN proof10s/ON proof5s. ACK đơn lẻ hoặc status trước ACK không đủ.
+Đọc action ledger và stopReason, không sửa timestamp hoặc phát lại UUID.
+ON chưa xác nhận vẫn chặn idle/CLOSE dù OFF có proof; cần phục hồi theo
+luồng phiên hiện có. Supervisor/manual OFF có thể thắng shared latch,
+cycle ngắt và không tự đóng van. COMPLETE chỉ là khép với OFF/CLOSED proof.
+
+Pause/HTTP lỗi/đếm ngược hết không chứng minh OFF. Dùng OFF riêng và đối
+chiếu thiết bị. Pending ARM/PAUSE qua reload chỉ GET đúng bản; active sau
+unknown pause chưa là ngừng. Restart không auto OFF/resume hoặc chạy lượt
+khác. Xem [chương61](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md).

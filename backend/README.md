@@ -440,3 +440,18 @@ occurrence/link/cursor, startup and >30s gaps skip missed times. No session,
 MQTT, auto handoff or catch-up. Disabling a plan does not cancel old queue
 requests. [Chapter60](../docs/book/CHAPTER_60_ZONE_QUEUE_SCHEDULE.md),
 [handoff](../docs/implementation/LOCAL_ZONE_QUEUE_SCHEDULE_REPORT.md).
+
+
+## One reviewed simulator irrigation cycle (V46)
+
+`SMARTFARM_IRRIGATION_CYCLE_ENABLED=false` by default. GET/POST
+`/api/v1/irrigation-circuits/{circuit}/session/{session}/cycle`, POST
+`/cycle/pause` with armId. Explicit PREPARED session arm freezes five UUIDs;
+OPEN30s → proof → bounded ON1–10s → OFF proof → CLOSE proof → FINISH.
+Overall30s, OPEN proof10s, ON proof5s, poll250ms; stopAt commits before ON IO.
+Existing identity/fence/route/idle/admission gates remain. Unconfirmed ON
+still blocks CLOSE. COMPLETE means safe closure, not physical watering.
+Pause is not OFF; restart interrupts without resume/replay/automatic OFF.
+No route switching, automatic queue handoff or next session. See
+[chapter61](../docs/book/CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md) and
+[handoff](../docs/implementation/LOCAL_IRRIGATION_CYCLE_REPORT.md).

@@ -1424,3 +1424,22 @@ cũ; full app/read-only và restart có đối chiếu riêng trong báo cáo.
 Sáu ca live Chưa chạy, chưa auto coordinator/multi-route/queue dispatch.
 [Chương60](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md),
 [bàn giao](../implementation/LOCAL_ZONE_QUEUE_SCHEDULE_REPORT.md).
+
+
+## 22/10/2026 — chu trình tự động một phiên V46
+
+Thêm quyền explicit cho PREPARED, năm UUID và cutoff lưu trước IO. Worker
+OPEN/proof→ON bounded→OFF proof→CLOSE proof→FINISH; shared dispatch/session
+gates, pause/manual/restart không replay, guarded late commit và supervisor
+OFF race. Giữ idle guard khi ON unresolved; COMPLETE khác tưới thành công.
+UI tiếng Việt có GET đối chiếu pending qua reload, OFF khẩn độc lập.
+
+Một lỗi compile trong test do lambda giữ biến gán lại đã sửa; hai ca tail
+ban đầu thiếu ON ACK nên idle guard chặn đúng, bổ sung setup thay vì nới
+guard. Final765backend,145browser,16parser,lint/build/native đạt. Actual
+scheduler với models native giữ state và receivers thật khép một phiên,
+4commands/5actions, không real MQTT/GPIO. Upgrade giữ55data tables; GET57
+bảng không đổi; restart56/57giữ nguyên, rule chỉ epoch+1/disabled. Sáu ca
+live Chưa chạy; multi-route/auto queue và phần cứng vẫn mở.
+[Chương61](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md),
+[bàn giao](../implementation/LOCAL_IRRIGATION_CYCLE_REPORT.md).

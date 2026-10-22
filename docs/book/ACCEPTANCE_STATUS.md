@@ -456,3 +456,15 @@ wall-clock scheduler/DB chỉ tạo1queue link;0command/session/run. Upgrade
 V44→V45 giữ52data tables và no-op lần2; full app GET-only/linked queue đạt.
 Đây chưa tưới tự động: defaultfalse, không catchup/start session/dispatch.
 Sáu ca live [chương60](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md) **Chưa chạy**.
+
+
+## V46 — tự điều phối một phiên,22/10/2026
+
+765backend(34mới),120circuit/session+25queue browser,16parser,lint/build
+và native helper đạt,0skip. Scheduler thật→persistent native models→real
+receivers/DB kết thúc COMPLETE,4commands/5actions/0queue. Upgrade V45→V46
+giữ55data tables, bảng cycle rỗng, lần2 no-op. GET-only giữ57tables; restart
+giữ56/57, watering_rule chỉ startup epoch+1/disabled. Full-app GET-only và
+restart đạt. Defaultfalse, explicit one-shot PREPARED, không route switch/
+auto queue/next. Sáu ca live [chương61](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md)
+**Chưa chạy**; chưa AWS/Wokwi/GPIO hoặc hardware safety acceptance.

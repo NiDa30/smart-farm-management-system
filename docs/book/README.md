@@ -125,3 +125,6 @@ Không lưu access key, secret key, token, private key, liên kết xác minh ho
 - [Lượng nước ước tính theo phiên](CHAPTER_59_SESSION_WATER_USAGE.md): FLOW tại trạm theo cửa sổ ý định ON/OFF, độ phủ, hiệu chuẩn và CSV; chưa phân bổ nước tới luống.
 
 - [Lịch tưới theo vùng tạo lượt chờ](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md): giờ/tuần Việt Nam, queue-only opt-in, chống trùng, không tạo bù hoặc tự bật bơm.
+
+
+- [Tự điều phối một phiên trên một nhánh](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md): duyệt một lần OPEN/ON/OFF/CLOSE, proof từng bước, ngắt không replay; chưa tự chạy queue hoặc đổi route.

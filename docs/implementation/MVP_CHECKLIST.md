@@ -365,3 +365,15 @@ Checklist này không ghi nhận lại UI mock đã pass trong onboarding như b
 - [ ] Sáu ca live chương60, coordinator toàn chu kỳ/multi-route/auto queue/physical acceptance.
 
 [Bàn giao](LOCAL_ZONE_QUEUE_SCHEDULE_REPORT.md).
+
+
+## V46 — tự điều phối một phiên trên một nhánh
+
+- [x] Explicit PREPARED arm, five immutable IDs, defaultfalse/SIMULATOR, duration1–10s.
+- [x] OPEN/proof→ON/cutoff→OFF ACK/status→CLOSE ACK/status→FINISH; no replay/next.
+- [x] Shared gates/stop latch, deadline/uncertainty/manual/pause/startup và latecommit.
+- [x] UI pending readback/reload, độc lập OFF khẩn;765backend/145browser/16parser/lintbuild.
+- [x] Actual scheduler/native retained models/receivers/DB, upgrade55data tables, full-app/read/restart.
+- [ ] Sáu ca live chương61, multi-route/auto queue/volume-stop/physical acceptance.
+
+[Bàn giao](LOCAL_IRRIGATION_CYCLE_REPORT.md).

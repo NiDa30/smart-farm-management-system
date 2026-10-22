@@ -680,3 +680,26 @@ và lưu. Đến giờ chỉ có lượt chờ TTL5phút, chưa có phiên hoặ
 Tắt lịch không cancel request cũ/OFF bơm; dùng hàng chờ/phiên tương ứng.
 Restart/lỡ vòng>30s không tạo bù. Sáu ca live
 [chương60](CHAPTER_60_ZONE_QUEUE_SCHEDULE.md) **Chưa chạy**.
+
+
+## 22/10/2026 — chu trình một phiên V46
+
+Pull nhánh, giữ DB/volume/private files và profile LED theo nhánh/session
+đã dùng. Dừng backend cũ; trong Git Bash backend:
+
+```bash
+export SMARTFARM_IRRIGATION_CYCLE_ENABLED=true
+bash tools/backend/run_backend_windows.sh
+```
+
+Giữ control/fence/route/circuit/session profile bật đúng, legacy demo=false.
+Không cần bật closure hoặc queue schedule/handoff để chạy phiên độc lập.
+Frontend terminal riêng `npm run dev`. Điều khiển Actuator → Cấu hình nhánh
+→ Phiên tưới có xác nhận → chuẩn bị phiên mới1–10s → Chu trình tự động một
+phiên → Duyệt chạy một phiên. Cần ACK và feedback đúng trên board; không
+coi ACK tự chứng minh vị trí. Không arm phiên cũ đang phục hồi.
+
+Ngừng tự chuyển bước chỉ ngừng quyền, không OFF; nút OFF khẩn riêng cần
+proof. Restart không resume/auto OFF. Hết hạn, unknown IO hoặc boot/config
+đổi cần phục hồi thủ công. Sáu ca live
+[chương61](CHAPTER_61_SINGLE_IRRIGATION_CYCLE.md) **Chưa chạy**.
