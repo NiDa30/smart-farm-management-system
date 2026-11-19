@@ -29,13 +29,18 @@ thành gói riêng có thử trên Wokwi.
 
 ## Trạng thái kiểm chứng
 
-- `RuleGuards` + `RuleSimulator` **được biên dịch và chạy thật**: 32 phép kiểm tra đạt (bản JUnit
-  tương ứng: `RuleSimulatorTest`, không cần DB).
-- V18 và các câu SQL mới (đọc phao trong 15 giây, đếm lượt theo ngày Việt Nam, lưu có so khớp
-  revision, ghi `guard_revision`) chạy đúng trên PostgreSQL 16, kể cả các ràng buộc từ chối.
-- Cú pháp Java toàn bộ `backend/src`; 4 unit test frontend mới (`guardsApi`), TS `--strict`.
-- Fixture Playwright `automation` được bổ sung route `/guards` và `/nodes` để test cũ không coi là
-  request lạ.
+Đã build và chạy test thật (19/11/2026) trên nhánh đã gộp gói 1, máy cloud + CI GitHub Actions:
 
-Chưa chạy: `./mvnw -B verify` (gồm `WateringGuardsTest` cần `SMARTFARM_TEST_DB_URL`),
-`npm run lint`, `npm run build`, `npm run test:automation`; chưa thử trên AWS/Wokwi.
+| Bước | Kết quả |
+|---|---|
+| `./mvnw -B verify` với PostgreSQL 16 | 169 test (thêm `WateringGuardsTest` 6, `RuleSimulatorTest` 7), 0 lỗi, 0 bỏ qua |
+| `npm run lint`, `npm run build` | đạt |
+| Unit `node:test` | 50/50 (thêm 4 `guardsApi`) |
+| Playwright 7 bộ | 101/101, `test:automation` 33/33 |
+| Firmware `pio run` + test native/pytest | đạt (gói này không đổi firmware) |
+
+Lỗi đã sửa: `WateringGuardsTest` không biên dịch vì hàm phụ `status(String)` che
+`MockMvcResultMatchers.status()` (đổi tên `pumpStatus`); `WateringRuleTest` dùng constructor
+`RuleController` cũ (thiếu `RuleSimulation`).
+
+Chưa thử trên AWS/Wokwi.
