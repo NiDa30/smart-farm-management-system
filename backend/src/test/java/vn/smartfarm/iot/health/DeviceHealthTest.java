@@ -66,7 +66,9 @@ class DeviceHealthTest {
  @Test void offlineOpensAfterSilenceKeepsHysteresisAndClearsOnFreshReceipt() {
   env(now.minusSeconds(61),40);
   var service=health(0);
-  assertEquals(1,service.evaluate(now).opened());
+  var first=service.evaluate(now);
+  assertEquals(1,first.opened(),()->"evaluation="+first+" now="+now+" nodes="+jdbc.queryForList("SELECT node_id,node_type FROM iot_node ORDER BY node_id")
+   +" telemetry="+jdbc.queryForList("SELECT device_id,received_at FROM telemetry")+" alerts="+jdbc.queryForList("SELECT device_id,type,opened_at,cleared_at FROM device_health_alert"));
   assertEquals(1,open("DEVICE_OFFLINE"));
   assertEquals(0,service.evaluate(now).opened(),"an open episode is not duplicated");
   env(now.minusSeconds(45),40); // inside the hysteresis band: neither opens nor clears
