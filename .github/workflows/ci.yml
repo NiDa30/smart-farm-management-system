@@ -1,0 +1,121 @@
+name: ci
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-bookworm
+        env:
+          POSTGRES_DB: smartfarm_test
+          POSTGRES_USER: smartfarm
+          POSTGRES_PASSWORD: smartfarm
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U smartfarm -d smartfarm_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      SMARTFARM_TEST_DB_URL: jdbc:postgresql://127.0.0.1:5432/smartfarm_test
+      SMARTFARM_DB_USER: smartfarm
+      SMARTFARM_DB_PASSWORD: smartfarm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: mvnw verify
+        working-directory: backend
+        run: |
+          set -o pipefail
+          ./mvnw -B verify 2>&1 | tee "$RUNNER_TEMP/mvn.log"
+      - name: Report surefire summary
+        if: always()
+        run: python3 .github/scripts/report.py surefire backend/target/surefire-reports "$RUNNER_TEMP/mvn.log"
+
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: lint
+        run: npm run lint 2>&1 | tee -a "$RUNNER_TEMP/fe.log"; exit ${PIPESTATUS[0]}
+        shell: bash
+      - name: build
+        run: npm run build 2>&1 | tee -a "$RUNNER_TEMP/fe.log"; exit ${PIPESTATUS[0]}
+        shell: bash
+      - name: unit (node:test)
+        run: node --import tsx --test $(find src -name '*.test.ts') 2>&1 | tee -a "$RUNNER_TEMP/fe.log"; exit ${PIPESTATUS[0]}
+        shell: bash
+      - run: npx playwright install --with-deps chromium
+      - name: playwright
+        shell: bash
+        run: |
+          status=0
+          for t in automation events monitoring dashboard safety alerts nodes; do
+            if npm run -s "test:$t" > "$RUNNER_TEMP/pw-$t.log" 2>&1; then r=PASS; else r=FAIL; status=1; fi
+            echo "test:$t $r $(grep -E '^ +[0-9]+ (passed|failed|flaky|skipped)' "$RUNNER_TEMP/pw-$t.log" | tr -s ' ' | tr '\n' ' ')" | tee -a "$RUNNER_TEMP/pw-summary.log"
+            [ "$r" = FAIL ] && cat "$RUNNER_TEMP/pw-$t.log" >> "$RUNNER_TEMP/fe.log"
+          done
+          exit $status
+      - name: Report
+        if: always()
+        run: python3 .github/scripts/report.py log frontend "$RUNNER_TEMP/pw-summary.log" "$RUNNER_TEMP/fe.log"
+
+  firmware:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ hashFiles('firmware/**/platformio.ini') }}
+      - run: pip install -r tools/requirements-day1.txt
+      - name: native + python tests
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            git clone -q --depth 1 --branch v7.4.2 https://github.com/bblanchon/ArduinoJson "$RUNNER_TEMP/ArduinoJson"
+            for f in tools/tests/*_test.cpp; do
+              n=$(basename "$f" .cpp)
+              g++ -std=c++17 -Wall -Wextra -I"$RUNNER_TEMP/ArduinoJson/src" -o "$RUNNER_TEMP/$n" "$f"
+              "$RUNNER_TEMP/$n" > /dev/null
+              echo "native $n PASS"
+            done
+            python -m pytest -q tools/tests
+          } 2>&1 | tee -a "$RUNNER_TEMP/fw.log"
+      - name: PlatformIO builds
+        shell: bash
+        run: |
+          set -o pipefail
+          for d in $(dirname $(ls firmware/*/platformio.ini)); do
+            echo "== $d" | tee -a "$RUNNER_TEMP/fw.log"
+            (cd "$d" && pio run -j 2 2>&1 | tee -a "$RUNNER_TEMP/fw.log" | grep -E 'RAM:|Flash:|SUCCESS|FAILED|error' ) || exit 1
+          done
+      - name: Report
+        if: always()
+        run: python3 .github/scripts/report.py log firmware "$RUNNER_TEMP/fw.log" "$RUNNER_TEMP/fw.log"
