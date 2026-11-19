@@ -9,8 +9,10 @@ public class TelemetryStorage {
     private final TelemetryValidator validator;
     private final SensorRegistry registry;
     private final TelemetryRepository repository;
-    public TelemetryStorage(TelemetryValidator validator, SensorRegistry registry, TelemetryRepository repository, vn.smartfarm.iot.alerts.SensorAlerts alerts) {
-        this.alerts=alerts;
+    private final vn.smartfarm.iot.realtime.RealtimeNotifier realtime;
+    public TelemetryStorage(TelemetryValidator validator, SensorRegistry registry, TelemetryRepository repository, vn.smartfarm.iot.alerts.SensorAlerts alerts,
+                            vn.smartfarm.iot.realtime.RealtimeNotifier realtime) {
+        this.alerts=alerts; this.realtime=realtime;
         this.validator = validator; this.registry = registry; this.repository = repository;
     }
     public Telemetry decodeRegistered(String topic, byte[] payload) {
@@ -23,7 +25,7 @@ public class TelemetryStorage {
     @org.springframework.transaction.annotation.Transactional
     public boolean save(Telemetry value) {
         boolean inserted=repository.insert(value);
-        if (inserted) alerts.observe(value);
+        if (inserted) { alerts.observe(value); realtime.telemetryStored(); }
         return inserted;
     }
 }

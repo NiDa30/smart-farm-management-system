@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import {createLiveLoop} from '../live/iotLive';
 import { Activity, RefreshCw } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import { currentDataState } from '../devices/monitoringApi';
@@ -14,7 +15,7 @@ export const IoTOverview:React.FC<{navigate:(route:string)=>void}>=({navigate})=
   const [elapsed,setElapsed]=useState(0),[requestedAt,setRequestedAt]=useState(0);
   useEffect(()=>{const timer=setInterval(()=>setElapsed(performance.now()),1000);return()=>clearInterval(timer);},[]);
   useEffect(()=>{
-    let active=true;let next:ReturnType<typeof setTimeout>;let controller:AbortController;
+    let active=true;let controller:AbortController;const loop=createLiveLoop(['dashboard'],5000);
     const poll=async()=>{
       controller=new AbortController();const started=performance.now();const timeout=setTimeout(()=>controller.abort(),5000);
       try{
@@ -22,8 +23,8 @@ export const IoTOverview:React.FC<{navigate:(route:string)=>void}>=({navigate})=
         const value=parseOverview(await response.json());
         if(active){setSnapshot(value);setRequestedAt(started);setElapsed(performance.now());setError(false);}
       }catch{if(active)setError(true);}
-      finally{clearTimeout(timeout);if(active){setLoading(false);next=setTimeout(poll,5000);}}
-    };void poll();return()=>{active=false;controller?.abort();clearTimeout(next);};
+      finally{clearTimeout(timeout);if(active){setLoading(false);loop.next(poll);}}
+    };void poll();return()=>{active=false;controller?.abort();loop.dispose();};
   },[refresh]);
   const now=snapshot?Date.parse(snapshot.monitoring.asOf)+Math.max(0,elapsed-requestedAt):0;
   const sensors=snapshot?.monitoring.devices.filter(d=>d.kind==='SENSOR')??[];
@@ -37,7 +38,7 @@ export const IoTOverview:React.FC<{navigate:(route:string)=>void}>=({navigate})=
     {loading&&<p role="status">Đang tải tổng quan…</p>}
     {error&&<p role="alert" className="text-rose-700">Không tải được tổng quan. Các thông tin còn hiển thị là bản chụp trước đó; chưa xác nhận trạng thái hiện tại.</p>}
     {snapshot&&<>
-      <section className="bg-white border rounded-xl p-4 space-y-2"><p role="status">{error?'Chưa xác định kết nối backend':brokerLabels[snapshot.monitoring.mqtt.state]}</p><p className="text-xs text-slate-500">Bản chụp lúc {time(snapshot.monitoring.asOf)} · Tự tải mỗi 5 giây. MQTT backend không xác nhận Wi-Fi của thiết bị.</p></section>
+      <section className="bg-white border rounded-xl p-4 space-y-2"><p role="status">{error?'Chưa xác định kết nối backend':brokerLabels[snapshot.monitoring.mqtt.state]}</p><p className="text-xs text-slate-500">Bản chụp lúc {time(snapshot.monitoring.asOf)} · Tải lại khi có thay đổi (dự phòng mỗi 5 giây). MQTT backend không xác nhận Wi-Fi của thiết bị.</p></section>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <article aria-label="Cảm biến đã đăng ký" className="bg-white border rounded-xl p-4"><h2>Cảm biến đã đăng ký</h2><p className="text-3xl font-bold">{sensors.length}</p><button className="text-emerald-700 underline text-sm" onClick={open('/iot/devices')}>Mở giám sát</button></article>
         <article aria-label="Cảm biến có dữ liệu mới" className="bg-white border rounded-xl p-4"><h2>Cảm biến có dữ liệu mới</h2><p className="text-3xl font-bold">{error?'—':fresh}</p><p className="text-xs text-slate-500">Trong 30 giây; không phải số thiết bị chắc chắn online.</p></article>

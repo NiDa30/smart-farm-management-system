@@ -20,7 +20,10 @@ public class WaterAlerts {
     private record Key(String source,String type,String channel) {}
     private record State(Key key,boolean active,Boolean candidate,int count) {}
     private final JdbcTemplate jdbc;
-    public WaterAlerts(JdbcTemplate jdbc){this.jdbc=jdbc;}
+    private final vn.smartfarm.iot.realtime.RealtimeNotifier realtime;
+    public WaterAlerts(JdbcTemplate jdbc){this(jdbc,vn.smartfarm.iot.realtime.RealtimeNotifier.NONE);}
+    @org.springframework.beans.factory.annotation.Autowired
+    public WaterAlerts(JdbcTemplate jdbc,vn.smartfarm.iot.realtime.RealtimeNotifier realtime){this.jdbc=jdbc;this.realtime=realtime;}
 
     /** Called inside the same transaction that stores a newly inserted packet. */
     @Transactional
@@ -113,6 +116,7 @@ public class WaterAlerts {
         }
         if(alert.clearedAt()!=null)throw bad(HttpStatus.CONFLICT,"Alert has returned to normal");
         jdbc.update("UPDATE water_alert SET acknowledged_at=CURRENT_TIMESTAMP,acknowledgement_note=? WHERE id=?",normalized,id);
+        realtime.alertsChanged();
         return find(id);
     }
     private static ResponseStatusException bad(HttpStatus status,String message){return new ResponseStatusException(status,message);}

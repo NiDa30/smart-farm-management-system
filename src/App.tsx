@@ -52,6 +52,7 @@ import { IoTAssetManager } from './modules/resources/iot-devices/IoTAssetManager
 // IoT & Automation Module Screens (Phân hệ 4 - IoT & Tự động hóa)
 import { IoTDashboard } from './modules/iot/dashboard/IoTDashboard';
 import { DeviceMonitor } from './modules/iot/devices/DeviceMonitor';
+import { DeviceStatisticsPanel } from './modules/iot/devices/DeviceStatisticsPanel';
 import { SensorRealtime } from './modules/iot/realtime/SensorRealtime';
 import { HistoricalData } from './modules/iot/history/HistoricalData';
 import { PumpControl } from './modules/iot/control/PumpControl';
@@ -90,6 +91,7 @@ import { AnomalyCenter } from './modules/analytics/anomalies/AnomalyCenter';
 import { ForecastCenter } from './modules/analytics/forecast/ForecastCenter';
 import { ReportBuilder } from './modules/analytics/reports/ReportBuilder';
 import { ReportsPreview } from './modules/reports/ReportsPreview';
+import { LiveStatusBadge } from './modules/iot/live/LiveStatusBadge';
 
 const AppContent: React.FC = () => {
   const { currentRoute, feedbackToast } = useApp();
@@ -259,7 +261,8 @@ const AppContent: React.FC = () => {
       return <IoTDashboard />;
     }
     if (currentRoute.startsWith('/iot/devices')) {
-      return <DeviceMonitor />;
+      // Statistics sit beside the monitor so the monitor keeps a single API dependency.
+      return <div className="space-y-4"><DeviceMonitor /><div className="max-w-6xl mx-auto"><DeviceStatisticsPanel /></div></div>;
     }
     if (currentRoute.startsWith('/iot/realtime')) {
       return <SensorRealtime />;
@@ -449,7 +452,10 @@ const AppContent: React.FC = () => {
 
         {/* Scrollable Viewport Frame */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F5F7F8]">
-          <div className="max-w-7xl mx-auto">{renderRoute()}</div>
+          <div className="max-w-7xl mx-auto">
+            {currentRoute.startsWith('/iot') && <div className="mb-3 flex justify-end"><LiveStatusBadge /></div>}
+            {renderRoute()}
+          </div>
         </main>
       </div>
 

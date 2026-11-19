@@ -14,7 +14,8 @@ public class SensorRegistryController {
     public record NewArea(String id, String name) {}
     public record NewSensor(String deviceId, String name, String areaId) {}
     private final SensorRegistry registry;
-    public SensorRegistryController(SensorRegistry registry) { this.registry = registry; }
+    private final vn.smartfarm.iot.realtime.RealtimeNotifier realtime;
+    public SensorRegistryController(SensorRegistry registry, vn.smartfarm.iot.realtime.RealtimeNotifier realtime) { this.registry = registry; this.realtime = realtime; }
     @GetMapping("/areas") public List<SensorRegistry.Area> areas() { return registry.areas(); }
     @GetMapping("/sensors") public List<SensorRegistry.Summary> sensors() { return registry.summaries(); }
     @GetMapping("/areas/{id}") public ResponseEntity<SensorRegistry.Area> area(@PathVariable String id) {
@@ -31,6 +32,7 @@ public class SensorRegistryController {
         catch (DataIntegrityViolationException error) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Area code or name already exists");
         }
+        realtime.nodesChanged();
         return ResponseEntity.created(URI.create("/api/v1/areas/" + id)).body(new SensorRegistry.Area(id, name));
     }
     @PostMapping("/sensors")
@@ -43,6 +45,7 @@ public class SensorRegistryController {
         catch (DataIntegrityViolationException error) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Sensor code already exists");
         }
+        realtime.nodesChanged();
         return ResponseEntity.created(URI.create("/api/v1/sensors/" + id))
             .body(new SensorRegistry.Sensor(id, name, area, "ENVIRONMENT"));
     }

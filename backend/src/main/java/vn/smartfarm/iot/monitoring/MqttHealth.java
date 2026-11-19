@@ -16,12 +16,16 @@ public class MqttHealth {
         this.enabled=enabled;
         state=new AtomicReference<>(new Snapshot(enabled?"STARTING":"DISABLED",Instant.now(),null));
     }
+    private volatile vn.smartfarm.iot.realtime.RealtimeNotifier realtime=vn.smartfarm.iot.realtime.RealtimeNotifier.NONE;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    void setRealtime(vn.smartfarm.iot.realtime.RealtimeNotifier realtime) { this.realtime=realtime; }
     public Snapshot snapshot() { return state.get(); }
     private synchronized void transition(String target) {
         if (!enabled) return;
         if (!state.get().state().equals(target)) {
             connectionVersion++;
             state.updateAndGet(previous -> new Snapshot(target,Instant.now(),previous.lastProcessedAt()));
+            realtime.publish("monitoring","safety","dashboard");
         }
     }
     public synchronized long connectionVersion() { return connectionVersion; }

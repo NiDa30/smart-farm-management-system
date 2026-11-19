@@ -1,5 +1,6 @@
 import {WaterHistoryPanel} from './WaterHistoryPanel';
 import React,{useEffect,useRef,useState} from 'react';
+import {createLiveLoop} from '../live/iotLive';
 import {channelFreshness,createWaterNode,matchesDeclaration,metricLabels,NodeSaveError,parseNode,parseNodes,tankState,tankLabels,sourceLabels,type NodeChannel,type NodesSnapshot,type WaterDeclaration} from './nodeApi';
 const labels={EMPTY:'Chưa có dữ liệu',CLOCK_SKEW:'Lệch giờ nguồn',STALE:'Dữ liệu cũ',SENSOR_FAULT:'Cảm biến báo lỗi',FRESH:'Dữ liệu mới'};
 export function WaterNodesPanel(){
@@ -11,7 +12,7 @@ export function WaterNodesPanel(){
  useEffect(()=>{mounted.current=true;const tick=setInterval(()=>setNow(performance.now()),1000);return()=>{mounted.current=false;clearInterval(tick);submission.current?.abort();};},[]);
  useEffect(()=>{
   if(history)return;
-  let active=true;let timer:ReturnType<typeof setTimeout>;let controller:AbortController;
+  let active=true;let controller:AbortController;const loop=createLiveLoop(['nodes'],5000);
   async function poll(){controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),8000);
    try{
     const [n,a]=await Promise.all([fetch('/api/v1/nodes',{signal:controller.signal,cache:'no-store'}),fetch('/api/v1/areas',{signal:controller.signal,cache:'no-store'})]);
@@ -19,8 +20,8 @@ export function WaterNodesPanel(){
     if(!Array.isArray(areaValue)||!areaValue.every(v=>v&&typeof v.id==='string'&&typeof v.name==='string'))throw new Error();
     if(active){receipt.current=performance.now();setSnapshot(value);setAreas(areaValue);setError('');setNow(performance.now());}
    }catch{if(active)setError('Không tải được node/kênh. Dữ liệu đã lưu còn hiển thị; chưa xác nhận dữ liệu mới.');}
-   finally{clearTimeout(timeout);if(active)timer=setTimeout(poll,5000);}
-  }void poll();return()=>{active=false;clearTimeout(timer);controller?.abort();};
+   finally{clearTimeout(timeout);if(active)loop.next(poll);}
+  }void poll();return()=>{active=false;loop.dispose();controller?.abort();};
  },[reload,!!history]);
  const serverNow=snapshot?Date.parse(snapshot.asOf)+Math.max(0,now-receipt.current):now;
  function declaration():WaterDeclaration{return {nodeId:id.trim(),name:name.trim(),areaId:area,channels:[

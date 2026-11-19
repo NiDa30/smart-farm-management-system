@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import {createLiveLoop} from '../live/iotLive';
 import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import { parseSafety, reasonLabels, ruleLabels, safetyFreshness, type SafetySnapshot } from './safetyApi';
@@ -13,7 +14,7 @@ export const SafetyPanel:React.FC<{navigate:(route:string)=>void}>=({navigate})=
   const [refresh,setRefresh]=useState(0),[elapsed,setElapsed]=useState(0),[loadedAt,setLoadedAt]=useState(0);
   useEffect(()=>{const clock=setInterval(()=>setElapsed(performance.now()),1000);return()=>clearInterval(clock);},[]);
   useEffect(()=>{
-    let active=true;let next:ReturnType<typeof setTimeout>;let controller:AbortController;
+    let active=true;let controller:AbortController;const loop=createLiveLoop(['safety','pump','monitoring'],3000);
     const poll=async()=>{
       controller=new AbortController();const requestedAt=performance.now();const timeout=setTimeout(()=>controller.abort(),5000);
       try{
@@ -22,8 +23,8 @@ export const SafetyPanel:React.FC<{navigate:(route:string)=>void}>=({navigate})=
         const value=parseSafety(await response.json());
         if(active){setSnapshot(value);setLoadedAt(requestedAt);setElapsed(performance.now());setError('');}
       }catch{if(active)setError('Không tải được trạng thái an toàn. Các bản ghi giữ lại thuộc lần tải trước; chưa thể kết luận thiết bị mất mạng.');}
-      finally{clearTimeout(timeout);if(active){setLoading(false);next=setTimeout(poll,3000);}}
-    };void poll();return()=>{active=false;controller?.abort();clearTimeout(next);};
+      finally{clearTimeout(timeout);if(active){setLoading(false);loop.next(poll);}}
+    };void poll();return()=>{active=false;controller?.abort();loop.dispose();};
   },[refresh]);
   const current=!!snapshot&&!error&&elapsed-loadedAt<10000;
   const now=snapshot?Date.parse(snapshot.asOf)+Math.max(0,elapsed-loadedAt):0;
@@ -37,7 +38,7 @@ export const SafetyPanel:React.FC<{navigate:(route:string)=>void}>=({navigate})=
     <section className="bg-white border rounded-xl p-4 space-y-2" aria-label="Kết nối backend">
       <p role="status">{current&&snapshot?mqttLabels[snapshot.mqtt.state]:loading&&!snapshot?'Đang tải an toàn…':'Chưa xác định kết nối backend'}</p>
       <p className="text-sm">Chỉ đọc dữ liệu FARM001 · ENV01 → PUMP01. Các thông tin dưới đây giúp đối chiếu vận hành, không phải xác nhận toàn hệ thống đang an toàn hoặc bơm vật lý đang chạy.</p>
-      {snapshot&&<p className="text-xs text-slate-500">Lần tải thành công: {time(snapshot.asOf)} · Tự tải mỗi 3 giây. Khi API lỗi, số liệu còn lại chỉ là lịch sử.</p>}
+      {snapshot&&<p className="text-xs text-slate-500">Lần tải thành công: {time(snapshot.asOf)} · Tải lại khi có thay đổi (dự phòng mỗi 3 giây). Khi API lỗi, số liệu còn lại chỉ là lịch sử.</p>}
       {error&&<p role="alert" className="text-rose-700">{error}</p>}
     </section>
     {snapshot&&<>

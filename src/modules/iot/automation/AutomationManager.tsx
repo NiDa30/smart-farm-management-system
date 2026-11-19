@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {createLiveLoop} from '../live/iotLive';
 import { IrrigationCalendarEditor } from './IrrigationCalendarEditor';
 import {parseCalendar,sameCalendar,vietnamTime,type CalendarSettings,type CalendarView} from './calendarApi';
 import { WateringSettingsEditor } from './WateringSettingsEditor';
@@ -25,7 +26,7 @@ export const AutomationManager: React.FC = () => {
   const unconfirmedChange=useRef<boolean|null>(null);
   useEffect(() => {
     if (sending) return;
-    let active=true; let timer: ReturnType<typeof setTimeout>; let controller: AbortController;
+    let active=true; let controller: AbortController;const loop=createLiveLoop(['automation','pump','commands','telemetry'],2000);
     const poll=async () => {
       const version=requestVersion.current;
       controller=new AbortController(); const timeout=setTimeout(()=>controller.abort(),5000);
@@ -40,8 +41,8 @@ export const AutomationManager: React.FC = () => {
           if (unconfirmedChange.current===state.enabled) { unconfirmedChange.current=null; setActionError(''); }
         }
       } catch { if(active && version===requestVersion.current) { setRule(null); setLoadError('Không tải được quy tắc. Kiểm tra backend.'); } }
-      finally { clearTimeout(timeout); if(active) timer=setTimeout(poll,2000); }
-    }; void poll(); return()=>{active=false;controller?.abort();clearTimeout(timer);};
+      finally { clearTimeout(timeout); if(active) loop.next(poll); }
+    }; void poll(); return()=>{active=false;controller?.abort();loop.dispose();};
   },[refresh,sending]);
   const changeSettings=async(input?:WateringSettings):Promise<WateringSettings|null>=>{
     requestVersion.current++;

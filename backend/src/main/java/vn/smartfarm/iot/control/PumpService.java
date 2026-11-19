@@ -31,9 +31,10 @@ public class PumpService {
     private final ObjectMapper mapper;
     private final ObjectProvider<CommandTransport> transports;
     private final boolean enabled;
+    private final vn.smartfarm.iot.realtime.RealtimeNotifier realtime;
     public PumpService(JdbcTemplate jdbc, ObjectMapper mapper, ObjectProvider<CommandTransport> transports,
-                       @Value("${smartfarm.control.enabled:false}") boolean enabled) {
-        this.jdbc=jdbc; this.mapper=mapper.copy().enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION).enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS); this.transports=transports; this.enabled=enabled;
+                       @Value("${smartfarm.control.enabled:false}") boolean enabled, vn.smartfarm.iot.realtime.RealtimeNotifier realtime) {
+        this.realtime=realtime; this.jdbc=jdbc; this.mapper=mapper.copy().enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION).enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS); this.transports=transports; this.enabled=enabled;
     }
     public Status status() {
         var rows=jdbc.query("SELECT * FROM pump_status WHERE singleton=1", (rs,n) -> {
@@ -98,8 +99,10 @@ public class PumpService {
             jdbc.update("UPDATE pump_command SET state='SENT' WHERE command_id=? AND state='PENDING'",id);
         } catch (Exception error) {
             jdbc.update("UPDATE pump_command SET state='PUBLISH_UNCERTAIN' WHERE command_id=? AND state='PENDING'",id);
+            realtime.commandChanged();
             throw new UncertainPublish(id);
         }
+        realtime.commandChanged();
         return jdbc.query("SELECT * FROM pump_command WHERE command_id=?", (rs,n) ->
             new Command(rs.getObject("command_id",UUID.class),rs.getString("action"),rs.getObject("duration_seconds",Integer.class),
                 rs.getTimestamp("issued_at").toInstant(),rs.getTimestamp("expires_at").toInstant(),
@@ -132,6 +135,7 @@ public class PumpService {
                     WHERE (EXCLUDED.boot_id = pump_status.boot_id AND EXCLUDED.observed_at >= pump_status.observed_at AND EXCLUDED.sequence > pump_status.sequence)
                        OR (EXCLUDED.boot_id <> pump_status.boot_id AND EXCLUDED.observed_at > pump_status.observed_at)
                     """,boot,node.path("sequence").asLong(),Timestamp.from(timestamp),state,node.path("safetyLockout").asBoolean(),reason);
+                realtime.pumpChanged();
             } else if (topic.equals("smartfarm/FARM001/PUMP01/ack")) {
                 if (!node.path("commandId").asText().matches("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")) throw new IllegalArgumentException();
                 UUID command=UUID.fromString(node.path("commandId").asText());
@@ -146,6 +150,7 @@ public class PumpService {
                     UPDATE pump_command SET state=?,reported_state=?,error_code=?,acknowledged_at=CURRENT_TIMESTAMP,ack_boot_id=?,ack_sequence=?
                     WHERE command_id=? AND state IN ('PENDING','SENT','PUBLISH_UNCERTAIN') AND ? >= issued_at AND ? <= expires_at + INTERVAL '5 seconds'
                     """,success ? "EXECUTED":"FAILED",state,error,boot,node.path("sequence").asLong(),command,Timestamp.from(timestamp),Timestamp.from(timestamp));
+                realtime.pumpChanged();
             } else throw new IllegalArgumentException();
         } catch (Exception error) { throw new IllegalArgumentException("Invalid or unavailable control message",error); }
     }
