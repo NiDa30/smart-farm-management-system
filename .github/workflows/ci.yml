@@ -66,7 +66,9 @@ jobs:
       - name: unit (node:test)
         run: node --import tsx --test $(find src -name '*.test.ts') 2>&1 | tee -a "$RUNNER_TEMP/fe.log"; exit ${PIPESTATUS[0]}
         shell: bash
-      - run: npx playwright install --with-deps chromium
+      - name: install chromium
+        shell: bash
+        run: npx playwright install --with-deps chromium 2>&1 | tee -a "$RUNNER_TEMP/fe.log" | tail -5; exit ${PIPESTATUS[0]}
       - name: playwright
         shell: bash
         run: |
