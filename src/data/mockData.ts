@@ -1052,7 +1052,7 @@ export const INITIAL_SETTINGS: SystemSettingsState = {
   integrations: {
     mqttBrokerUrl: 'ssl://iot.smartfarm.anphu.vn',
     mqttPort: 8883,
-    weatherApiKey: 'wapi_live_***ben_tre_station',
+    weatherApiKey: 'YOUR_WEATHER_API_KEY',
     qrDomain: 'https://qr.smartfarm.vn/plant/',
     smsGatewayEnabled: true,
   },
