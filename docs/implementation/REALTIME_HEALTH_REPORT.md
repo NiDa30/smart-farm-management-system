@@ -34,23 +34,21 @@ nếu không, chỉ báo hiện "đang kết nối lại" và màn hình vẫn t
 
 ## Trạng thái kiểm chứng
 
-Môi trường làm việc không tải được Maven/npm, nên **chưa build và chưa chạy test Java,
-Vite hay Playwright**. Đã kiểm chứng được:
+Đã build và chạy test thật (19/11/2026), cả trên máy cloud lẫn CI GitHub Actions (`.github/workflows/ci.yml`):
 
-- Migration V1–V17 chạy sạch trên PostgreSQL 16; các câu SQL mới (thống kê, giá trị đứng,
-  mất tín hiệu, mở/đóng đợt, khóa advisory) chạy trên dữ liệu mẫu và cho kết quả đúng.
-- Cú pháp Java của toàn bộ `backend/src` (javac, bước phân tích cú pháp).
-- 9 unit test frontend (`node:test`, TypeScript `--strict`): kết nối, backoff, watchdog, đồng bộ
-  lại, vòng tải không chạy song song, kiểm tra phản hồi cảnh báo sức khỏe và thống kê.
-- So sánh lỗi kiểu giữa `main` và nhánh này với bản khai báo React tối giản: không có lỗi mới
-  ngoài loại lỗi do bản khai báo đó (giống hệt các file sẵn có).
+| Bước | Kết quả |
+|---|---|
+| `cd backend && ./mvnw -B verify` với PostgreSQL 16, `SMARTFARM_TEST_DB_URL=...?currentSchema=telemetry_test` | 156 test, 0 lỗi, 0 bỏ qua |
+| `npm ci`, `npm run lint`, `npm run build` | đạt |
+| Unit `node --import tsx --test src/**/*.test.ts` | 46/46 |
+| Playwright `test:automation/events/monitoring/dashboard/safety/alerts/nodes` | 33/8/7/8/10/17/18, tất cả đạt |
+| Firmware `pio run` (esp32, water-node), 3 test native C++, 31 pytest `tools/tests` | đạt |
 
-Cần chạy trên máy có mạng trước khi merge:
+Lỗi đã sửa khi kiểm chứng:
 
-```bash
-cd backend && ./mvnw -B verify      # gồm IotRealtimeTest; DeviceHealthTest cần SMARTFARM_TEST_DB_URL
-npm run lint && npm run build
-npm run test:alerts && npm run test:monitoring && npm run test:dashboard && npm run test:safety
-```
+- `npm ci` hỏng ngay từ `main`: esbuild `^0.25` xung đột peer với vite 8.3.2 → nâng `^0.28`.
+- `WateringRuleTest` không biên dịch: `RuleController` đã thêm tham số `RealtimeNotifier`.
+- `DeviceHealthTest` chập chờn: mẫu cách đúng 61 giây có thể đọc lại thành 60,99999 giây do
+  PostgreSQL làm tròn micro giây → dùng 62 giây.
 
 Chưa thử trên Windows/AWS/Wokwi: độ trễ từ gói MQTT đến giao diện, hành vi khi mất mạng thật.
