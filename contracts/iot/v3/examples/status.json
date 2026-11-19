@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 3,
+  "deviceId": "VALVE01",
+  "bootId": "3e4d1219-4d80-456c-8561-ec0b744f5184",
+  "sequence": 43,
+  "timestamp": "2026-11-19T01:00:01Z",
+  "connection": "ONLINE",
+  "reportedState": "ON",
+  "safetyLockout": false,
+  "stateReason": "COMMAND_ON",
+  "activeCommandId": "6f1c2e1a-8d43-4c55-9b0e-7f6a5e3d2c10"
+}

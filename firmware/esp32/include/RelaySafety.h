@@ -6,9 +6,11 @@
 class RelaySafety {
  public:
   enum Action { ON, OFF, RESET };
+  // interlock: a cross-actuator reason to refuse ON (e.g. NO_VALVE_OPEN). It is cached
+  // like any other rejection so a delayed duplicate cannot succeed once it clears.
   const char* apply(const char* id, Action action, unsigned seconds,
                     int64_t issued, int64_t expires, int64_t epoch, uint32_t tick,
-                    unsigned futureToleranceSeconds = 2) {
+                    unsigned futureToleranceSeconds = 2, const char* interlock = nullptr) {
     tickSafety(tick, true);
     for (auto &item : cache) {
       if (item.used && epoch <= item.expires && strcmp(item.id, id) == 0) {
@@ -23,8 +25,9 @@ class RelaySafety {
     else if (issued <= 0 || expires <= issued || expires - issued > 15) error = "INVALID_LIFETIME";
     else if (issued > epoch + (futureToleranceSeconds > 10 ? 10 : futureToleranceSeconds)) error = "CLOCK_SKEW";
     else if (expires <= epoch) error = "EXPIRED";
-    else if (action == ON && (seconds < 1 || seconds > 3600)) error = "INVALID_DURATION";
+    else if (action == ON && (seconds < 1 || seconds > maxSeconds)) error = "INVALID_DURATION";
     else if (!waterAvailable && action != OFF) error = "WATER_LOW";
+    else if (action == ON && interlock) error = interlock;
     else if (action == ON && locked) error = "SAFETY_LOCKOUT";
     else if (action == ON && running) error = "BUSY";
     else if (action == RESET && running) error = "BUSY";
@@ -55,6 +58,9 @@ class RelaySafety {
     return false;
   }
   bool isOn() const { return running; }
+  // Hard cap for one ON command; PUMP01 keeps the contract's 3600 s.
+  void setMaxSeconds(unsigned seconds) { maxSeconds = seconds < 1 ? 1 : seconds > 86400 ? 86400 : seconds; }
+  unsigned maxDuration() const { return maxSeconds; }
   bool lockout() const { return locked; }
   bool setWaterAvailable(bool available) {
     bool changed = available != waterAvailable;
@@ -75,4 +81,5 @@ class RelaySafety {
   bool running = false, locked = false;
   bool waterAvailable = true;
   uint32_t started = 0, durationMs = 0;
+  unsigned maxSeconds = 3600;
 };

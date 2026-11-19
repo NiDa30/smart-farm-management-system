@@ -1,0 +1,5 @@
+# Wokwi CI self-test for the multi-relay firmware (env:wokwi_selftest). No network.
+[wokwi]
+version = 1
+firmware = "../../.pio/build/wokwi_selftest/firmware.bin"
+elf = "../../.pio/build/wokwi_selftest/firmware.elf"

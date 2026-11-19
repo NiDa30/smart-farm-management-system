@@ -24,3 +24,22 @@
 
 // Wokwi-only future issuedAt tolerance; production/default remains 2 seconds.
 #define FARM_WOKWI_CLOCK_TOLERANCE_SECONDS 2
+
+// Extra actuators on ENV01 (contract v3, see contracts/iot/v3). 0 keeps PUMP01 only.
+// Wokwi loads are LEDs on the GPIO; real hardware needs relay modules and its own
+// electrical interlocks. Use -1 to leave a channel out.
+#define FARM_ACTUATORS_ENABLED 0
+#define FARM_VALVE_PINS {25, 33, 32, 13}   // VALVE01..VALVE04, one per zone
+#define FARM_FAN_PIN 18
+#define FARM_LIGHT_PIN 19
+#define FARM_MIST_PIN 21
+// One shared pump: refuse PUMP01 ON without an open valve; closing the last valve stops it.
+#define FARM_PUMP_REQUIRES_VALVE 1
+#define FARM_MAX_OPEN_VALVES 1
+// Hard caps per ON command (seconds). PUMP01 stays at 3600.
+#define FARM_VALVE_MAX_SECONDS 3600
+#define FARM_FAN_MAX_SECONDS 14400
+#define FARM_LIGHT_MAX_SECONDS 14400
+#define FARM_MIST_MAX_SECONDS 600
+// Misting draws from the same reservoir: dry float trips it with lockout, like the pump.
+#define FARM_MIST_USES_RESERVOIR 1

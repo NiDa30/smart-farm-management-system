@@ -1,0 +1,267 @@
+name: 'Multi-relay safety self-test (PUMP01 + valves + fan/light/mist)'
+version: 1
+author: 'smartfarm'
+steps:
+  - wait-serial: 'SELFTEST_READY'
+  # Boot: every output OFF; the open float latches the reservoir users.
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 33
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 32
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 13
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 18
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 19
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 21
+      value: 0
+  - set-control:
+      part-id: float_btn
+      name: pressed
+      value: 1
+  - wait-serial: 'SELFTEST_CHECK 1 boot-dry-latch-reset'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 33
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 32
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 13
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 18
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 19
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 21
+      value: 0
+  # PUMP01 without an open valve is refused (NO_VALVE_OPEN).
+  - wait-serial: 'COMMAND_EXECUTED id=PUMP01 action=ON state=OFF result=NO_VALVE_OPEN'
+  - wait-serial: 'SELFTEST_CHECK 2 pump-without-valve'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 0
+  # One zone at a time (VALVE_LIMIT).
+  - wait-serial: 'COMMAND_EXECUTED id=VALVE02 action=ON state=OFF result=VALVE_LIMIT'
+  - wait-serial: 'SELFTEST_CHECK 3 one-zone-at-a-time'
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 33
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - wait-serial: 'SELFTEST_CHECK 4 pump-with-valve'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 1
+  # PUMP01 hard cap (3 s) ends the run; the valve stays open.
+  - wait-serial: 'RELAY_OFF id=PUMP01 reason=TIMER_EXPIRED'
+  - wait-serial: 'SELFTEST_CHECK 5 pump-hard-cap'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 1
+  - wait-serial: 'SELFTEST_CHECK 6 pump-again'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 1
+  # Closing the last valve stops the pump in the same pass.
+  - wait-serial: 'RELAY_OFF id=PUMP01 reason=VALVE_CLOSED'
+  - wait-serial: 'SELFTEST_CHECK 7 last-valve-closed-stops-pump'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 0
+  - wait-serial: 'SELFTEST_CHECK 8 all-on'
+  - expect-pin:
+      part-id: esp
+      name: 18
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 19
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 21
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 32
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 33
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 13
+      value: 0
+  # Float opens (dry): pump and mist OFF with lockout; fan, light and valve keep running.
+  - set-control:
+      part-id: float_btn
+      name: pressed
+      value: 0
+  - wait-serial: 'SELFTEST_CHECK 9 dry-trips-reservoir-users'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 21
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 18
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 19
+      value: 1
+  - expect-pin:
+      part-id: esp
+      name: 32
+      value: 1
+  # Link loss: everything OFF.
+  - wait-serial: 'SELFTEST_CHECK 10 network-loss-all-off'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 33
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 32
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 13
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 18
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 19
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 21
+      value: 0
+  - wait-serial: 'SELFTEST_DONE lockouts pump=1 valve3=1 fan=1 light=1'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 33
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 32
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 13
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 18
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 19
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 21
+      value: 0

@@ -1,0 +1,347 @@
+{
+  "version": 1,
+  "author": "smartfarm",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 90,
+      "left": 25,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "float_btn",
+      "top": -60,
+      "left": 300,
+      "attrs": {
+        "color": "blue",
+        "label": "Phao: nhan = co nuoc"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "pump_led",
+      "top": 10,
+      "left": 360,
+      "attrs": {
+        "color": "green",
+        "label": "PUMP01"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "pump_r",
+      "top": 20,
+      "left": 300,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "valve1_led",
+      "top": 250,
+      "left": -200,
+      "attrs": {
+        "color": "blue",
+        "label": "VALVE01 - zone 1"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "valve1_r",
+      "top": 260,
+      "left": -260,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "valve2_led",
+      "top": 295,
+      "left": -200,
+      "attrs": {
+        "color": "blue",
+        "label": "VALVE02 - zone 2"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "valve2_r",
+      "top": 305,
+      "left": -260,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "valve3_led",
+      "top": 340,
+      "left": -200,
+      "attrs": {
+        "color": "blue",
+        "label": "VALVE03 - zone 3"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "valve3_r",
+      "top": 350,
+      "left": -260,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "valve4_led",
+      "top": 385,
+      "left": -200,
+      "attrs": {
+        "color": "blue",
+        "label": "VALVE04 - zone 4"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "valve4_r",
+      "top": 395,
+      "left": -260,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "fan_led",
+      "top": 430,
+      "left": -200,
+      "attrs": {
+        "color": "white",
+        "label": "FAN01"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "fan_r",
+      "top": 440,
+      "left": -260,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "light_led",
+      "top": 475,
+      "left": -200,
+      "attrs": {
+        "color": "yellow",
+        "label": "LIGHT01"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "light_r",
+      "top": 485,
+      "left": -260,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "mist_led",
+      "top": 520,
+      "left": -200,
+      "attrs": {
+        "color": "cyan",
+        "label": "MIST01"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "mist_r",
+      "top": 530,
+      "left": -260,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "float_btn:1.l",
+      "esp:27",
+      "blue",
+      []
+    ],
+    [
+      "float_btn:2.l",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:26",
+      "pump_r:1",
+      "green",
+      []
+    ],
+    [
+      "pump_r:2",
+      "pump_led:A",
+      "green",
+      []
+    ],
+    [
+      "pump_led:C",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "esp:25",
+      "valve1_r:1",
+      "green",
+      []
+    ],
+    [
+      "valve1_r:2",
+      "valve1_led:A",
+      "green",
+      []
+    ],
+    [
+      "valve1_led:C",
+      "esp:GND.3",
+      "black",
+      []
+    ],
+    [
+      "esp:33",
+      "valve2_r:1",
+      "green",
+      []
+    ],
+    [
+      "valve2_r:2",
+      "valve2_led:A",
+      "green",
+      []
+    ],
+    [
+      "valve2_led:C",
+      "esp:GND.3",
+      "black",
+      []
+    ],
+    [
+      "esp:32",
+      "valve3_r:1",
+      "green",
+      []
+    ],
+    [
+      "valve3_r:2",
+      "valve3_led:A",
+      "green",
+      []
+    ],
+    [
+      "valve3_led:C",
+      "esp:GND.3",
+      "black",
+      []
+    ],
+    [
+      "esp:13",
+      "valve4_r:1",
+      "green",
+      []
+    ],
+    [
+      "valve4_r:2",
+      "valve4_led:A",
+      "green",
+      []
+    ],
+    [
+      "valve4_led:C",
+      "esp:GND.3",
+      "black",
+      []
+    ],
+    [
+      "esp:18",
+      "fan_r:1",
+      "green",
+      []
+    ],
+    [
+      "fan_r:2",
+      "fan_led:A",
+      "green",
+      []
+    ],
+    [
+      "fan_led:C",
+      "esp:GND.3",
+      "black",
+      []
+    ],
+    [
+      "esp:19",
+      "light_r:1",
+      "green",
+      []
+    ],
+    [
+      "light_r:2",
+      "light_led:A",
+      "green",
+      []
+    ],
+    [
+      "light_led:C",
+      "esp:GND.3",
+      "black",
+      []
+    ],
+    [
+      "esp:21",
+      "mist_r:1",
+      "green",
+      []
+    ],
+    [
+      "mist_r:2",
+      "mist_led:A",
+      "green",
+      []
+    ],
+    [
+      "mist_led:C",
+      "esp:GND.3",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}
