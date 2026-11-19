@@ -36,10 +36,10 @@ class WateringGuardsTest {
   jdbc.update("INSERT INTO iot_node(node_id,name,area_id,node_type,telemetry_version) VALUES('WGUARD','Guard water','AREA001','WATER',2) ON CONFLICT DO NOTHING");
   jdbc.update("INSERT INTO iot_channel(node_id,channel_id,metric,unit) VALUES('WGUARD','LOW','WATER_PRESENT','boolean'),('WGUARD','FLOW','FLOW_RATE','L/min') ON CONFLICT DO NOTHING");
   reset(transport);when(transport.controlConnected()).thenReturn(true);
-  status("OFF"); sample(45,25,50,Instant.now().minusSeconds(10));
+  pumpStatus("OFF"); sample(45,25,50,Instant.now().minusSeconds(10));
  }
  void sample(double soil,double temperature,double humidity,Instant at) { repository.insert(new Telemetry(1,"ENV01",sensorBoot,seq++,at,temperature,humidity,soil,0)); }
- void status(String state) {
+ void pumpStatus(String state) {
   String text="{\"schemaVersion\":1,\"deviceId\":\"PUMP01\",\"bootId\":\"ab6cfc5e-18ff-4a01-852b-03604df6b52f\",\"sequence\":"+(seq++)+",\"timestamp\":\""+Instant.now()+"\",\"reportedState\":\""+state+"\",\"safetyLockout\":false,\"connection\":\"ONLINE\"}";
   pump.receive("smartfarm/FARM001/PUMP01/status",text.getBytes());
  }
