@@ -51,7 +51,7 @@ public class NodeInventory {
                 channels.computeIfAbsent(node,key->new ArrayList<>()).add(new Channel(rs.getString("channel_id"),metric,rs.getString("unit"),rs.getString("calibration_version"),reading));
             });
         Map<String,List<Actuator>> actuators=new HashMap<>();
-        jdbc.query("SELECT * FROM iot_actuator_binding ORDER BY actuator_id",rs->{actuators.computeIfAbsent(rs.getString("node_id"),key->new ArrayList<>())
+        jdbc.query("SELECT * FROM iot_actuator_binding ORDER BY actuator_type<>'PUMP',actuator_id",rs->{actuators.computeIfAbsent(rs.getString("node_id"),key->new ArrayList<>())
             .add(new Actuator(rs.getString("actuator_id"),rs.getString("actuator_type"),rs.getString("command_contract")));});
         var nodes=jdbc.query("SELECT * FROM iot_node ORDER BY area_id,node_id",(rs,n)->new Node(rs.getString("node_id"),rs.getString("name"),rs.getString("area_id"),
             rs.getString("node_type"),rs.getInt("telemetry_version"),channels.getOrDefault(rs.getString("node_id"),List.of()),actuators.getOrDefault(rs.getString("node_id"),List.of())));

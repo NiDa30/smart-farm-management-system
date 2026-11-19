@@ -14,8 +14,12 @@ def esc(text: str) -> str:
     return text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
 
 
-def emit(kind: str, title: str, body: str) -> None:
-    print(f'::{kind} title={esc(title)}::{esc(body[-60000:])}')
+LIMIT = 3800  # GitHub keeps roughly the first 4 KB of an annotation message
+
+
+def emit(kind: str, title: str, body: str, keep_end: bool = False) -> None:
+    body = body[-LIMIT:] if keep_end else body[:LIMIT]
+    print(f'::{kind} title={esc(title)}::{esc(body)}')
 
 
 def read(path: str) -> str:
@@ -61,10 +65,13 @@ def surefire(directory: str, log_path: str) -> None:
 
 
 def plain(name: str, summary_path: str, log_path: str) -> None:
-    emit('notice', f'{name} summary', read(summary_path)[-20000:] or '(empty)')
-    tail = read(log_path).splitlines()[-200:]
-    if tail:
-        emit('warning', f'{name} log tail', '\n'.join(tail))
+    emit('notice', f'{name} summary', read(summary_path) or '(empty)', keep_end=True)
+    lines = read(log_path).splitlines()
+    problems = [line for line in lines if any(k in line for k in ('error', 'Error', 'FAIL', 'Assertion', 'assert'))]
+    for start in range(0, min(len(problems), 120), 30):
+        emit('warning', f'{name} error lines {start + 1}+', '\n'.join(problems[start:start + 30]))
+    if lines:
+        emit('warning', f'{name} log tail', '\n'.join(lines[-200:]), keep_end=True)
 
 
 if __name__ == '__main__':

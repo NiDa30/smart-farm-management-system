@@ -28,11 +28,19 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
         new ArrayBlockingQueue<>(128), runnable -> new Thread(runnable, "telemetry-storage"));
     private final vn.smartfarm.iot.control.PumpService pump;
     private final boolean controlsEnabled;
+    private final boolean actuatorsEnabled;
+    private final vn.smartfarm.iot.control.ActuatorService actuators;
     private final ThreadPoolExecutor controlWorker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(32), runnable -> new Thread(runnable, "pump-control"));
     private MqttClientConnection connection;
     private volatile boolean controlReady, initialized, stopping;
     @Override public boolean controlConnected() { return controlReady && connection != null; }
+    @Override public void publishActuatorCommand(String actuatorId, byte[] payload) throws Exception {
+        if (!controlConnected() || !actuatorsEnabled) throw new IllegalStateException("Control unavailable");
+        if (!actuatorId.matches("[A-Z0-9]{2,16}") || actuatorId.equals("PUMP01")) throw new IllegalArgumentException("Invalid actuator");
+        connection.publish(new software.amazon.awssdk.crt.mqtt.MqttMessage("smartfarm/FARM001/"+actuatorId+"/command",payload,
+            QualityOfService.AT_LEAST_ONCE,false)).get(10,TimeUnit.SECONDS);
+    }
     @Override public void publishCommand(byte[] payload) throws Exception {
         if (!controlConnected()) throw new IllegalStateException("Control unavailable");
         connection.publish(new software.amazon.awssdk.crt.mqtt.MqttMessage("smartfarm/FARM001/PUMP01/command",payload,
@@ -41,8 +49,10 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
 
     public TelemetryIngestion(vn.smartfarm.iot.nodes.TelemetryRouter router, vn.smartfarm.iot.control.PumpService pump,
         vn.smartfarm.iot.monitoring.MqttHealth health,
-        @org.springframework.beans.factory.annotation.Value("${smartfarm.control.enabled:false}") boolean controlsEnabled) {
+        @org.springframework.beans.factory.annotation.Value("${smartfarm.control.enabled:false}") boolean controlsEnabled,
+        vn.smartfarm.iot.control.ActuatorService actuators) {
         this.health=health; this.router = router; this.pump=pump; this.controlsEnabled=controlsEnabled;
+        this.actuators=actuators; this.actuatorsEnabled=actuators.enabled();
     }
 
     @Override
@@ -108,6 +118,18 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                     try { pump.receive(message.getTopic(),copy); health.messageProcessed(); }
                     catch (RuntimeException error) { LOG.warn("Pump message rejected or not persisted"); }
                 }); } catch (RejectedExecutionException error) { LOG.error("Pump queue full; status/ACK not persisted"); }
+            }).get(10,TimeUnit.SECONDS);
+        }
+        // Explicit per-actuator topics, matching the backend IAM statements (no wildcard).
+        if (actuatorsEnabled) for (var actuator : actuators.overview().actuators()) for (String suffix : new String[]{"status","ack"}) {
+            connection.subscribe("smartfarm/FARM001/"+actuator.actuatorId()+"/"+suffix,QualityOfService.AT_LEAST_ONCE,message -> {
+                if (!vn.smartfarm.iot.control.ActuatorService.handles(message.getTopic())) return;
+                if (message.getRetain() || message.getPayload().length>4096) return;
+                byte[] copy=Arrays.copyOf(message.getPayload(),message.getPayload().length);
+                try { controlWorker.execute(() -> {
+                    try { actuators.receive(message.getTopic(),copy); health.messageProcessed(); }
+                    catch (RuntimeException error) { LOG.warn("Actuator message rejected or not persisted"); }
+                }); } catch (RejectedExecutionException error) { LOG.error("Control queue full; actuator status/ACK not persisted"); }
             }).get(10,TimeUnit.SECONDS);
         }
         health.subscriptionsReady(healthVersion);
