@@ -73,7 +73,7 @@ jobs:
         shell: bash
         run: |
           status=0
-          for t in automation events monitoring dashboard safety alerts nodes; do
+          for t in automation events monitoring dashboard safety alerts nodes actuators; do
             if npm run -s "test:$t" > "$RUNNER_TEMP/pw-$t.log" 2>&1; then r=PASS; else r=FAIL; status=1; fi
             echo "test:$t $r $(grep -E '^ +[0-9]+ (passed|failed|flaky|skipped)' "$RUNNER_TEMP/pw-$t.log" | tr -s ' ' | tr '\n' ' ')" | tee -a "$RUNNER_TEMP/pw-summary.log"
             [ "$r" = FAIL ] && cat "$RUNNER_TEMP/pw-$t.log" >> "$RUNNER_TEMP/fe.log"
@@ -138,7 +138,10 @@ jobs:
           key: pio-${{ hashFiles('firmware/**/platformio.ini') }}
       - run: pip install platformio==6.2.0
       - name: build self-test image
-        run: cd firmware/esp32 && pio run -e wokwi_selftest | tail -5
+        shell: bash
+        run: |
+          set -o pipefail
+          cd firmware/esp32 && pio run -e wokwi_selftest 2>&1 | tee "$RUNNER_TEMP/wokwi-cli.log" | tail -5
       - name: run Wokwi scenario
         if: ${{ env.WOKWI_CLI_TOKEN != '' }}
         shell: bash
@@ -151,6 +154,6 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if [ -z "$WOKWI_CLI_TOKEN" ]; then echo "WOKWI_SKIPPED: secret WOKWI_CLI_TOKEN is not set" > "$RUNNER_TEMP/wokwi-cli.log"; fi
+          if [ -z "$WOKWI_CLI_TOKEN" ]; then echo "WOKWI_SKIPPED: secret WOKWI_CLI_TOKEN is not set" >> "$RUNNER_TEMP/wokwi-cli.log"; fi
           cat "$RUNNER_TEMP/wokwi.log" >> "$RUNNER_TEMP/wokwi-cli.log" 2>/dev/null || true
           python3 .github/scripts/report.py log wokwi "$RUNNER_TEMP/wokwi-cli.log" "$RUNNER_TEMP/wokwi-cli.log"

@@ -80,7 +80,7 @@ class ActuatorBank {
     const char* error = c.relay.apply(commandId, action, seconds, issued, expires, epoch, tick, tolerance, interlock);
     if (!error) {
       if (action == RelaySafety::ON && c.relay.isOn() && !wasOn) c.reason = "COMMAND_ON";
-      else if (action == RelaySafety::OFF) { c.reason = "COMMAND_OFF"; if (wasOn) stopped |= bit(i); }
+      else if (action == RelaySafety::OFF) { c.reason = "COMMAND_OFF"; if (wasOn) stopped |= maskOf(i); }
       else if (action == RelaySafety::RESET) c.reason = "LOCKOUT_RESET";
     }
     enforcePumpValve();
@@ -93,7 +93,7 @@ class ActuatorBank {
       Channel& c = channels[i];
       const bool wasOn = c.relay.isOn();
       c.relay.tickSafety(now, link);
-      if (wasOn && !c.relay.isOn()) { c.reason = link ? "TIMER_EXPIRED" : "CONNECTION_LOST"; stopped |= bit(i); }
+      if (wasOn && !c.relay.isOn()) { c.reason = link ? "TIMER_EXPIRED" : "CONNECTION_LOST"; stopped |= maskOf(i); }
     }
     enforcePumpValve();
   }
@@ -107,7 +107,7 @@ class ActuatorBank {
     const bool wasOn = channels[i].relay.isOn();
     channels[i].relay.fail(commandId, error);
     channels[i].reason = error;
-    if (wasOn) stopped |= bit(i);
+    if (wasOn) stopped |= maskOf(i);
     enforcePumpValve();
   }
   // Float switch: returns true when the reading changed. Dry trips every reservoir user.
@@ -118,7 +118,7 @@ class ActuatorBank {
       if (!c.reservoir) continue;
       const bool wasOn = c.relay.isOn();
       changed = c.relay.setWaterAvailable(present) || changed;
-      if (!present) { c.reason = "WATER_LOW"; if (wasOn) stopped |= bit(i); }
+      if (!present) { c.reason = "WATER_LOW"; if (wasOn) stopped |= maskOf(i); }
     }
     enforcePumpValve();
     return changed;
@@ -134,12 +134,12 @@ class ActuatorBank {
     RelaySafety relay;
     const char* reason = "BOOT";
   };
-  static uint32_t bit(int i) { return uint32_t(1) << i; }
+  static uint32_t maskOf(int i) { return uint32_t(1) << i; }
   void stopWith(int i, const char* why, bool lock) {
     Channel& c = channels[i];
     const bool wasOn = c.relay.isOn();
     if (lock) c.relay.trip(); else c.relay.stop();
-    if (wasOn) { c.reason = why; stopped |= bit(i); }
+    if (wasOn) { c.reason = why; stopped |= maskOf(i); }
     else if (lock) c.reason = why;
   }
   void enforcePumpValve() {
