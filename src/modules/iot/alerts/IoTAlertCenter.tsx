@@ -1,6 +1,8 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {createLiveLoop} from '../live/iotLive';
 import {AlertTriangle,RefreshCw} from 'lucide-react';
 import {WaterAlertCenter} from './WaterAlertCenter';
+import {HealthAlertCenter} from './HealthAlertCenter';
 import {AlertAcknowledgement} from './AlertAcknowledgement';
 import {alertTitle,parseAlert,parseAlerts,type SensorAlert} from './alertApi';
 const SensorAlertPanel:React.FC<{onBusyChange:(busy:boolean)=>void}>=({onBusyChange})=>{
@@ -12,7 +14,7 @@ const SensorAlertPanel:React.FC<{onBusyChange:(busy:boolean)=>void}>=({onBusyCha
   const version=useRef(0),inFlight=useRef(false);
   useEffect(()=>{
     if(busy)return;
-    let active=true;let next:ReturnType<typeof setTimeout>;let controller:AbortController;
+    let active=true;let controller:AbortController;const loop=createLiveLoop(['alerts'],5000);
     const poll=async()=>{
       const requestVersion=version.current;
       controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),5000);
@@ -21,8 +23,8 @@ const SensorAlertPanel:React.FC<{onBusyChange:(busy:boolean)=>void}>=({onBusyCha
         if(!response.ok)throw new Error();const value=parseAlerts(await response.json());
         if(active&&requestVersion===version.current){setAlerts(value);setError(false);setSelected(current=>current?(value.find(a=>a.id===current.id)??current):null);}
       }catch{if(active&&requestVersion===version.current)setError(true);}
-      finally{clearTimeout(timeout);if(active){setLoading(false);next=setTimeout(poll,5000);}}
-    };void poll();return()=>{active=false;controller?.abort();clearTimeout(next);};
+      finally{clearTimeout(timeout);if(active){setLoading(false);loop.next(poll);}}
+    };void poll();return()=>{active=false;controller?.abort();loop.dispose();};
   },[refresh,busy]);
   const open=(alert:SensorAlert)=>{if(inFlight.current)return;setSelected(alert);setNeedsCheck(false);setActionError('');setSuccess(false);};
   const act=async(note?:string):Promise<boolean>=>{
@@ -76,17 +78,18 @@ const SensorAlertPanel:React.FC<{onBusyChange:(busy:boolean)=>void}>=({onBusyCha
       {alert.acknowledgementNote&&<p className="text-sm whitespace-pre-wrap break-words">Ghi chú: {alert.acknowledgementNote}</p>}
       <button disabled={busy} onClick={()=>open(alert)} className="border rounded px-3 py-1 disabled:opacity-40">Chi tiết cảnh báo #{alert.id}</button>
     </article>)}</div>}
-    <p className="text-xs text-slate-500">Tự tải mỗi 5 giây. Tối đa 100 cảnh báo, ưu tiên đang hoạt động rồi chưa xem. Bộ lọc áp dụng cho danh sách đã tải; không phải tổng toàn bộ lịch sử. Chi tiết đang mở được giữ khi cảnh báo ra khỏi danh sách.</p>
+    <p className="text-xs text-slate-500">Tải lại khi có thay đổi (dự phòng mỗi 5 giây). Tối đa 100 cảnh báo, ưu tiên đang hoạt động rồi chưa xem. Bộ lọc áp dụng cho danh sách đã tải; không phải tổng toàn bộ lịch sử. Chi tiết đang mở được giữ khi cảnh báo ra khỏi danh sách.</p>
   </div>;
 };
 
 export const IoTAlertCenter:React.FC=()=>{
-  const [tab,setTab]=useState<'sensor'|'water'>('sensor'),[busy,setBusy]=useState(false);
+  const [tab,setTab]=useState<'sensor'|'water'|'health'>('sensor'),[busy,setBusy]=useState(false);
   return <div className="space-y-4">
     <nav aria-label="Nhóm cảnh báo" className="flex gap-2">
       <button disabled={busy} aria-pressed={tab==='sensor'} onClick={()=>setTab('sensor')} className="border rounded px-4 py-2 aria-pressed:bg-emerald-100 disabled:opacity-40">Cảm biến môi trường</button>
       <button disabled={busy} aria-pressed={tab==='water'} onClick={()=>setTab('water')} className="border rounded px-4 py-2 aria-pressed:bg-emerald-100 disabled:opacity-40">Trạm nước</button>
+      <button disabled={busy} aria-pressed={tab==='health'} onClick={()=>setTab('health')} className="border rounded px-4 py-2 aria-pressed:bg-emerald-100 disabled:opacity-40">Sức khỏe thiết bị</button>
     </nav>
-    {tab==='sensor'?<SensorAlertPanel onBusyChange={setBusy}/>:<WaterAlertCenter onBusyChange={setBusy}/>}
+    {tab==='sensor'?<SensorAlertPanel onBusyChange={setBusy}/>:tab==='water'?<WaterAlertCenter onBusyChange={setBusy}/>:<HealthAlertCenter onBusyChange={setBusy}/>}
   </div>;
 };

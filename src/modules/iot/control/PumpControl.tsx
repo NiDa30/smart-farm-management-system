@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import {createLiveLoop} from '../live/iotLive';
 import { Power, ShieldCheck, RefreshCw } from 'lucide-react';
 
 interface PumpStatus { deviceId: 'PUMP01'; reportedState: 'ON' | 'OFF' | 'UNKNOWN'; safetyLockout: boolean; fresh: boolean; controlEnabled: boolean; observedAt: string | null }
@@ -20,8 +21,7 @@ export const PumpControl: React.FC = () => {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
   useEffect(() => {
-    let active = true;
-    let next: ReturnType<typeof setTimeout>;
+    let active = true;const loop=createLiveLoop(['pump','commands'],2000);
     let controller: AbortController;
     let timeout: ReturnType<typeof setTimeout>;
     const poll = async () => {
@@ -42,9 +42,9 @@ export const PumpControl: React.FC = () => {
             }
           } catch { /* State history must not block emergency OFF. */ } }
       } catch { if (active) setAvailable(false); }
-      finally { clearTimeout(timeout); if (active) next = setTimeout(poll, 2000); }
+      finally { clearTimeout(timeout); if (active) loop.next(poll); }
     };
-    void poll(); return () => { active = false; clearTimeout(next); clearTimeout(timeout); controller?.abort(); };
+    void poll(); return () => { active = false; loop.dispose(); clearTimeout(timeout); controller?.abort(); };
   }, [refresh]);
   const age = status?.observedAt ? now - Date.parse(status.observedAt) : Infinity;
   const fresh = available && status?.fresh && age >= -2000 && age <= 15000;

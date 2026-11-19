@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import {createLiveLoop} from '../live/iotLive';
 import { Activity, RefreshCw } from 'lucide-react';
 import { currentDataState, Monitoring, MonitoredDevice, parseMonitoring } from './monitoringApi';
+import { DeviceStatisticsPanel } from './DeviceStatisticsPanel';
 const time=(value:string|null)=>value?new Date(value).toLocaleString('vi-VN'):'Chưa có';
 const number=(value:number|null)=>value===null?'—':value.toLocaleString('vi-VN',{maximumFractionDigits:1});
 const dataLabels={FRESH:'Dữ liệu mới',STALE:'Dữ liệu đã cũ',EMPTY:'Chưa có dữ liệu',CLOCK_SKEW:'Lệch thời gian'};
@@ -11,7 +13,7 @@ export const DeviceMonitor:React.FC=()=>{
   const [selection,setSelection]=useState<string|null>(null),[elapsed,setElapsed]=useState(0),[loadedAt,setLoadedAt]=useState(0);
   useEffect(()=>{const timer=setInterval(()=>setElapsed(performance.now()),1000);return()=>clearInterval(timer);},[]);
   useEffect(()=>{
-    let active=true;let next:ReturnType<typeof setTimeout>;let controller:AbortController;
+    let active=true;let controller:AbortController;const loop=createLiveLoop(['monitoring'],5000);
     const poll=async()=>{
       controller=new AbortController();const requestedAt=performance.now();const timeout=setTimeout(()=>controller.abort(),5000);
       try{
@@ -20,8 +22,8 @@ export const DeviceMonitor:React.FC=()=>{
         const value=parseMonitoring(await response.json());
         if(active){setSnapshot(value);setLoadedAt(requestedAt);setElapsed(performance.now());setError('');}
       }catch{if(active)setError('Không tải được giám sát. Chưa thể kết luận thiết bị mất mạng; dữ liệu đang hiển thị là lần tải trước.');}
-      finally{clearTimeout(timeout);if(active){setLoading(false);next=setTimeout(poll,5000);}}
-    };void poll();return()=>{active=false;controller?.abort();clearTimeout(next);};
+      finally{clearTimeout(timeout);if(active){setLoading(false);loop.next(poll);}}
+    };void poll();return()=>{active=false;controller?.abort();loop.dispose();};
   },[refresh]);
   const now=snapshot?Date.parse(snapshot.asOf)+Math.max(0,elapsed-loadedAt):0;
   const areas=[...new Map(snapshot?.devices.filter(d=>d.areaId).map(d=>[d.areaId!,d.areaName??d.areaId!])??[]).entries()];
@@ -37,7 +39,7 @@ export const DeviceMonitor:React.FC=()=>{
     <header className="flex justify-between items-center"><h1 className="font-bold text-xl flex gap-2 items-center"><Activity />Giám sát thiết bị</h1><button onClick={()=>setRefresh(v=>v+1)} className="border rounded p-2 flex gap-2"><RefreshCw size={18} />Làm mới</button></header>
     <section className="border rounded-xl bg-white p-4 space-y-2">
       <p role="status">{error?'Không tải được trạng thái backend':snapshot?brokerLabels[snapshot.mqtt.state]:loading?'Đang tải giám sát…':'Chưa xác định kết nối backend'}</p>
-      {snapshot&&<><p className="text-sm">Lần xử lý bản tin MQTT cuối: {time(snapshot.mqtt.lastProcessedAt)}</p><p className="text-xs text-slate-500">Đồng bộ lúc {time(snapshot.asOf)} · Tự tải mỗi 5 giây.</p></>}
+      {snapshot&&<><p className="text-sm">Lần xử lý bản tin MQTT cuối: {time(snapshot.mqtt.lastProcessedAt)}</p><p className="text-xs text-slate-500">Đồng bộ lúc {time(snapshot.asOf)} · Tải lại khi có thay đổi (dự phòng mỗi 5 giây).</p></>}
       <p className="text-sm text-slate-500">Đây là hoạt động nhận bản tin, không xác nhận Wi-Fi/nguồn điện của thiết bị. Cảm biến dùng ngưỡng mới 30 giây; trạng thái relay 15 giây. Quy tắc tưới vẫn yêu cầu số đo mới trong 15 giây.</p>
       {snapshot&&snapshot.mqtt.state!=='CONNECTED'&&<p className="text-amber-800 text-sm">Backend chưa sẵn sàng nhận MQTT. Bản ghi có sẵn không chứng minh thiết bị đang online.</p>}
       {error&&<p role="alert" className="text-rose-700">{error}</p>}
@@ -56,5 +58,6 @@ export const DeviceMonitor:React.FC=()=>{
       {selected.kind==='SENSOR'?<><p>Nhiệt độ: {number(selected.temperature)} °C · Độ ẩm không khí: {number(selected.humidity)}% · Đất: {number(selected.soilMoisture)}%</p><p>Cảnh báo đang mở: {selected.activeAlerts}. Không tự đóng cảnh báo khi mất dữ liệu.</p></>:<><p>Trạng thái relay: {!error&&currentDataState(selected,now)==='FRESH'?(selected.reportedState??'Chưa xác định'):'Chưa xác định'} · Lần báo trước: {selected.reportedState??'Chưa có'}</p><p>Khóa an toàn ở lần báo trước: {selected.safetyLockout===null?'Chưa có':selected.safetyLockout?'Có':'Không'}</p></>}
       <p className="text-xs text-slate-500">Màn này chỉ giám sát, không phát lệnh điều khiển, OTA hoặc thay cấu hình thiết bị. Dữ liệu đã cũ chỉ là giá trị lịch sử.</p>
     </section>}
+    <DeviceStatisticsPanel />
   </div>;
 };

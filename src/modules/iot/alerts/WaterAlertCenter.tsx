@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {createLiveLoop} from '../live/iotLive';
 import {AlertTriangle,RefreshCw} from 'lucide-react';
 import {AlertAcknowledgement} from './AlertAcknowledgement';
 import {waterAlertTitle as alertTitle,parseWaterAlert as parseAlert,parseWaterAlerts as parseAlerts,waterSourceLabel,sameWaterEpisode,type WaterAlert} from './waterAlertApi';
@@ -11,7 +12,7 @@ export const WaterAlertCenter:React.FC<{onBusyChange:(busy:boolean)=>void}>=({on
   const version=useRef(0),inFlight=useRef(false);
   useEffect(()=>{
     if(busy)return;
-    let active=true;let next:ReturnType<typeof setTimeout>;let controller:AbortController;
+    let active=true;let controller:AbortController;const loop=createLiveLoop(['alerts'],5000);
     const poll=async()=>{
       const requestVersion=version.current;
       controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),5000);
@@ -20,8 +21,8 @@ export const WaterAlertCenter:React.FC<{onBusyChange:(busy:boolean)=>void}>=({on
         if(!response.ok)throw new Error();const value=parseAlerts(await response.json());
         if(active&&requestVersion===version.current){setAlerts(value);setError(false);setSelected(current=>current?(value.find(a=>a.id===current.id)??current):null);}
       }catch{if(active&&requestVersion===version.current)setError(true);}
-      finally{clearTimeout(timeout);if(active){setLoading(false);next=setTimeout(poll,5000);}}
-    };void poll();return()=>{active=false;controller?.abort();clearTimeout(next);};
+      finally{clearTimeout(timeout);if(active){setLoading(false);loop.next(poll);}}
+    };void poll();return()=>{active=false;controller?.abort();loop.dispose();};
   },[refresh,busy]);
   const open=(alert:WaterAlert)=>{if(inFlight.current)return;setSelected(alert);setNeedsCheck(false);setActionError('');setSuccess(false);};
   const act=async(note?:string):Promise<boolean>=>{
@@ -78,6 +79,6 @@ export const WaterAlertCenter:React.FC<{onBusyChange:(busy:boolean)=>void}>=({on
       {alert.acknowledgementNote&&<p className="text-sm whitespace-pre-wrap break-words">Ghi chú: {alert.acknowledgementNote}</p>}
       <button disabled={busy} onClick={()=>open(alert)} className="border rounded px-3 py-1 disabled:opacity-40">Chi tiết cảnh báo nước #{alert.id}</button>
     </article>)}</div>}
-    <p className="text-xs text-slate-500">Tự tải mỗi 5 giây. Tối đa 100 cảnh báo nước, ưu tiên đang hoạt động rồi chưa xem. Bộ lọc áp dụng cho danh sách đã tải; không phải tổng toàn bộ lịch sử. Chi tiết đang mở được giữ khi cảnh báo ra khỏi danh sách.</p>
+    <p className="text-xs text-slate-500">Tải lại khi có thay đổi (dự phòng mỗi 5 giây). Tối đa 100 cảnh báo nước, ưu tiên đang hoạt động rồi chưa xem. Bộ lọc áp dụng cho danh sách đã tải; không phải tổng toàn bộ lịch sử. Chi tiết đang mở được giữ khi cảnh báo ra khỏi danh sách.</p>
   </div>;
 };

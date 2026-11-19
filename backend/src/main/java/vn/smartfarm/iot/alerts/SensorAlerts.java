@@ -18,7 +18,10 @@ public class SensorAlerts {
     public record Alert(long id,String deviceId,String type,Instant openedAt,double openedValue,
                         Instant clearedAt,Double clearedValue,Instant acknowledgedAt,String acknowledgementNote) {}
     private final JdbcTemplate jdbc;
-    public SensorAlerts(JdbcTemplate jdbc) { this.jdbc=jdbc; }
+    private final vn.smartfarm.iot.realtime.RealtimeNotifier realtime;
+    public SensorAlerts(JdbcTemplate jdbc) { this(jdbc, vn.smartfarm.iot.realtime.RealtimeNotifier.NONE); }
+    @org.springframework.beans.factory.annotation.Autowired
+    public SensorAlerts(JdbcTemplate jdbc, vn.smartfarm.iot.realtime.RealtimeNotifier realtime) { this.jdbc=jdbc; this.realtime=realtime; }
     public static Alert mapAlert(ResultSet rs) throws SQLException {
         Timestamp cleared=rs.getTimestamp("cleared_at"),acknowledged=rs.getTimestamp("acknowledged_at");
         return new Alert(rs.getLong("id"),rs.getString("device_id"),rs.getString("type"),rs.getTimestamp("opened_at").toInstant(),
@@ -48,6 +51,7 @@ public class SensorAlerts {
         }
         if(alert.clearedAt()!=null)throw new ResponseStatusException(HttpStatus.CONFLICT,"Alert has returned to normal");
         jdbc.update("UPDATE sensor_alert SET acknowledged_at=CURRENT_TIMESTAMP,acknowledgement_note=? WHERE id=?",normalized,id);
+        realtime.alertsChanged();
         return find(id);
     }
     @Transactional

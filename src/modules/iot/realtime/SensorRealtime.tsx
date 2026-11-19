@@ -1,4 +1,5 @@
 import { WaterNodesPanel } from '../nodes/WaterNodesPanel';
+import { createLiveLoop } from '../live/iotLive';
 import React, { useEffect, useRef, useState } from 'react';
 import { Activity, Clock, Database, Droplets, History, RefreshCw, Thermometer, WifiOff, Plus, MapPin, X } from 'lucide-react';
 import { fetchHistory, fetchLatest, telemetryState, type NetworkState, type TelemetryReading, fetchRegistry, registerItem, type SensorSummary, type SensorArea } from './telemetryApi';
@@ -22,7 +23,7 @@ const SensorDetail: React.FC<{ sensor: SensorSummary; areaName: string }> = ({ s
 
   useEffect(() => {
     let active = true;
-    let nextPoll: ReturnType<typeof setTimeout>;
+    const loop = createLiveLoop(['telemetry'], 5000);
     let controller: AbortController;
     let timeout: ReturnType<typeof setTimeout>;
     const poll = async () => {
@@ -52,14 +53,14 @@ const SensorDetail: React.FC<{ sensor: SensorSummary; areaName: string }> = ({ s
         clearTimeout(timeout);
         if (active) {
           setRefreshing(false);
-          nextPoll = setTimeout(poll, 5000);
+          loop.next(poll);
         }
       }
     };
     void poll();
     return () => {
       active = false;
-      clearTimeout(nextPoll);
+      loop.dispose();
       clearTimeout(timeout);
       controller?.abort();
     };
@@ -103,7 +104,7 @@ const SensorDetail: React.FC<{ sensor: SensorSummary; areaName: string }> = ({ s
             {state === 'error' ? <WifiOff className="w-3.5 h-3.5" /> : <span className={`w-2 h-2 rounded-full ${state === 'live' ? 'bg-emerald-500' : 'bg-amber-500'}`} />}
             {labels[state]}
           </span>
-          <span className="text-xs text-slate-500">Tự cập nhật sau mỗi 5 giây</span>
+          <span className="text-xs text-slate-500">Cập nhật khi có gói mới (dự phòng mỗi 5 giây)</span>
         </div>
         {state === 'error' && <p role="alert" className="text-sm text-rose-700">Không tải được dữ liệu mới. Kiểm tra backend đang chạy; reading còn hiển thị là dữ liệu đã tải trước đó.</p>}
         {state === 'empty' && <p className="text-sm text-slate-500">Chưa có dữ liệu cảm biến trong database. Hãy chạy thiết bị và chờ reading đầu tiên.</p>}
@@ -181,7 +182,7 @@ export const SensorRealtime: React.FC = () => {
   }, []);
   useEffect(() => {
     let active = true;
-    let timer: ReturnType<typeof setTimeout>;
+    const loop = createLiveLoop(['nodes'], 5000);
     let timeout: ReturnType<typeof setTimeout>;
     let controller: AbortController;
     const load = async () => {
@@ -197,11 +198,11 @@ export const SensorRealtime: React.FC = () => {
         if (active) setFailed(true);
       } finally {
         clearTimeout(timeout);
-        if (active) { setLoading(false); timer = setTimeout(load, 5000); }
+        if (active) { setLoading(false); loop.next(load); }
       }
     };
     void load();
-    return () => { active = false; clearTimeout(timer); clearTimeout(timeout); controller?.abort(); };
+    return () => { active = false; loop.dispose(); clearTimeout(timeout); controller?.abort(); };
   }, [reload]);
 
   const visible = sensors.filter(sensor => filter === 'all' || sensor.areaId === filter);

@@ -90,6 +90,7 @@ import { AnomalyCenter } from './modules/analytics/anomalies/AnomalyCenter';
 import { ForecastCenter } from './modules/analytics/forecast/ForecastCenter';
 import { ReportBuilder } from './modules/analytics/reports/ReportBuilder';
 import { ReportsPreview } from './modules/reports/ReportsPreview';
+import { LiveStatusBadge } from './modules/iot/live/LiveStatusBadge';
 
 const AppContent: React.FC = () => {
   const { currentRoute, feedbackToast } = useApp();
@@ -449,7 +450,10 @@ const AppContent: React.FC = () => {
 
         {/* Scrollable Viewport Frame */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F5F7F8]">
-          <div className="max-w-7xl mx-auto">{renderRoute()}</div>
+          <div className="max-w-7xl mx-auto">
+            {currentRoute.startsWith('/iot') && <div className="mb-3 flex justify-end"><LiveStatusBadge /></div>}
+            {renderRoute()}
+          </div>
         </main>
       </div>
 

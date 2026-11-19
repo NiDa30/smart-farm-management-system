@@ -19,7 +19,8 @@ public class NodeInventory {
     private final JdbcTemplate jdbc;
     private final SensorRegistry sensors;
     private final vn.smartfarm.iot.alerts.WaterAlerts waterAlerts;
-    public NodeInventory(JdbcTemplate jdbc,SensorRegistry sensors,vn.smartfarm.iot.alerts.WaterAlerts waterAlerts) {this.jdbc=jdbc;this.sensors=sensors;this.waterAlerts=waterAlerts;}
+    private final vn.smartfarm.iot.realtime.RealtimeNotifier realtime;
+    public NodeInventory(JdbcTemplate jdbc,SensorRegistry sensors,vn.smartfarm.iot.alerts.WaterAlerts waterAlerts,vn.smartfarm.iot.realtime.RealtimeNotifier realtime) {this.jdbc=jdbc;this.sensors=sensors;this.waterAlerts=waterAlerts;this.realtime=realtime;}
 
     @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
     public Snapshot snapshot() {
@@ -83,6 +84,7 @@ public class NodeInventory {
         jdbc.update("INSERT INTO iot_node(node_id,name,area_id,node_type,telemetry_version) VALUES(?,?,?,'WATER',2)",id,name,area);
         for(JsonNode channel:channels)jdbc.update("INSERT INTO iot_channel(node_id,channel_id,metric,unit,calibration_version) VALUES(?,?,?,?,?)",id,
             channel.get("channelId").textValue(),channel.get("metric").textValue(),channel.get("unit").textValue(),channel.get("calibrationVersion").isNull()?null:channel.get("calibrationVersion").textValue());
+        realtime.nodesChanged();
         return id;
     }
 
@@ -108,6 +110,7 @@ public class NodeInventory {
             """,rows.getFirst(),packet.deviceId(),reading.channelId(),reading.quality(),reading.value() instanceof Number?reading.value():null,
                 reading.value() instanceof Boolean?reading.value():null,reading.calibrationVersion());
         waterAlerts.observe(packet,rows.getFirst());
+        realtime.waterStored();
         return true;
     }
 }

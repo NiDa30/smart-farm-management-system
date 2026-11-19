@@ -21,3 +21,13 @@ smartfarm:
     enabled: ${SMARTFARM_MQTT_ENABLED:false}
   control:
     enabled: ${SMARTFARM_CONTROL_ENABLED:false}
+  realtime:
+    # Browser origins allowed to open /ws/iot (explicit list, no wildcard).
+    allowed-origins: ${SMARTFARM_REALTIME_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+  health:
+    offline-seconds: ${SMARTFARM_HEALTH_OFFLINE_SECONDS:60}
+    stuck-minutes: ${SMARTFARM_HEALTH_STUCK_MINUTES:30}
+    # NODE/CHANNEL of the FLOW_RATE channel downstream of PUMP01, e.g. WATER01/FLOW; empty disables.
+    pump-flow-channel: ${SMARTFARM_HEALTH_PUMP_FLOW_CHANNEL:}
+    minimum-flow-lpm: ${SMARTFARM_HEALTH_MINIMUM_FLOW_LPM:0.5}
+    flow-grace-seconds: ${SMARTFARM_HEALTH_FLOW_GRACE_SECONDS:20}
