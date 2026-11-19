@@ -64,7 +64,8 @@ class DeviceHealthTest {
   assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM device_health_alert",Integer.class));
  }
  @Test void offlineOpensAfterSilenceKeepsHysteresisAndClearsOnFreshReceipt() {
-  env(now.minusSeconds(61),40);
+  // 62, not 61: PostgreSQL rounds to microseconds, so 61 s can read back as 60.99999 s.
+  env(now.minusSeconds(62),40);
   var service=health(0);
   var first=service.evaluate(now);
   assertEquals(1,first.opened(),()->"evaluation="+first+" now="+now+" nodes="+jdbc.queryForList("SELECT node_id,node_type FROM iot_node ORDER BY node_id")
