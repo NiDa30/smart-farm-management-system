@@ -52,6 +52,7 @@ import { IoTAssetManager } from './modules/resources/iot-devices/IoTAssetManager
 // IoT & Automation Module Screens (Phân hệ 4 - IoT & Tự động hóa)
 import { IoTDashboard } from './modules/iot/dashboard/IoTDashboard';
 import { DeviceMonitor } from './modules/iot/devices/DeviceMonitor';
+import { DeviceStatisticsPanel } from './modules/iot/devices/DeviceStatisticsPanel';
 import { SensorRealtime } from './modules/iot/realtime/SensorRealtime';
 import { HistoricalData } from './modules/iot/history/HistoricalData';
 import { PumpControl } from './modules/iot/control/PumpControl';
@@ -260,7 +261,8 @@ const AppContent: React.FC = () => {
       return <IoTDashboard />;
     }
     if (currentRoute.startsWith('/iot/devices')) {
-      return <DeviceMonitor />;
+      // Statistics sit beside the monitor so the monitor keeps a single API dependency.
+      return <div className="space-y-4"><DeviceMonitor /><div className="max-w-6xl mx-auto"><DeviceStatisticsPanel /></div></div>;
     }
     if (currentRoute.startsWith('/iot/realtime')) {
       return <SensorRealtime />;

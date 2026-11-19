@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {createLiveLoop} from '../live/iotLive';
 import { Activity, RefreshCw } from 'lucide-react';
 import { currentDataState, Monitoring, MonitoredDevice, parseMonitoring } from './monitoringApi';
-import { DeviceStatisticsPanel } from './DeviceStatisticsPanel';
 const time=(value:string|null)=>value?new Date(value).toLocaleString('vi-VN'):'Chưa có';
 const number=(value:number|null)=>value===null?'—':value.toLocaleString('vi-VN',{maximumFractionDigits:1});
 const dataLabels={FRESH:'Dữ liệu mới',STALE:'Dữ liệu đã cũ',EMPTY:'Chưa có dữ liệu',CLOCK_SKEW:'Lệch thời gian'};
@@ -58,6 +57,5 @@ export const DeviceMonitor:React.FC=()=>{
       {selected.kind==='SENSOR'?<><p>Nhiệt độ: {number(selected.temperature)} °C · Độ ẩm không khí: {number(selected.humidity)}% · Đất: {number(selected.soilMoisture)}%</p><p>Cảnh báo đang mở: {selected.activeAlerts}. Không tự đóng cảnh báo khi mất dữ liệu.</p></>:<><p>Trạng thái relay: {!error&&currentDataState(selected,now)==='FRESH'?(selected.reportedState??'Chưa xác định'):'Chưa xác định'} · Lần báo trước: {selected.reportedState??'Chưa có'}</p><p>Khóa an toàn ở lần báo trước: {selected.safetyLockout===null?'Chưa có':selected.safetyLockout?'Có':'Không'}</p></>}
       <p className="text-xs text-slate-500">Màn này chỉ giám sát, không phát lệnh điều khiển, OTA hoặc thay cấu hình thiết bị. Dữ liệu đã cũ chỉ là giá trị lịch sử.</p>
     </section>}
-    <DeviceStatisticsPanel />
   </div>;
 };
