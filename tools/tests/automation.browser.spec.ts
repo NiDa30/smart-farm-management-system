@@ -40,6 +40,7 @@ async function fixtures(page: Page) {
     putResponse: undefined as unknown,
     requests: [] as { enabled: boolean }[],
     unexpected: [] as string[],
+    guards: {minAirTemperature:null,maxAirTemperature:null,maxAirHumidity:null,waterNode:null,waterChannel:null,maxRunsPerDay:null,revision:1} as Record<string,unknown>,
   };
   await page.route('**/*', async route => {
     const url = new URL(route.request().url());
@@ -70,6 +71,13 @@ async function fixtures(page: Page) {
       state.settings = { ...input, revision: input.revision+1 };
       if (state.loseSettingsResponse) { await route.abort('connectionfailed'); return; }
       await route.fulfill({ json: state.settings }); return;
+    }
+    // Guards editor and its float-channel list: served so they never surface as unexpected calls.
+    if (pathname === '/api/v1/automation/watering/guards' && route.request().method() === 'GET') {
+      await route.fulfill({ json: state.guards }); return;
+    }
+    if (pathname === '/api/v1/nodes' && route.request().method() === 'GET') {
+      await route.fulfill({ json: { farmId:'FARM001', asOf:new Date().toISOString(), nodes:[] } }); return;
     }
     if (pathname === '/api/v1/automation/watering/runs' && route.request().method() === 'GET') {
       await route.fulfill({ json: state.runs }); return;
