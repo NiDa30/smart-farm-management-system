@@ -223,7 +223,7 @@ class WateringRuleTest {
   }
  }
  @Test void settingsApiPersistsVersionAndLeavesCurrentCooldownUnchanged() throws Exception {
-  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar,vn.smartfarm.iot.realtime.RealtimeNotifier.NONE)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
   mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/automation/watering/settings"))
    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.durationSeconds").value(20));
@@ -237,7 +237,7 @@ class WateringRuleTest {
   verify(transport,never()).publishCommand(any());
  }
  @Test void settingsRejectInvalidRangesAndNonIntegerJsonWithoutChanges() throws Exception {
-  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar,vn.smartfarm.iot.realtime.RealtimeNotifier.NONE)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
   var initial=rule.settings();
   for (String body:java.util.List.of(
    "{}","null",
@@ -252,7 +252,7 @@ class WateringRuleTest {
   }
  }
  @Test void staleSettingsRevisionCannotOverwriteAnotherTab() throws Exception {
-  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar,vn.smartfarm.iot.realtime.RealtimeNotifier.NONE)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
   var one=new WateringRule.Settings(25,40,12,120,1);
   mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/automation/watering/settings")
    .contentType("application/json").content(mapper.writeValueAsString(one)))
@@ -381,7 +381,7 @@ class WateringRuleTest {
   rule.tick();assertEquals(0,pump.commands().stream().filter(c->c.action().equals("ON")).count());
  }
  @Test void calendarApiSupportsPreviewAndRejectsInvalidPayloadWithoutPublishing() throws Exception {
-  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new vn.smartfarm.iot.automation.RuleController(rule,calendar,vn.smartfarm.iot.realtime.RealtimeNotifier.NONE)).setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(mapper)).build();
   mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/automation/watering/calendar"))
    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.settings.mode").value("ANY_TIME"));
