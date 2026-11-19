@@ -27,7 +27,7 @@ def read(path: str) -> str:
 
 
 def surefire(directory: str, log_path: str) -> None:
-    rows, failures = [], []
+    rows, failures, causes = [], [], {}
     total = {'tests': 0, 'failures': 0, 'errors': 0, 'skipped': 0}
     for path in sorted(glob.glob(os.path.join(directory, 'TEST-*.xml'))):
         suite = ET.parse(path).getroot()
@@ -38,12 +38,21 @@ def surefire(directory: str, log_path: str) -> None:
                     f"{counts['failures'] + counts['errors']} failed, {counts['skipped']} skipped")
         for case in suite.iter('testcase'):
             for problem in list(case.findall('failure')) + list(case.findall('error')):
-                detail = (problem.get('message') or '') + '\n' + (problem.text or '')[:3000]
+                text = problem.text or ''
+                for line in text.splitlines():
+                    if line.startswith('Caused by:'):
+                        causes[line[:1500]] = causes.get(line[:1500], 0) + 1
+                if 'failure threshold' in (problem.get('message') or ''):
+                    continue
+                detail = (problem.get('message') or '') + '\n' + text[:6000]
                 failures.append((f"{case.get('classname')}.{case.get('name')}", detail))
     summary = (f"TOTAL {total['tests']} tests, {total['failures']} failures, "
                f"{total['errors']} errors, {total['skipped']} skipped\n" + '\n'.join(rows))
     emit('notice', 'surefire summary', summary)
-    for name, detail in failures[:40]:
+    if causes:
+        ranked = sorted(causes.items(), key=lambda item: -item[1])
+        emit('error', 'root causes', '\n\n'.join(f'[{n}x] {c}' for c, n in ranked[:25]))
+    for name, detail in failures[:30]:
         emit('error', name, detail)
     log = read(log_path).splitlines()
     error_lines = [line for line in log if line.startswith('[ERROR]')]
