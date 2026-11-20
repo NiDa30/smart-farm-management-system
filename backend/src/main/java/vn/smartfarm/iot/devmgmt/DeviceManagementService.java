@@ -97,6 +97,12 @@ public class DeviceManagementService {
 
     public boolean enabled() { return enabled; }
 
+    /** SHA-256 of the configured key (diagnostics only; the key is public). */
+    String releaseKeyFingerprint() {
+        try { return releaseKey == null ? "none" : HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(releaseKey.getEncoded())); }
+        catch (Exception error) { return "unavailable"; }
+    }
+
     // ---------------- configuration ----------------
 
     public static String validate(Settings s) {

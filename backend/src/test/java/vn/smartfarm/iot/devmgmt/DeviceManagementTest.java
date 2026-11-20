@@ -41,8 +41,7 @@ class DeviceManagementTest {
         catch (Exception error) { throw new IllegalStateException(error); }
     }
     @DynamicPropertySource static void key(DynamicPropertyRegistry registry) {
-        registry.add("smartfarm.ota.public-key", () -> "-----BEGIN PUBLIC KEY-----\n"
-            + Base64.getMimeEncoder().encodeToString(RELEASE.getPublic().getEncoded()) + "\n-----END PUBLIC KEY-----\n");
+        registry.add("smartfarm.ota.public-key", () -> pem(RELEASE));
     }
 
     @Autowired DeviceManagementService service;
@@ -130,8 +129,15 @@ class DeviceManagementTest {
         assertEquals(503, code(() -> service.requestConfig(GOOD)));
     }
 
+    static String pem(KeyPair key) {
+        return "-----BEGIN PUBLIC KEY-----\n" + Base64.getMimeEncoder().encodeToString(key.getPublic().getEncoded()) + "\n-----END PUBLIC KEY-----\n";
+    }
+
     @Test void releasesNeedAValidSignatureFromTheConfiguredKey() throws Exception {
         var good = release("1.4.0", RELEASE);
+        assertEquals(RELEASE.getPublic(), DeviceManagementService.parseKey(pem(RELEASE)), "PEM round trip");
+        assertTrue(service.signatureValid(good.sha256(), good.signature()), "service key=" + service.releaseKeyFingerprint()
+            + " expected=" + java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(RELEASE.getPublic().getEncoded())));
         assertEquals("1.4.0", service.register(good).version());
         assertEquals(409, code(() -> service.register(good)), "versions are immutable");
         assertEquals(400, code(() -> { try { service.register(release("1.4.1", OTHER)); } catch (Exception e) { throw new RuntimeException(e); } }));

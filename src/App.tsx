@@ -57,6 +57,7 @@ import { SensorRealtime } from './modules/iot/realtime/SensorRealtime';
 import { HistoricalData } from './modules/iot/history/HistoricalData';
 import { PumpControl } from './modules/iot/control/PumpControl';
 import { ActuatorPanel } from './modules/iot/actuators/ActuatorPanel';
+import { DeviceManagementPanel } from './modules/iot/devices/DeviceManagementPanel';
 import { DigitalTwinView } from './modules/iot/digital-twin/DigitalTwinView';
 import { AutomationManager } from './modules/iot/automation/AutomationManager';
 import { IoTAlertCenter } from './modules/iot/alerts/IoTAlertCenter';
@@ -296,11 +297,12 @@ const AppContent: React.FC = () => {
     ) {
       return <WaterEnergyMonitor />;
     }
+    if (currentRoute.startsWith('/iot/ota') || currentRoute.startsWith('/iot/config')) {
+      return <DeviceManagementPanel />;
+    }
     if (
       currentRoute.startsWith('/iot/safety') ||
-      currentRoute.startsWith('/iot/edge') ||
-      currentRoute.startsWith('/iot/ota') ||
-      currentRoute.startsWith('/iot/config')
+      currentRoute.startsWith('/iot/edge')
     ) {
       return <SafetyAndEdge />;
     }
