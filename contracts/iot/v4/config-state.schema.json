@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ENV01 applied configuration and firmware",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "deviceId": {
+      "const": "ENV01"
+    },
+    "bootId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "telemetrySeconds": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 10
+        },
+        "heartbeatSeconds": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 20
+        },
+        "soilWetAdc": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "soilDryAdc": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "pumpMaxSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        }
+      },
+      "required": [
+        "telemetrySeconds",
+        "heartbeatSeconds",
+        "soilWetAdc",
+        "soilDryAdc",
+        "pumpMaxSeconds"
+      ]
+    },
+    "firmwareVersion": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 23
+    },
+    "partition": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16
+    },
+    "otaTrial": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "timestamp",
+    "revision",
+    "settings",
+    "firmwareVersion",
+    "partition",
+    "otaTrial"
+  ]
+}

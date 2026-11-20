@@ -28,3 +28,7 @@
 #define FARM_LIGHT_MAX_SECONDS 14400
 #define FARM_MIST_MAX_SECONDS 600
 #define FARM_MIST_USES_RESERVOIR 1
+#define FARM_DEVMGMT_ENABLED 1
+#define FARM_FIRMWARE_VERSION "1.4.0-selftest"
+// Throwaway test key from include/testvectors/OtaTestVector.h; never a release key.
+#define FARM_OTA_PUBLIC_KEY_PEM ota_test::kPublicKey

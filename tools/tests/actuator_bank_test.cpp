@@ -98,6 +98,25 @@ int main() {
   assert(legacy.isOn(only) && legacy.outputAllowed(only));
   assert(is(legacy.apply(only, "legacy-long", RelaySafety::ON, 3601, E, E + 10, E, 0, 2), "INVALID_DURATION"));
 
+  // Remote config narrows a cap but can never widen it past the compiled value.
+  ActuatorBank capped;
+  int cp = capped.add("PUMP01", KIND_PUMP, 3600, true);
+  capped.configure(false, 1);
+  capped.limitSeconds(cp, 600);
+  assert(capped.maxSeconds(cp) == 600);
+  assert(is(capped.apply(cp, "cap-701", RelaySafety::ON, 601, E, E + 10, E, 0, 2), "INVALID_DURATION"));
+  capped.limitSeconds(cp, 99999);
+  assert(capped.maxSeconds(cp) == 3600 && capped.allOff());
+  assert(!capped.apply(cp, "cap-ok", RelaySafety::ON, 3600, E, E + 10, E, 0, 2));
+  assert(!capped.allOff());
+  // OTA block: ON refused and remembered, OFF still works.
+  capped.block("OTA_IN_PROGRESS");
+  assert(!capped.apply(cp, "cap-off", RelaySafety::OFF, 0, E, E + 10, E, 10, 2) && capped.allOff());
+  assert(is(capped.apply(cp, "ota-on", RelaySafety::ON, 10, E, E + 10, E, 20, 2), "OTA_IN_PROGRESS"));
+  capped.block(nullptr);
+  assert(is(capped.apply(cp, "ota-on", RelaySafety::ON, 10, E, E + 10, E, 30, 2), "OTA_IN_PROGRESS"));
+  assert(capped.allOff());
+
   // Fault paths keep the latch and stop the pump with its valve.
   ActuatorBank faults;
   int fp = faults.add("PUMP01", KIND_PUMP, 3600, true), fv = faults.add("VALVE01", KIND_VALVE, 3600, false);

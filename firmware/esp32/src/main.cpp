@@ -9,8 +9,17 @@
 #include <sys/time.h>
 #include <esp_timer.h>
 #include <esp_sntp.h>
+#include <Preferences.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <Update.h>
+#include <esp_ota_ops.h>
 #include "RelaySafety.h"
 #include "ActuatorBank.h"
+#include "DeviceConfig.h"
+#include "OtaGuard.h"
+#include "OtaVerify.h"
+#include "testvectors/OtaTestVector.h"
 
 #if defined(FARM_WOKWI_SELFTEST) && FARM_WOKWI_SELFTEST
 #include "config.selftest.h"   // tracked, no secrets: Wokwi CI self-test only
@@ -82,6 +91,21 @@ static_assert(FARM_WOKWI_CLOCK_TOLERANCE_SECONDS >= 0 && FARM_WOKWI_CLOCK_TOLERA
 #ifndef FARM_WOKWI_SELFTEST
 #define FARM_WOKWI_SELFTEST 0
 #endif
+// Remote configuration + OTA (contract v4). Missing flag keeps the previous behaviour.
+#ifndef FARM_DEVMGMT_ENABLED
+#define FARM_DEVMGMT_ENABLED 0
+#endif
+#ifndef FARM_FIRMWARE_VERSION
+#define FARM_FIRMWARE_VERSION "1.3.0"
+#endif
+#ifndef FARM_OTA_HOST_SUFFIX
+#define FARM_OTA_HOST_SUFFIX ".amazonaws.com"
+#endif
+// PEM of the release-signing public key. Empty = OTA refused (OTA_DISABLED).
+#ifndef FARM_OTA_PUBLIC_KEY_PEM
+#define FARM_OTA_PUBLIC_KEY_PEM ""
+#endif
+static_assert(FARM_DEVMGMT_ENABLED == 0 || FARM_DEVMGMT_ENABLED == 1, "Device management flag must be 0 or 1");
 static_assert(FARM_ACTUATORS_ENABLED == 0 || FARM_ACTUATORS_ENABLED == 1, "Actuators flag must be 0 or 1");
 static_assert(FARM_MAX_OPEN_VALVES >= 1 && FARM_MAX_OPEN_VALVES <= 4, "1..4 open valves");
 static_assert(FARM_VALVE_MAX_SECONDS >= 1 && FARM_VALVE_MAX_SECONDS <= 3600, "Valve cap 1..3600 s");
@@ -114,6 +138,14 @@ static volatile bool outputOn[ActuatorBank::MAX];
 static volatile bool controlFault = false;
 struct CommandPacket { char payload[769]; bool retained; uint8_t channel; };
 static QueueHandle_t commandQueue;
+enum MgmtKind : uint8_t { MGMT_CONFIG, MGMT_OTA };
+struct MgmtPacket { char payload[1537]; bool retained; MgmtKind kind; };
+static QueueHandle_t mgmtQueue;
+static DeviceConfig deviceConfig;
+static OtaRecord otaRecord;
+static String configTopic, configAckTopic, configStateTopic, otaTopic, otaStatusTopic;
+static volatile bool configStateReported = false;
+static bool otaInProgress = false;
 static portMUX_TYPE relayMux = portMUX_INITIALIZER_UNLOCKED;
 static const uint8_t OFF_LEVEL = FARM_RELAY_OFF_LEVEL;
 
@@ -355,13 +387,23 @@ static void mqttEvent(void *, esp_event_base_t, int32_t id, void *eventData) {
     connected = true;
     portEXIT_CRITICAL(&relayMux);
     if (controlEnabled) for (int i = 0; i < bank.size(); i++) esp_mqtt_client_subscribe(client, io[i].commandTopic.c_str(), 1);
+    if (FARM_DEVMGMT_ENABLED) { esp_mqtt_client_subscribe(client, configTopic.c_str(), 1); esp_mqtt_client_subscribe(client, otaTopic.c_str(), 1); }
     Serial.println("AWS MQTT connected (TLS verified)");
   } else if (id == MQTT_EVENT_DISCONNECTED || id == MQTT_EVENT_ERROR) {
     portENTER_CRITICAL(&relayMux);
     connected = false;
+    configStateReported = false;
     allOutputsOffLocked(NETWORK_CAUSE);
     portEXIT_CRITICAL(&relayMux);
     Serial.println("AWS MQTT unavailable; check endpoint/cert/policy/network");
+  } else if (id == MQTT_EVENT_DATA && FARM_DEVMGMT_ENABLED && event->current_data_offset == 0
+      && event->data_len == event->total_data_len && event->data_len > 0 && event->data_len <= 1536
+      && ((event->topic_len == (int)configTopic.length() && strncmp(event->topic, configTopic.c_str(), event->topic_len) == 0)
+       || (event->topic_len == (int)otaTopic.length() && strncmp(event->topic, otaTopic.c_str(), event->topic_len) == 0))) {
+    MgmtPacket packet = {};
+    memcpy(packet.payload, event->data, event->data_len); packet.retained = event->retain;
+    packet.kind = event->topic_len == (int)configTopic.length() && strncmp(event->topic, configTopic.c_str(), event->topic_len) == 0 ? MGMT_CONFIG : MGMT_OTA;
+    xQueueSend(mgmtQueue, &packet, 0);  // full queue: dropped, the backend times out and may resend
   } else if (id == MQTT_EVENT_DATA && controlEnabled) {
     if (event->current_data_offset != 0 || event->data_len != event->total_data_len
         || event->data_len <= 0 || event->data_len > 768) return;
@@ -455,6 +497,251 @@ static bool setupActuators() {
   return bank.pump() == 0;
 }
 
+// ---- Remote configuration + OTA (contract v4) ----
+static Preferences prefs;
+
+static void applyConfigToActuators() {
+  if (bank.pump() >= 0) bank.limitSeconds(bank.pump(), deviceConfig.settings().pumpMaxSeconds);
+}
+static void loadConfig() {
+  DeviceSettings defaults;
+  defaults.soilWetAdc = FARM_SOIL_WET_ADC; defaults.soilDryAdc = FARM_SOIL_DRY_ADC;
+  deviceConfig.restore(0, defaults);
+  if (prefs.begin("farmcfg", true)) {
+    if (prefs.isKey("rev")) {
+      DeviceSettings stored;
+      stored.telemetrySeconds = prefs.getUShort("tel", 5); stored.heartbeatSeconds = prefs.getUShort("hb", 10);
+      stored.soilWetAdc = prefs.getUShort("wet", 0); stored.soilDryAdc = prefs.getUShort("dry", 4095);
+      stored.pumpMaxSeconds = prefs.getUShort("pcap", 3600);
+      deviceConfig.restore(prefs.getUInt("rev", 0), stored);
+    }
+    prefs.end();
+  }
+  applyConfigToActuators();
+}
+static bool saveConfig() {
+  if (!prefs.begin("farmcfg", false)) return false;
+  const DeviceSettings& s = deviceConfig.settings();
+  bool ok = prefs.putUShort("tel", s.telemetrySeconds) && prefs.putUShort("hb", s.heartbeatSeconds)
+    && prefs.putUShort("wet", s.soilWetAdc) && prefs.putUShort("dry", s.soilDryAdc) && prefs.putUShort("pcap", s.pumpMaxSeconds);
+  ok = ok && prefs.putUInt("rev", deviceConfig.revision());  // revision last: a torn write keeps the old revision
+  prefs.end();
+  return ok;
+}
+static void loadOta() {
+  if (prefs.begin("farmota", true)) {
+    if (prefs.getBytesLength("rec") == sizeof(OtaRecord)) prefs.getBytes("rec", &otaRecord, sizeof(OtaRecord));
+    prefs.end();
+  }
+  otaRecord.otaId[36] = 0; otaRecord.previous[16] = 0; otaRecord.version[23] = 0;
+}
+static void saveOta() {
+  if (prefs.begin("farmota", false)) { prefs.putBytes("rec", &otaRecord, sizeof(OtaRecord)); prefs.end(); }
+}
+static const char* runningPartition() {
+  const esp_partition_t* running = esp_ota_get_running_partition();
+  return running ? running->label : "unknown";
+}
+
+static void publishConfigState() {
+  JsonDocument doc;
+  base(doc);
+  doc["revision"] = deviceConfig.revision();
+  JsonObject settings = doc["settings"].to<JsonObject>();
+  const DeviceSettings& s = deviceConfig.settings();
+  settings["telemetrySeconds"] = s.telemetrySeconds; settings["heartbeatSeconds"] = s.heartbeatSeconds;
+  settings["soilWetAdc"] = s.soilWetAdc; settings["soilDryAdc"] = s.soilDryAdc; settings["pumpMaxSeconds"] = s.pumpMaxSeconds;
+  doc["firmwareVersion"] = FARM_FIRMWARE_VERSION;
+  doc["partition"] = runningPartition();
+  doc["otaTrial"] = otaRecord.pending;
+  String payload; serializeJson(doc, payload);
+#if FARM_WOKWI_SELFTEST
+  publish(configStateTopic, payload, 0);
+  configStateReported = true;
+#else
+  if (client && esp_mqtt_client_publish(client, configStateTopic.c_str(), payload.c_str(), 0, 1, 0) >= 0) configStateReported = true;
+#endif
+}
+
+static void publishOtaStatus(const char* otaId, const char* version, const char* stage, const char* error, int progress) {
+  JsonDocument doc;
+  base(doc);
+  doc["otaId"] = otaId; doc["version"] = version; doc["stage"] = stage;
+  if (error) doc["errorCode"] = error; else doc["errorCode"] = nullptr;
+  if (progress >= 0) doc["progress"] = progress; else doc["progress"] = nullptr;
+  doc["firmwareVersion"] = FARM_FIRMWARE_VERSION;
+  String payload; serializeJson(doc, payload);
+  publish(otaStatusTopic, payload, 0);
+  Serial.printf("OTA_STATUS stage=%s error=%s\n", stage, error ? error : "none");
+}
+
+static void handleConfig(const MgmtPacket& packet) {
+  JsonDocument doc;
+  const char* error = nullptr;
+  const char* id = "";
+  if (deserializeJson(doc, packet.payload)) { Serial.println("Config rejected: JSON"); return; }
+  id = doc["configId"] | "";
+  if (!validUuid(id)) { Serial.println("Config rejected: ID"); return; }
+  JsonObject in = doc["settings"];
+  DeviceSettings next;
+  const char* keys[] = {"telemetrySeconds", "heartbeatSeconds", "soilWetAdc", "soilDryAdc", "pumpMaxSeconds"};
+  bool shape = !packet.retained && doc.is<JsonObject>() && doc.size() == 7 && doc["schemaVersion"].is<int>() && doc["schemaVersion"].as<int>() == 1
+    && strcmp(doc["deviceId"] | "", FARM_DEVICE_ID) == 0 && doc["revision"].is<uint32_t>() && !in.isNull() && in.size() == 5
+    && doc["issuedAt"].is<const char*>() && doc["expiresAt"].is<const char*>();
+  for (const char* key : keys) shape = shape && in[key].is<uint16_t>();
+  if (packet.retained) error = "RETAINED_COMMAND";
+  else if (!shape) error = "INVALID_CONFIG";
+  else {
+    next.telemetrySeconds = in["telemetrySeconds"]; next.heartbeatSeconds = in["heartbeatSeconds"];
+    next.soilWetAdc = in["soilWetAdc"]; next.soilDryAdc = in["soilDryAdc"]; next.pumpMaxSeconds = in["pumpMaxSeconds"];
+    const uint32_t before = deviceConfig.revision();
+    error = deviceConfig.apply(id, doc["revision"].as<uint32_t>(), next, parseUtc(doc["issuedAt"]), parseUtc(doc["expiresAt"]), time(nullptr));
+    if (!error && deviceConfig.revision() != before) {
+      if (!saveConfig()) Serial.println("Config applied but NVS write failed; it will not survive a reboot");
+      applyConfigToActuators();
+    }
+  }
+  JsonDocument ack;
+  base(ack); ack["configId"] = id; ack["status"] = error ? "REJECTED" : "APPLIED";
+  if (error) ack["errorCode"] = error; else ack["errorCode"] = nullptr;
+  ack["revision"] = deviceConfig.revision();
+  String payload; serializeJson(ack, payload);
+  publish(configAckTopic, payload, 0);
+  Serial.printf("CONFIG_RESULT revision=%lu status=%s\n", (unsigned long)deviceConfig.revision(), error ? error : "APPLIED");
+  publishConfigState();
+}
+
+// Streams the image into the inactive OTA partition while hashing it; the boot partition only
+// changes (Update.end) after the SHA-256 matches and the ECDSA signature verifies.
+static const char* downloadImage(const char* otaId, const char* version, const char* url, uint32_t size, const char* sha256, const char* signature) {
+  WiFiClientSecure tls;
+  tls.setCACert(ca.c_str());        // the device's pinned Amazon Root CA
+  HTTPClient http;
+  http.setTimeout(15000);
+  http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+  if (!http.begin(tls, url)) return "DOWNLOAD_FAILED";
+  if (http.GET() != 200) { http.end(); return "DOWNLOAD_FAILED"; }
+  if (http.getSize() != (int)size) { http.end(); return "SIZE_MISMATCH"; }
+  if (!Update.begin(size, U_FLASH)) { http.end(); return "UPDATE_BEGIN_FAILED"; }
+  FirmwareHash hash;
+  const char* error = hash.begin() ? nullptr : "HASH_FAILED";
+  WiFiClient* stream = http.getStreamPtr();
+  static uint8_t buffer[1024];
+  uint32_t done = 0, lastData = millis();
+  int reported = -1;
+  while (!error && done < size) {
+    if (!connected || WiFi.status() != WL_CONNECTED) { error = "CONNECTION_LOST"; break; }
+    const size_t available = stream->available();
+    if (!available) {
+      if (millis() - lastData > 15000) error = "DOWNLOAD_TIMEOUT";
+      delay(5);
+      continue;
+    }
+    size_t want = size - done;
+    if (want > sizeof(buffer)) want = sizeof(buffer);
+    if (want > available) want = available;
+    const int n = stream->readBytes(buffer, want);
+    if (n <= 0) continue;
+    if (!hash.update(buffer, n)) error = "HASH_FAILED";
+    else if (Update.write(buffer, n) != (size_t)n) error = "FLASH_WRITE_FAILED";
+    done += n; lastData = millis();
+    const int percent = int(uint64_t(done) * 100 / size);
+    if (percent / 25 != reported / 25) { reported = percent; publishOtaStatus(otaId, version, "DOWNLOADING", nullptr, percent); }
+  }
+  http.end();
+  if (!error) {
+    uint8_t digest[32];
+    error = hash.finish(digest) ? OtaVerify::check(digest, sha256, signature, FARM_OTA_PUBLIC_KEY_PEM) : "HASH_FAILED";
+  }
+  if (error) { Update.abort(); return error; }
+  if (!Update.end()) return "UPDATE_END_FAILED";
+  return nullptr;
+}
+
+static void handleOta(const MgmtPacket& packet) {
+  JsonDocument doc;
+  if (deserializeJson(doc, packet.payload)) { Serial.println("OTA rejected: JSON"); return; }
+  const char* id = doc["otaId"] | "";
+  if (!validUuid(id)) { Serial.println("OTA rejected: ID"); return; }
+  const char* version = doc["version"] | "";
+  const char* error = nullptr;
+  const esp_partition_t* target = esp_ota_get_next_update_partition(nullptr);
+  if (packet.retained) error = "RETAINED_COMMAND";
+  else if (!doc.is<JsonObject>() || doc.size() != 10 || !doc["schemaVersion"].is<int>() || doc["schemaVersion"].as<int>() != 1
+      || strcmp(doc["deviceId"] | "", FARM_DEVICE_ID) != 0 || !doc["size"].is<uint32_t>()) error = "INVALID_OTA";
+  else if (strlen(FARM_OTA_PUBLIC_KEY_PEM) == 0) error = "OTA_DISABLED";
+  else if (otaInProgress || otaRecord.pending) error = "OTA_BUSY";
+  else if (!connected) error = "NOT_CONNECTED";
+  else if (!target) error = "NO_OTA_PARTITION";
+  else error = OtaGuard::request(id, version, doc["url"] | "", doc["size"].as<uint32_t>(), doc["sha256"] | "", doc["signature"] | "",
+    parseUtc(doc["issuedAt"] | ""), parseUtc(doc["expiresAt"] | ""), time(nullptr), target->size, FARM_OTA_HOST_SUFFIX, bank.allOff());
+  if (error) { publishOtaStatus(id, version, "REJECTED", error, -1); return; }
+  // No actuator may start while the image is written; OFF and lockout handling stay active.
+  otaInProgress = true;
+  bank.block("OTA_IN_PROGRESS");
+  publishOtaStatus(id, version, "RECEIVED", nullptr, 0);
+  error = downloadImage(id, version, doc["url"], doc["size"].as<uint32_t>(), doc["sha256"], doc["signature"]);
+  if (error) {
+    otaInProgress = false;
+    bank.block(nullptr);
+    publishOtaStatus(id, version, "FAILED", error, -1);
+    return;
+  }
+  OtaRecord next;
+  next.pending = true; next.attempts = 0;
+  strncpy(next.otaId, id, 36); strncpy(next.previous, runningPartition(), 16); strncpy(next.version, version, 23);
+  otaRecord = next;
+  saveOta();
+  publishOtaStatus(id, version, "REBOOTING", nullptr, 100);
+  portENTER_CRITICAL(&relayMux); allOutputsOffLocked(NO_CAUSE); portEXIT_CRITICAL(&relayMux);
+  delay(1500);  // let QoS1 status leave
+  ESP.restart();
+}
+
+// Back to the image that installed this one. Prefers the bootloader rollback when the image is
+// still in ESP_OTA_IMG_PENDING_VERIFY; otherwise switches the boot partition by label.
+static void rollback(const char* why) {
+  Serial.printf("OTA_ROLLBACK reason=%s previous=%s\n", why, otaRecord.previous);
+  portENTER_CRITICAL(&relayMux); allOutputsOffLocked(NO_CAUSE); portEXIT_CRITICAL(&relayMux);
+  OtaGuard::finish(otaRecord, false);
+  saveOta();
+  esp_ota_img_states_t state;
+  const esp_partition_t* running = esp_ota_get_running_partition();
+  if (running && esp_ota_get_state_partition(running, &state) == ESP_OK && state == ESP_OTA_IMG_PENDING_VERIFY)
+    esp_ota_mark_app_invalid_rollback_and_reboot();  // does not return on success
+  const esp_partition_t* previous = esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_ANY, otaRecord.previous);
+  if (previous && previous != running && esp_ota_set_boot_partition(previous) == ESP_OK) { delay(100); ESP.restart(); }
+  Serial.println("OTA_ROLLBACK_FAILED; staying on the current image");
+}
+
+static void otaTick(uint32_t now) {
+  if (!FARM_DEVMGMT_ENABLED) return;
+  if (connected && !configStateReported && client) publishConfigState();
+  switch (OtaGuard::onTick(otaRecord, now, connected && configStateReported)) {
+    case OtaGuard::TRIAL_CONFIRM:
+      esp_ota_mark_app_valid_cancel_rollback();
+      OtaGuard::finish(otaRecord, true);
+      otaRecord.outcome = 0;  // reported right now
+      saveOta();
+      publishOtaStatus(otaRecord.otaId, otaRecord.version, "CONFIRMED", nullptr, 100);
+      break;
+    case OtaGuard::TRIAL_ROLLBACK: rollback("NO_HEALTHY_SESSION"); break;
+    default: break;
+  }
+  // An image that came back from a failed trial reports it once.
+  if (connected && configStateReported && otaRecord.outcome == 2) {
+    publishOtaStatus(otaRecord.otaId, otaRecord.version, "ROLLED_BACK", "TRIAL_FAILED", -1);
+    otaRecord.outcome = 0; saveOta();
+  }
+  if (connected) {
+    static MgmtPacket packet;  // 1.5 KB: keep it off the loop stack
+    if (xQueueReceive(mgmtQueue, &packet, 0) == pdTRUE) { if (packet.kind == MGMT_CONFIG) handleConfig(packet); else handleOta(packet); }
+  }
+}
+
+// Keep the bootloader's pending-verify state until our own health check decides.
+extern "C" bool verifyRollbackLater() { return FARM_DEVMGMT_ENABLED == 1; }
+
 // ---- Wokwi CI self-test: scripted commands, no Wi-Fi/AWS. Build env wokwi_selftest only. ----
 #if FARM_WOKWI_SELFTEST
 static void selftestCommand(const char* device, const char* action, unsigned seconds) {
@@ -479,6 +766,21 @@ static void selftestCommand(const char* device, const char* action, unsigned sec
   packet.channel = c;
   handleCommand(packet);
 }
+#if FARM_DEVMGMT_ENABLED
+static void selftestConfig(const char* id, uint32_t revision, unsigned telemetry, unsigned pumpMax) {
+  static MgmtPacket packet = {};
+  const time_t now = time(nullptr), later = now + 30;
+  char issued[21], expires[21]; struct tm utc;
+  gmtime_r(&now, &utc); strftime(issued, sizeof(issued), "%Y-%m-%dT%H:%M:%SZ", &utc);
+  gmtime_r(&later, &utc); strftime(expires, sizeof(expires), "%Y-%m-%dT%H:%M:%SZ", &utc);
+  packet.kind = MGMT_CONFIG;
+  snprintf(packet.payload, sizeof(packet.payload),
+    "{\"schemaVersion\":1,\"configId\":\"%s\",\"deviceId\":\"ENV01\",\"revision\":%lu,\"issuedAt\":\"%s\",\"expiresAt\":\"%s\","
+    "\"settings\":{\"telemetrySeconds\":%u,\"heartbeatSeconds\":15,\"soilWetAdc\":900,\"soilDryAdc\":3100,\"pumpMaxSeconds\":%u}}",
+    id, (unsigned long)revision, issued, expires, telemetry, pumpMax);
+  handleConfig(packet);
+}
+#endif
 // Each step waits for its time (ms since the first water-present reading) and prints a
 // marker; the scenario checks GPIO levels after each marker.
 static void selftestLoop(uint32_t now) {
@@ -525,6 +827,45 @@ static void selftestLoop(uint32_t now) {
       Serial.printf("SELFTEST_DONE lockouts pump=%d valve3=%d fan=%d light=%d\n",
         bank.lockout(bank.pump()), bank.lockout(bank.find("VALVE03")), bank.lockout(bank.find("FAN01")), bank.lockout(bank.find("LIGHT01")));
       break;
+#if FARM_DEVMGMT_ENABLED
+    case 12: if (t < 15000) return;
+      selftestConfig("c0000000-0000-4000-8000-000000000001", 5, 8, 600);
+      selftestConfig("c0000000-0000-4000-8000-000000000001", 5, 8, 600);   // duplicate: same answer
+      selftestConfig("c0000000-0000-4000-8000-000000000002", 5, 8, 600);   // same revision: stale
+      selftestConfig("c0000000-0000-4000-8000-000000000003", 6, 30, 600);  // interval out of range
+      loadConfig();                                                         // read back from NVS
+      Serial.printf("SELFTEST_CONFIG_NVS revision=%lu telemetry=%u pumpMax=%u\n", (unsigned long)deviceConfig.revision(),
+        deviceConfig.settings().telemetrySeconds, bank.maxSeconds(bank.pump()));
+      break;
+    case 13: if (t < 16000) return; {
+      FirmwareHash hash; uint8_t chunk[200]; uint8_t digest[32];
+      hash.begin();
+      for (uint32_t done = 0; done < ota_test::kImageSize;) {
+        uint32_t n = 0;
+        while (n < sizeof(chunk) && done + n < ota_test::kImageSize) { chunk[n] = ota_test::imageByte(done + n); n++; }
+        hash.update(chunk, n); done += n;
+      }
+      hash.finish(digest);
+      const char* good = OtaVerify::check(digest, ota_test::kSha256, ota_test::kSignature, FARM_OTA_PUBLIC_KEY_PEM);
+      const char* other = OtaVerify::check(digest, ota_test::kSha256, ota_test::kSignature, ota_test::kOtherPublicKey);
+      digest[0] ^= 1;
+      const char* tampered = OtaVerify::check(digest, ota_test::kSha256, ota_test::kSignature, FARM_OTA_PUBLIC_KEY_PEM);
+      Serial.printf("SELFTEST_OTA_VERIFY good=%s otherKey=%s tampered=%s\n", good ? good : "OK", other ? other : "OK", tampered ? tampered : "OK");
+    } break;
+    case 14: if (t < 17000) return; {
+      static MgmtPacket packet = {};
+      packet.kind = MGMT_OTA;
+      snprintf(packet.payload, sizeof(packet.payload),
+        "{\"schemaVersion\":1,\"otaId\":\"0a000000-0000-4000-8000-000000000001\",\"deviceId\":\"ENV01\",\"version\":\"1.4.0\","
+        "\"url\":\"https://fw.s3.amazonaws.com/a.bin\",\"size\":4096,\"sha256\":\"%s\",\"signature\":\"%s\","
+        "\"issuedAt\":\"2027-01-15T08:00:00Z\",\"expiresAt\":\"2027-01-15T08:00:30Z\"}", ota_test::kSha256, ota_test::kSignature);
+      handleOta(packet);  // link is down in this step: REJECTED NOT_CONNECTED, nothing written
+      OtaRecord crash; crash.pending = true; int boots = 0;
+      while (OtaGuard::onBoot(crash) == OtaGuard::BOOT_TRIAL) boots++;
+      Serial.printf("SELFTEST_OTA_GUARD trialsBeforeRollback=%d pending=%d\n", boots, otaRecord.pending ? 1 : 0);
+      Serial.println("SELFTEST_DEVMGMT_DONE");
+    } break;
+#endif
     default: return;
   }
   step++;
@@ -536,9 +877,20 @@ void setup() {
   for (int i = 0; i < ActuatorBank::MAX; i++) { offCause[i] = NO_CAUSE; forcedOff[i] = false; outputOn[i] = false; }
   const bool actuatorsReady = setupActuators();
   Serial.begin(115200);
+  Serial.printf("Firmware %s on partition %s\n", FARM_FIRMWARE_VERSION, runningPartition());
+  if (FARM_DEVMGMT_ENABLED) {
+    // Trial-boot bookkeeping first: a crash loop must reach the rollback before anything else.
+    loadOta();
+    const OtaGuard::Boot boot = OtaGuard::onBoot(otaRecord);
+    saveOta();
+    if (boot == OtaGuard::BOOT_ROLLBACK) rollback("BOOT_ATTEMPTS");
+    else if (boot == OtaGuard::BOOT_TRIAL) Serial.printf("OTA_TRIAL attempt=%u version=%s\n", otaRecord.attempts, otaRecord.version);
+  }
   Serial.println("SmartFarm starting; relays OFF");
   setenv("TZ","UTC0",1); tzset();
   commandQueue = xQueueCreate(8,sizeof(CommandPacket));
+  mgmtQueue = xQueueCreate(2, sizeof(MgmtPacket));
+  loadConfig();
   controlEnabled = FARM_CONTROL_ENABLED == 1 && strcmp(FARM_DEVICE_ID,"ENV01")==0 && strcmp(FARM_ID,"FARM001")==0 && commandQueue && actuatorsReady;
   Serial.println(controlEnabled ? "Wokwi relay control enabled" : "Relay control disabled");
   Serial.printf("Actuators: %d (pump requires valve=%d, max open valves=%d)\n", bank.size(), pumpNeedsValve() ? 1 : 0, FARM_MAX_OPEN_VALVES);
@@ -556,6 +908,9 @@ void setup() {
     id[8], id[9], id[10], id[11], id[12], id[13], id[14], id[15]);
   telemetryTopic = String("smartfarm/") + FARM_ID + "/" + FARM_DEVICE_ID + "/telemetry";
   statusTopic = String("smartfarm/") + FARM_ID + "/" + FARM_DEVICE_ID + "/status";
+  const String device = String("smartfarm/") + FARM_ID + "/" + FARM_DEVICE_ID;
+  configTopic = device + "/config"; configAckTopic = device + "/config-ack"; configStateTopic = device + "/config-state";
+  otaTopic = device + "/ota"; otaStatusTopic = device + "/ota-status";
 #if FARM_WOKWI_SELFTEST
   // Fixed wall clock and a simulated live link; no network is used.
   struct timeval tv = {1800000000, 0};
@@ -622,6 +977,7 @@ void loop() {
     CommandPacket packet;
     if (xQueueReceive(commandQueue,&packet,0)==pdTRUE) handleCommand(packet);
   }
+  otaTick(now);
   static uint32_t lastDiagnostic = 0;
   if (!client && now - lastDiagnostic >= 10000) {
     lastDiagnostic = now;
@@ -649,23 +1005,23 @@ void loop() {
     lastWifiAttempt = now;
     startMqtt();
   }
-  if (connected && now - lastHeartbeat >= 10000) {
+  if (connected && now - lastHeartbeat >= deviceConfig.settings().heartbeatSeconds * 1000u) {
     lastHeartbeat = now;
     publishStatus();
   }
-  if (connected && now - lastSample >= 5000) {
+  if (connected && now - lastSample >= deviceConfig.settings().telemetrySeconds * 1000u) {
     lastSample = now;
     TempAndHumidity values = dht.getTempAndHumidity();
     if (isfinite(values.temperature) && isfinite(values.humidity)
         && values.temperature >= -40 && values.temperature <= 80
         && values.humidity >= 0 && values.humidity <= 100
-        && FARM_SOIL_DRY_ADC != FARM_SOIL_WET_ADC) {
+        && deviceConfig.settings().soilDryAdc != deviceConfig.settings().soilWetAdc) {
       JsonDocument doc;
       base(doc);
       doc["temperature"] = values.temperature;
       doc["humidity"] = values.humidity;
-      float soil = 100.0f * (FARM_SOIL_DRY_ADC - analogRead(FARM_SOIL_PIN))
-        / (FARM_SOIL_DRY_ADC - FARM_SOIL_WET_ADC);
+      const float dry = deviceConfig.settings().soilDryAdc, wet = deviceConfig.settings().soilWetAdc;
+      float soil = 100.0f * (dry - analogRead(FARM_SOIL_PIN)) / (dry - wet);
       doc["soilMoisture"] = constrain(soil, 0.0f, 100.0f);
       doc["uptimeMs"] = now;
       String payload;

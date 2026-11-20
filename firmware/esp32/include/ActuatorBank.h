@@ -28,6 +28,7 @@ class ActuatorBank {
     strncpy(c.id, id, 15); c.id[15] = 0;
     c.kind = kind; c.reservoir = usesReservoir || kind == KIND_PUMP;
     c.relay.setMaxSeconds(maxSeconds);
+    c.capSeconds = maxSeconds;
     c.reason = "BOOT";
     if (kind == KIND_PUMP) pumpIndex = count;
     return count++;
@@ -48,6 +49,17 @@ class ActuatorBank {
   bool isOn(int i) const { return channels[i].relay.isOn(); }
   bool lockout(int i) const { return channels[i].relay.lockout(); }
   unsigned maxSeconds(int i) const { return channels[i].relay.maxDuration(); }
+  // Remote config may only narrow the compiled cap, never widen it.
+  void limitSeconds(int i, unsigned seconds) {
+    Channel& c = channels[i];
+    c.relay.setMaxSeconds(seconds < 1 ? 1 : seconds > c.capSeconds ? c.capSeconds : seconds);
+  }
+  // Refuse every ON (cached per command like any rejection), e.g. "OTA_IN_PROGRESS". nullptr clears.
+  void block(const char* reason) { blocked = reason; }
+  bool allOff() const {
+    for (int i = 0; i < count; i++) if (channels[i].relay.isOn()) return false;
+    return true;
+  }
   const char* reason(int i) const { return channels[i].reason; }
   void setReason(int i, const char* value) { channels[i].reason = value; }
 
@@ -73,7 +85,8 @@ class ActuatorBank {
     Channel& c = channels[i];
     const char* interlock = nullptr;
     if (action == RelaySafety::ON) {
-      if (i == pumpIndex && pumpRequiresValve && runningValves() == 0) interlock = "NO_VALVE_OPEN";
+      if (blocked) interlock = blocked;
+      else if (i == pumpIndex && pumpRequiresValve && runningValves() == 0) interlock = "NO_VALVE_OPEN";
       else if (c.kind == KIND_VALVE && !c.relay.isOn() && runningValves() >= (int)maxOpenValves) interlock = "VALVE_LIMIT";
     }
     const bool wasOn = c.relay.isOn();
@@ -131,6 +144,7 @@ class ActuatorBank {
     char id[16] = {};
     ActuatorKind kind = KIND_FAN;
     bool reservoir = false;
+    unsigned capSeconds = 3600;
     RelaySafety relay;
     const char* reason = "BOOT";
   };
@@ -151,4 +165,5 @@ class ActuatorBank {
   bool pumpRequiresValve = false;
   unsigned maxOpenValves = 1;
   uint32_t stopped = 0;
+  const char* blocked = nullptr;
 };

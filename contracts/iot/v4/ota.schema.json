@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ENV01 OTA request",
+  "description": "signature = base64(DER ECDSA P-256 over SHA-256 of the image). Device refuses unless every actuator is OFF.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "otaId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "deviceId": {
+      "const": "ENV01"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9]{1,8})?$",
+      "maxLength": 23
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https://[^/@:?\\s]+\\.amazonaws\\.com/[^\\s\"<>]*$",
+      "maxLength": 1024
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 1024,
+      "maximum": 1310720
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]+={0,2}$",
+      "minLength": 80,
+      "maxLength": 200
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "otaId",
+    "deviceId",
+    "version",
+    "url",
+    "size",
+    "sha256",
+    "signature",
+    "issuedAt",
+    "expiresAt"
+  ]
+}

@@ -265,3 +265,46 @@ steps:
       part-id: esp
       name: 21
       value: 0
+  # Remote config: apply, idempotent duplicate, stale revision, out-of-range value, NVS read-back.
+  - wait-serial: 'CONFIG_RESULT revision=5 status=APPLIED'
+  - wait-serial: 'CONFIG_RESULT revision=5 status=APPLIED'
+  - wait-serial: 'CONFIG_RESULT revision=5 status=STALE_REVISION'
+  - wait-serial: 'CONFIG_RESULT revision=5 status=INVALID_TELEMETRY_INTERVAL'
+  - wait-serial: 'SELFTEST_CONFIG_NVS revision=5 telemetry=8 pumpMax=600'
+  # OTA verification on the ESP32 itself (mbedtls): good image, foreign key, tampered digest.
+  - wait-serial: 'SELFTEST_OTA_VERIFY good=OK otherKey=BAD_SIGNATURE tampered=HASH_MISMATCH'
+  - wait-serial: 'OTA_STATUS stage=REJECTED error=NOT_CONNECTED'
+  - wait-serial: 'SELFTEST_OTA_GUARD trialsBeforeRollback=3 pending=0'
+  - wait-serial: 'SELFTEST_DEVMGMT_DONE'
+  - expect-pin:
+      part-id: esp
+      name: 26
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 25
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 33
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 32
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 13
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 18
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 19
+      value: 0
+  - expect-pin:
+      part-id: esp
+      name: 21
+      value: 0
