@@ -186,7 +186,7 @@ public class DeviceManagementService {
         expire();
         var releases = jdbc.query("SELECT * FROM firmware_release ORDER BY created_at DESC LIMIT 20", (rs, n) -> new Release(rs.getString("version"),
             rs.getInt("size"), rs.getString("sha256"), rs.getString("signature"), rs.getString("url"), rs.getTimestamp("created_at").toInstant()));
-        var jobs = jdbc.query("SELECT * FROM ota_job ORDER BY issued_at DESC LIMIT 20", (rs, n) -> new OtaJob(rs.getObject("ota_id", UUID.class),
+        var jobs = jdbc.query("SELECT * FROM ota_job ORDER BY issued_at DESC,updated_at DESC LIMIT 20", (rs, n) -> new OtaJob(rs.getObject("ota_id", UUID.class),
             rs.getString("version"), rs.getString("from_version"), rs.getTimestamp("issued_at").toInstant(), rs.getString("state"),
             rs.getObject("progress", Integer.class), rs.getString("error_code"), rs.getTimestamp("updated_at").toInstant()));
         var device = device();
@@ -310,7 +310,7 @@ public class DeviceManagementService {
         String status = node.path("status").asText();
         boolean applied = status.equals("APPLIED");
         if (!applied && !status.equals("REJECTED")) throw new IllegalArgumentException();
-        String error = applied ? null : node.path("errorCode").asText();
+        String error = applied ? null : node.path("errorCode").isTextual() ? node.path("errorCode").asText() : "";
         if (!applied && (error.isBlank() || error.length() > 80)) throw new IllegalArgumentException();
         jdbc.update("""
             UPDATE device_config_request SET state=?,error_code=?,applied_revision=?,acknowledged_at=CURRENT_TIMESTAMP
@@ -343,7 +343,7 @@ public class DeviceManagementService {
         if (!node.path("otaId").asText().matches(UUID_PATTERN)) throw new IllegalArgumentException();
         String stage = node.path("stage").asText();
         if (!RANK.containsKey(stage) || stage.equals("SENT") || stage.equals("PUBLISH_UNCERTAIN") || stage.equals("TIMED_OUT")) throw new IllegalArgumentException();
-        String error = node.path("errorCode").isNull() ? null : node.path("errorCode").asText();
+        String error = node.path("errorCode").isNull() ? null : node.path("errorCode").isTextual() ? node.path("errorCode").asText() : "";
         if (error != null && (error.isBlank() || error.length() > 80)) throw new IllegalArgumentException();
         if (Set.of("REJECTED", "FAILED").contains(stage) && error == null) throw new IllegalArgumentException();
         Integer progress = node.path("progress").isIntegralNumber() ? node.path("progress").asInt() : null;

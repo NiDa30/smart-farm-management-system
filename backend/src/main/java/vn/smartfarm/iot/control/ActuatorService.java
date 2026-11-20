@@ -187,7 +187,7 @@ public class ActuatorService {
                 UUID command = UUID.fromString(node.path("commandId").asText());
                 boolean success = node.path("status").asText().equals("SUCCESS");
                 if (!success && !node.path("status").asText().equals("FAILED")) throw new IllegalArgumentException();
-                String error = success ? null : node.path("errorCode").asText();
+                String error = success ? null : node.path("errorCode").isTextual() ? node.path("errorCode").asText() : "";
                 if (!success && (error.isBlank() || error.length() > 80)) throw new IllegalArgumentException();
                 if (success && jdbc.queryForObject("SELECT COUNT(*) FROM actuator_command WHERE command_id=? AND ((action='ON' AND ?<>'ON') OR (action IN ('OFF','RESET_LOCKOUT') AND ?<>'OFF'))",
                     Integer.class, command, state, state) > 0) throw new IllegalArgumentException();

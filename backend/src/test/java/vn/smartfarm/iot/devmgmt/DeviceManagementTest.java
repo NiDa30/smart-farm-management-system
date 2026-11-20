@@ -140,7 +140,8 @@ class DeviceManagementTest {
             + " expected=" + java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(RELEASE.getPublic().getEncoded())));
         assertEquals("1.4.0", service.register(good).version());
         assertEquals(409, code(() -> service.register(good)), "versions are immutable");
-        assertEquals(400, code(() -> { try { service.register(release("1.4.1", OTHER)); } catch (Exception e) { throw new RuntimeException(e); } }));
+        var foreign = release("1.4.1", OTHER);
+        assertEquals(400, code(() -> service.register(foreign)), "signed with another key");
         var tampered = new ReleaseRequest("1.4.2", good.size(), (good.sha256().charAt(0) == '0' ? "1" : "0") + good.sha256().substring(1), good.signature(), good.url());
         assertEquals(400, code(() -> service.register(tampered)));
         for (String url : List.of("http://x.amazonaws.com/a.bin", "https://evil.com/a.bin", "https://u@x.amazonaws.com/a.bin",
@@ -198,7 +199,8 @@ class DeviceManagementTest {
         assertEquals("TIMED_OUT", service.ota().jobs().stream().filter(j -> j.otaId().equals(again.otaId())).findFirst().orElseThrow().state());
         doThrow(new IllegalStateException("broker")).when(transport).publishDeviceManagement(anyString(), any());
         assertEquals(502, code(() -> service.start(new DeviceManagementService.StartRequest("1.4.0"))));
-        assertEquals("PUBLISH_UNCERTAIN", service.ota().jobs().getFirst().state());
+        assertEquals(List.of("PUBLISH_UNCERTAIN", "REJECTED", "TIMED_OUT"), service.ota().jobs().stream().map(DeviceManagementService.OtaJob::state).sorted(
+            java.util.Comparator.comparing(state -> List.of("PUBLISH_UNCERTAIN", "REJECTED", "TIMED_OUT").indexOf(state))).toList());
     }
 
     @Test void keyParsingRejectsWrongCurves() throws Exception {

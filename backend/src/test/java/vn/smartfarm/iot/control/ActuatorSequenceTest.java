@@ -209,6 +209,13 @@ class ActuatorSequenceTest {
         assertEquals("FAN01", wire.path("deviceId").asText());
         assertEquals(10, java.time.Duration.between(Instant.parse(wire.path("issuedAt").asText()), Instant.parse(wire.path("expiresAt").asText())).toSeconds());
         assertEquals(409, code.apply(() -> actuators.create("FAN01", new ActuatorService.Request("ON", 10))), "pending");
+        // A FAILED ACK must name its error (contract v1/v3); JSON null is not a code.
+        String nullError = "{\"schemaVersion\":3,\"deviceId\":\"FAN01\",\"bootId\":\"" + boot + "\",\"sequence\":" + (seq++) + ",\"timestamp\":\"" + Instant.now()
+            + "\",\"commandId\":\"" + fan.commandId() + "\",\"stage\":\"EXECUTED\",\"status\":\"FAILED\",\"reportedState\":\"OFF\",\"errorCode\":null,\"safetyLockout\":false}";
+        assertThrows(IllegalArgumentException.class, () -> actuators.receive("smartfarm/FARM001/FAN01/ack", nullError.getBytes()));
+        assertThrows(IllegalArgumentException.class, () -> pump.receive("smartfarm/FARM001/PUMP01/ack", nullError.replace("\"schemaVersion\":3", "\"schemaVersion\":1")
+            .replace("FAN01", "PUMP01").getBytes()));
+        assertEquals("SENT", actuators.command(fan.commandId()).state());
         // An ACK that contradicts the action is rejected; a matching one resolves it.
         assertThrows(IllegalArgumentException.class, () -> ack("FAN01", fan.commandId().toString(), "OFF", null));
         ack("FAN01", fan.commandId().toString(), "ON", null);
