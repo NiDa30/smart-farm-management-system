@@ -7,4 +7,8 @@ public interface CommandTransport {
     default void publishActuatorCommand(String actuatorId, byte[] payload) throws Exception {
         throw new IllegalStateException("Actuator commands unavailable");
     }
+    /** Contract v4: smartfarm/FARM001/ENV01/{config|ota}. */
+    default void publishDeviceManagement(String kind, byte[] payload) throws Exception {
+        throw new IllegalStateException("Device management unavailable");
+    }
 }
