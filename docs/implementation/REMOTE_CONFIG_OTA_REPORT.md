@@ -35,8 +35,8 @@ lịch sử ACK) và OTA (chọn bản, không chọn được bản đang chạ
 | Test native `device_management_test.cpp` (link mbedtls 2.28.8, ASan/UBSan) | đạt, đã bắt một lỗi thật (`1.4.0-` lọt kiểm phiên bản) |
 | `pio run` (`esp32dev`, `wokwi_selftest`) | đạt trên CI |
 | pytest (hợp đồng v4, công cụ ký, IAM, vector test) | 54 |
-| Unit / Playwright frontend | xem CI; `test:devices` 3/3 |
-| `./mvnw -B verify` | xem CI (`DeviceManagementTest`) |
+| Unit / Playwright frontend | 58/58; 9 bộ đều đạt, `test:devices` 3/3 |
+| `./mvnw -B verify` (PostgreSQL 16) | 181 test, 0 lỗi, 0 bỏ qua (thêm `DeviceManagementTest` 5, ký ECDSA thật trong Java). Đã bắt và sửa: `errorCode: null` bị lưu thành chuỗi `"null"` (cả PUMP01 và v3) |
 | Wokwi (cấu hình + kiểm chữ ký ngay trên ESP32) | cần `WOKWI_CLI_TOKEN` |
 
 Chưa kiểm trên phần cứng: tải thật qua S3, đổi phân vùng và rollback thật (Wokwi không mô phỏng
