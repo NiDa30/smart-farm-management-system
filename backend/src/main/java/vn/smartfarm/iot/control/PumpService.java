@@ -123,7 +123,7 @@ public class PumpService {
             if (!Set.of("ON","OFF").contains(state) || !node.path("safetyLockout").isBoolean()) throw new IllegalArgumentException();
             String reason=null;
             if (node.has("stateReason")) {
-                if (!node.path("stateReason").isTextual() || !Set.of("BOOT","COMMAND_ON","COMMAND_OFF","LOCKOUT_RESET","TIMER_EXPIRED","CONNECTION_LOST","DEVICE_FAULT","WATER_LOW").contains(node.path("stateReason").asText())) throw new IllegalArgumentException();
+                if (!node.path("stateReason").isTextual() || !Set.of("BOOT","COMMAND_ON","COMMAND_OFF","LOCKOUT_RESET","TIMER_EXPIRED","CONNECTION_LOST","DEVICE_FAULT","WATER_LOW","VALVE_CLOSED").contains(node.path("stateReason").asText())) throw new IllegalArgumentException();
                 reason=node.path("stateReason").asText();
             }
             if (topic.equals("smartfarm/FARM001/PUMP01/status")) {
@@ -142,7 +142,7 @@ public class PumpService {
                 if (!node.path("stage").asText().equals("EXECUTED")) throw new IllegalArgumentException();
                 boolean success=node.path("status").asText().equals("SUCCESS");
                 if (!success && !node.path("status").asText().equals("FAILED")) throw new IllegalArgumentException();
-                String error=success ? null : node.path("errorCode").asText();
+                String error=success ? null : node.path("errorCode").isTextual() ? node.path("errorCode").asText() : "";
                 if (!success && (error.isBlank() || error.length()>80)) throw new IllegalArgumentException();
                 if (success && jdbc.queryForObject("SELECT COUNT(*) FROM pump_command WHERE command_id=? AND ((action='ON' AND ?<>'ON') OR (action IN ('OFF','RESET_LOCKOUT') AND ?<>'OFF'))",Integer.class,command,state,state)>0)
                     throw new IllegalArgumentException();

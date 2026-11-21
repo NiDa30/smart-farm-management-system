@@ -61,7 +61,8 @@
         "TIMER_EXPIRED",
         "CONNECTION_LOST",
         "DEVICE_FAULT",
-        "WATER_LOW"
+        "WATER_LOW",
+        "VALVE_CLOSED"
       ]
     }
   },

@@ -21,6 +21,9 @@ smartfarm:
     enabled: ${SMARTFARM_MQTT_ENABLED:false}
   control:
     enabled: ${SMARTFARM_CONTROL_ENABLED:false}
+  actuators:
+    # Contract v3 actuators (zone valves, fan, light, misting) and zone sequences; also needs control.enabled.
+    enabled: ${SMARTFARM_ACTUATORS_ENABLED:false}
   realtime:
     # Browser origins allowed to open /ws/iot (explicit list, no wildcard).
     allowed-origins: ${SMARTFARM_REALTIME_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}

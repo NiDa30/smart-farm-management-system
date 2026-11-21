@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Smart Farm actuator command v3",
+  "description": "Zone valves, fan, grow light and misting on ENV01. PUMP01 stays on contract v1.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 3
+    },
+    "commandId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "deviceId": {
+      "enum": [
+        "VALVE01",
+        "VALVE02",
+        "VALVE03",
+        "VALVE04",
+        "FAN01",
+        "LIGHT01",
+        "MIST01"
+      ]
+    },
+    "action": {
+      "enum": [
+        "ON",
+        "OFF",
+        "RESET_LOCKOUT"
+      ]
+    },
+    "durationSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 14400
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "commandId",
+    "deviceId",
+    "action",
+    "issuedAt",
+    "expiresAt"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "action": {
+            "const": "ON"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "durationSeconds"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "durationSeconds"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deviceId": {
+            "pattern": "^VALVE0[1-4]$"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "durationSeconds": {
+            "maximum": 3600
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deviceId": {
+            "pattern": "^FAN01$"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "durationSeconds": {
+            "maximum": 14400
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deviceId": {
+            "pattern": "^LIGHT01$"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "durationSeconds": {
+            "maximum": 14400
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "deviceId": {
+            "pattern": "^MIST01$"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "durationSeconds": {
+            "maximum": 600
+          }
+        }
+      }
+    }
+  ]
+}

@@ -2,7 +2,9 @@ export const metrics={AIR_TEMPERATURE:'°C',AIR_HUMIDITY:'%RH',SOIL_MOISTURE:'%'
 export type Metric=keyof typeof metrics;
 export interface ChannelReading {value:number|boolean|null;quality:'VALID'|'SENSOR_FAULT';observedAt:string;receivedAt:string;bootId:string;sequence:number;calibrationVersion:string|null;dataSource?:'UNSPECIFIED'|'SIMULATOR'|'PHYSICAL'}
 export interface NodeChannel {channelId:string;metric:Metric;unit:string;calibrationVersion:string|null;latest:ChannelReading|null}
-export interface FarmNode {nodeId:string;name:string;areaId:string;nodeType:'ENVIRONMENT'|'WATER';telemetryVersion:1|2;channels:NodeChannel[];actuators:{actuatorId:string;actuatorType:'PUMP';commandContract:'PUMP_V1'}[]}
+export interface FarmNode {nodeId:string;name:string;areaId:string;nodeType:'ENVIRONMENT'|'WATER';telemetryVersion:1|2;channels:NodeChannel[];actuators:NodeActuator[]}
+// PUMP01 stays on contract v1; zone valves, fan, light and misting use contract v3.
+export type NodeActuator={actuatorId:string;actuatorType:'PUMP';commandContract:'PUMP_V1'}|{actuatorId:string;actuatorType:'VALVE'|'FAN'|'LIGHT'|'MIST';commandContract:'ACTUATOR_V3'};
 export interface NodesSnapshot {farmId:'FARM001';asOf:string;nodes:FarmNode[]}
 export interface WaterDeclaration {nodeId:string;name:string;areaId:string;channels:Omit<NodeChannel,'latest'>[]}
 const obj=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v);
@@ -37,7 +39,7 @@ export function parseNode(v:unknown):FarmNode {
    parseChannelReading(r,c.metric as Metric);
   }
  }
- if(!v.actuators.every((a:unknown)=>obj(a)&&code(a.actuatorId)&&a.actuatorType==='PUMP'&&a.commandContract==='PUMP_V1')||new Set(v.actuators.map((a:any)=>a.actuatorId)).size!==v.actuators.length)throw new Error('Actuator không hợp lệ.');
+ if(!v.actuators.every((a:unknown)=>obj(a)&&code(a.actuatorId)&&((a.actuatorType==='PUMP'&&a.commandContract==='PUMP_V1')||(['VALVE','FAN','LIGHT','MIST'].includes(a.actuatorType)&&a.commandContract==='ACTUATOR_V3')))||new Set(v.actuators.map((a:any)=>a.actuatorId)).size!==v.actuators.length)throw new Error('Actuator không hợp lệ.');
  return v as FarmNode;
 }
 export function parseNodes(v:unknown):NodesSnapshot {

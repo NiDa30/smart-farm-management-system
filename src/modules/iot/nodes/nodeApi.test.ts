@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {parseNodes,channelFreshness,matchesDeclaration,tankState,type FarmNode} from './nodeApi';
+import {parseNode,parseNodes,channelFreshness,matchesDeclaration,tankState,type FarmNode} from './nodeApi';
 const now='2026-10-14T12:00:00Z';
 function node():FarmNode{return {nodeId:'WATER01',name:'Trạm nước',areaId:'AREA001',nodeType:'WATER',telemetryVersion:2,actuators:[],channels:[{channelId:'LOW',metric:'WATER_PRESENT',unit:'boolean',calibrationVersion:null,latest:{value:false,quality:'VALID',observedAt:now,receivedAt:now,bootId:'31000000-0000-4000-8000-000000000001',sequence:1,calibrationVersion:null}}]};}
 function parse(n:unknown){return parseNodes({farmId:'FARM001',asOf:now,nodes:[n]});}
@@ -42,4 +42,11 @@ test('provenance is validated and two different sources cannot form a tank state
  n.channels.push({...n.channels[0],channelId:'HIGH',latest:{...n.channels[0].latest!,dataSource:'PHYSICAL'}});
  assert.equal(tankState(n,Date.parse(now)),'UNKNOWN');
  (n.channels[0].latest as any).dataSource='ASSUMED';assert.throws(()=>parse(n));
+});
+test('contract v3 actuators are accepted only with their own contract',()=>{
+ const env=(actuators:unknown[])=>parseNode({...node(),nodeId:'ENV01',actuators});
+ assert.equal(env([{actuatorId:'PUMP01',actuatorType:'PUMP',commandContract:'PUMP_V1'},{actuatorId:'VALVE01',actuatorType:'VALVE',commandContract:'ACTUATOR_V3'},{actuatorId:'MIST01',actuatorType:'MIST',commandContract:'ACTUATOR_V3'}]).actuators.length,3);
+ assert.throws(()=>env([{actuatorId:'VALVE01',actuatorType:'VALVE',commandContract:'PUMP_V1'}]));
+ assert.throws(()=>env([{actuatorId:'PUMP01',actuatorType:'PUMP',commandContract:'ACTUATOR_V3'}]));
+ assert.throws(()=>env([{actuatorId:'HEAT01',actuatorType:'HEATER',commandContract:'ACTUATOR_V3'}]));
 });

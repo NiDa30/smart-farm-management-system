@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Smart Farm actuator status v3",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 3
+    },
+    "deviceId": {
+      "enum": [
+        "VALVE01",
+        "VALVE02",
+        "VALVE03",
+        "VALVE04",
+        "FAN01",
+        "LIGHT01",
+        "MIST01"
+      ]
+    },
+    "bootId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "connection": {
+      "const": "ONLINE"
+    },
+    "reportedState": {
+      "enum": [
+        "ON",
+        "OFF"
+      ]
+    },
+    "safetyLockout": {
+      "type": "boolean"
+    },
+    "stateReason": {
+      "enum": [
+        "BOOT",
+        "COMMAND_ON",
+        "COMMAND_OFF",
+        "LOCKOUT_RESET",
+        "TIMER_EXPIRED",
+        "CONNECTION_LOST",
+        "DEVICE_FAULT",
+        "WATER_LOW"
+      ]
+    },
+    "activeCommandId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "timestamp",
+    "connection",
+    "reportedState",
+    "safetyLockout",
+    "stateReason",
+    "activeCommandId"
+  ]
+}

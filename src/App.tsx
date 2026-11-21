@@ -56,6 +56,7 @@ import { DeviceStatisticsPanel } from './modules/iot/devices/DeviceStatisticsPan
 import { SensorRealtime } from './modules/iot/realtime/SensorRealtime';
 import { HistoricalData } from './modules/iot/history/HistoricalData';
 import { PumpControl } from './modules/iot/control/PumpControl';
+import { ActuatorPanel } from './modules/iot/actuators/ActuatorPanel';
 import { DigitalTwinView } from './modules/iot/digital-twin/DigitalTwinView';
 import { AutomationManager } from './modules/iot/automation/AutomationManager';
 import { IoTAlertCenter } from './modules/iot/alerts/IoTAlertCenter';
@@ -271,7 +272,7 @@ const AppContent: React.FC = () => {
       return <HistoricalData />;
     }
     if (currentRoute.startsWith('/iot/control')) {
-      return <PumpControl />;
+      return <><PumpControl /><ActuatorPanel /></>;
     }
     if (currentRoute.startsWith('/iot/digital-twin')) {
       return <DigitalTwinView />;
