@@ -18,7 +18,8 @@
     "test:nodes": "playwright test --config playwright.nodes.config.ts",
     "test:actuators": "playwright test --config playwright.actuators.config.ts",
     "test:devices": "playwright test --config playwright.devices.config.ts",
-    "test:live": "playwright test --config playwright.liveviews.config.ts"
+    "test:live": "playwright test --config playwright.liveviews.config.ts",
+    "test:rules": "playwright test --config playwright.rules.config.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -64,6 +64,7 @@ import { EdgeStatus } from './modules/iot/live-views/EdgeStatus';
 import { WaterMonitoring } from './modules/iot/live-views/WaterMonitoring';
 import { EnergyMonitor } from './modules/iot/live-views/EnergyMonitor';
 import { IotAnalyticsView } from './modules/iot/live-views/IotAnalyticsView';
+import { RuleCenter } from './modules/iot/rules/RuleCenter';
 import { AutomationManager } from './modules/iot/automation/AutomationManager';
 import { IoTAlertCenter } from './modules/iot/alerts/IoTAlertCenter';
 import { SafetyAndEdge } from './modules/iot/safety/SafetyAndEdge';
@@ -298,6 +299,9 @@ const AppContent: React.FC = () => {
     }
     if (currentRoute.startsWith('/iot/energy') || currentRoute.startsWith('/iot/resources')) {
       return <EnergyMonitor />;
+    }
+    if (currentRoute.startsWith('/iot/rules')) {
+      return <RuleCenter />;
     }
     if (currentRoute.startsWith('/iot/analytics')) {
       return <IotAnalyticsView />;
