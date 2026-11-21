@@ -50,5 +50,5 @@ Lỗi trả về dạng `{status, message}`.
 - Frontend: `ruleApi.test.ts` đạt 3/3. `npm run test:rules` (Playwright) đạt 4/4, kiểm tra danh sách, bộ dựng → mô phỏng → lưu, lý do xung đột, và kênh mực nước. Lint và build sạch.
 
 ## Giới hạn
-- Trạng thái thời gian nghỉ và tạm dừng nằm trong DB. Nếu backend khởi động lại, việc đánh giá tiếp tục đúng, nhưng một điều kiện có `forSeconds` sẽ được tính lại từ dữ liệu đã lưu.
+- Thời gian nghỉ, số lần chạy và tạm dừng được tính từ DB (lượt chạy, lệnh tay), nên vẫn đúng sau khi backend khởi động lại; điều kiện `forSeconds` cũng đọc từ dữ liệu đã lưu.
 - Chưa thử với phần cứng thật: quy tắc chỉ gửi lệnh qua MQTT như điều khiển tay đã được kiểm chứng trên Wokwi.
