@@ -6,7 +6,6 @@ import { EdgeStatus } from '../../../../src/modules/iot/live-views/EdgeStatus';
 import { WaterMonitoring } from '../../../../src/modules/iot/live-views/WaterMonitoring';
 import { EnergyMonitor } from '../../../../src/modules/iot/live-views/EnergyMonitor';
 import { IotAnalyticsView } from '../../../../src/modules/iot/live-views/IotAnalyticsView';
-import { RuleCenter } from '../../../../src/modules/iot/rules/RuleCenter';
-const views: Record<string, React.FC> = { topology: TopologyView, twin: DigitalTwinLive, edge: EdgeStatus, water: WaterMonitoring, energy: EnergyMonitor, analytics: IotAnalyticsView, rules: RuleCenter };
+const views: Record<string, React.FC> = { topology: TopologyView, twin: DigitalTwinLive, edge: EdgeStatus, water: WaterMonitoring, energy: EnergyMonitor, analytics: IotAnalyticsView };
 const View = views[location.hash.slice(1)] ?? TopologyView;
 createRoot(document.getElementById('root')!).render(<View />);
