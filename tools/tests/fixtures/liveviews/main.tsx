@@ -1,0 +1,11 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { TopologyView } from '../../../../src/modules/iot/live-views/TopologyView';
+import { DigitalTwinLive } from '../../../../src/modules/iot/live-views/DigitalTwinLive';
+import { EdgeStatus } from '../../../../src/modules/iot/live-views/EdgeStatus';
+import { WaterMonitoring } from '../../../../src/modules/iot/live-views/WaterMonitoring';
+import { EnergyMonitor } from '../../../../src/modules/iot/live-views/EnergyMonitor';
+import { IotAnalyticsView } from '../../../../src/modules/iot/live-views/IotAnalyticsView';
+const views: Record<string, React.FC> = { topology: TopologyView, twin: DigitalTwinLive, edge: EdgeStatus, water: WaterMonitoring, energy: EnergyMonitor, analytics: IotAnalyticsView };
+const View = views[location.hash.slice(1)] ?? TopologyView;
+createRoot(document.getElementById('root')!).render(<View />);

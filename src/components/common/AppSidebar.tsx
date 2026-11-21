@@ -43,6 +43,8 @@ import {
   CheckCircle2,
   TrendingUp,
   DollarSign,
+  Zap,
+  UploadCloud,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -115,8 +117,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     { label: 'Bản sao số Digital Twin', route: '/iot/digital-twin', icon: Layers },
     { label: 'Quy tắc Tự động hóa', route: '/iot/automation', icon: Sparkles },
     { label: 'Trung tâm Cảnh báo', route: '/iot/alerts', icon: AlertTriangle },
-    { label: 'Tiêu thụ Nước & Điện', route: '/iot/resources', icon: Droplets },
-    { label: 'An toàn Fail-Safe & Edge', route: '/iot/safety', icon: ShieldCheck },
+    { label: 'Giám sát nước', route: '/iot/water', icon: Droplets },
+    { label: 'Điện năng (ước tính)', route: '/iot/energy', icon: Zap },
+    { label: 'An toàn Fail-Safe', route: '/iot/safety', icon: ShieldCheck },
+    { label: 'Trạng thái Edge', route: '/iot/edge', icon: Cpu },
+    { label: 'Cấu hình từ xa', route: '/iot/config', icon: Settings },
+    { label: 'Cập nhật firmware OTA', route: '/iot/ota', icon: UploadCloud },
+    { label: 'Phân tích IoT', route: '/iot/analytics', icon: BarChart3 },
     { label: 'Nhật ký sự kiện Event Log', route: '/iot/events', icon: FileText },
   ];
 
