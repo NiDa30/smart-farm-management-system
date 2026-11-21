@@ -58,11 +58,14 @@ import { HistoricalData } from './modules/iot/history/HistoricalData';
 import { PumpControl } from './modules/iot/control/PumpControl';
 import { ActuatorPanel } from './modules/iot/actuators/ActuatorPanel';
 import { DeviceManagementPanel } from './modules/iot/devices/DeviceManagementPanel';
-import { DigitalTwinView } from './modules/iot/digital-twin/DigitalTwinView';
+import { TopologyView } from './modules/iot/live-views/TopologyView';
+import { DigitalTwinLive } from './modules/iot/live-views/DigitalTwinLive';
+import { EdgeStatus } from './modules/iot/live-views/EdgeStatus';
+import { WaterMonitoring } from './modules/iot/live-views/WaterMonitoring';
+import { EnergyMonitor } from './modules/iot/live-views/EnergyMonitor';
+import { IotAnalyticsView } from './modules/iot/live-views/IotAnalyticsView';
 import { AutomationManager } from './modules/iot/automation/AutomationManager';
 import { IoTAlertCenter } from './modules/iot/alerts/IoTAlertCenter';
-import { IoTTopology } from './modules/iot/topology/IoTTopology';
-import { WaterEnergyMonitor } from './modules/iot/resources/WaterEnergyMonitor';
 import { SafetyAndEdge } from './modules/iot/safety/SafetyAndEdge';
 import { IoTEventLogger } from './modules/iot/events/IoTEventLogger';
 
@@ -276,7 +279,7 @@ const AppContent: React.FC = () => {
       return <><PumpControl /><ActuatorPanel /></>;
     }
     if (currentRoute.startsWith('/iot/digital-twin')) {
-      return <DigitalTwinView />;
+      return <DigitalTwinLive />;
     }
     if (
       currentRoute.startsWith('/iot/automation') ||
@@ -288,22 +291,24 @@ const AppContent: React.FC = () => {
       return <IoTAlertCenter />;
     }
     if (currentRoute.startsWith('/iot/topology')) {
-      return <IoTTopology />;
+      return <TopologyView />;
     }
-    if (
-      currentRoute.startsWith('/iot/resources') ||
-      currentRoute.startsWith('/iot/water') ||
-      currentRoute.startsWith('/iot/energy')
-    ) {
-      return <WaterEnergyMonitor />;
+    if (currentRoute.startsWith('/iot/water')) {
+      return <WaterMonitoring />;
+    }
+    if (currentRoute.startsWith('/iot/energy') || currentRoute.startsWith('/iot/resources')) {
+      return <EnergyMonitor />;
+    }
+    if (currentRoute.startsWith('/iot/analytics')) {
+      return <IotAnalyticsView />;
     }
     if (currentRoute.startsWith('/iot/ota') || currentRoute.startsWith('/iot/config')) {
       return <DeviceManagementPanel />;
     }
-    if (
-      currentRoute.startsWith('/iot/safety') ||
-      currentRoute.startsWith('/iot/edge')
-    ) {
+    if (currentRoute.startsWith('/iot/edge')) {
+      return <EdgeStatus />;
+    }
+    if (currentRoute.startsWith('/iot/safety')) {
       return <SafetyAndEdge />;
     }
     if (currentRoute.startsWith('/iot/events')) {

@@ -19,7 +19,8 @@ class IotAnalyticsTest {
     final String boot = "6a1e1f1e-1d50-4c51-8e7e-0d41b34e9a11";
 
     @BeforeEach void setup() {
-        jdbc.execute("TRUNCATE actuator_status,actuator_state_history,actuator_command,pump_status,pump_state_history,pump_command,watering_run");
+        jdbc.execute("TRUNCATE actuator_status,actuator_state_history,actuator_command,pump_status,pump_state_history,pump_command,watering_run,watering_rule");
+        jdbc.update("INSERT INTO watering_rule(singleton) VALUES(1)");
         jdbc.execute("TRUNCATE irrigation_sequence CASCADE");
         jdbc.update("UPDATE iot_actuator_binding SET rated_watts=NULL");
     }

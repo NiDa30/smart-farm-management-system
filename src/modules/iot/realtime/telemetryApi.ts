@@ -89,8 +89,9 @@ export async function fetchRegistry(signal: AbortSignal): Promise<{ areas: Senso
     fetch('/api/v1/sensors', { signal, cache: 'no-store' }),
   ]);
   if (!a.ok || !s.ok) throw new Error('Registry unavailable');
-  const areas: unknown = await a.json();
-  const sensors: unknown = await s.json();
+  return parseRegistry(await a.json(), await s.json());
+}
+export function parseRegistry(areas: unknown, sensors: unknown): { areas: SensorArea[]; sensors: SensorSummary[] } {
   if (!Array.isArray(areas) || !areas.every(v => object(v) && typeof v.id === 'string' && typeof v.name === 'string')
     || !Array.isArray(sensors) || !sensors.every(v => object(v) && typeof v.deviceId === 'string' && typeof v.name === 'string'
       && typeof v.areaId === 'string' && v.sensorType === 'ENVIRONMENT')) throw new Error('Invalid registry');
