@@ -22,4 +22,11 @@ public class AutomationRulesController {
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable long id) { rules.delete(id); }
     @GetMapping("/runs") public List<AutomationRules.Run> runs(@RequestParam(required = false) Long ruleId) { return rules.runs(ruleId); }
     @PostMapping("/simulation") public AutomationRules.Simulation simulate(@RequestBody AutomationRules.SimulationRequest request) { return rules.simulate(request); }
+
+    /** Only this controller's own reasons (validation, conflicts) are returned to the builder. */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public org.springframework.http.ResponseEntity<java.util.Map<String, Object>> reason(org.springframework.web.server.ResponseStatusException error) {
+        return org.springframework.http.ResponseEntity.status(error.getStatusCode())
+            .body(java.util.Map.of("status", error.getStatusCode().value(), "message", error.getReason() == null ? "" : error.getReason()));
+    }
 }
