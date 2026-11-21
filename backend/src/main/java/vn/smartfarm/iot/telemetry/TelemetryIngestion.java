@@ -30,6 +30,7 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     private final boolean controlsEnabled;
     private final boolean actuatorsEnabled;
     private final vn.smartfarm.iot.control.ActuatorService actuators;
+    private final vn.smartfarm.iot.devmgmt.DeviceManagementService devices;
     private final ThreadPoolExecutor controlWorker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(32), runnable -> new Thread(runnable, "pump-control"));
     private MqttClientConnection connection;
@@ -41,6 +42,12 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
         connection.publish(new software.amazon.awssdk.crt.mqtt.MqttMessage("smartfarm/FARM001/"+actuatorId+"/command",payload,
             QualityOfService.AT_LEAST_ONCE,false)).get(10,TimeUnit.SECONDS);
     }
+    @Override public void publishDeviceManagement(String kind, byte[] payload) throws Exception {
+        if (!controlConnected() || !devices.enabled()) throw new IllegalStateException("Device management unavailable");
+        if (!kind.equals("config") && !kind.equals("ota")) throw new IllegalArgumentException("Invalid topic");
+        connection.publish(new software.amazon.awssdk.crt.mqtt.MqttMessage("smartfarm/FARM001/ENV01/"+kind,payload,
+            QualityOfService.AT_LEAST_ONCE,false)).get(10,TimeUnit.SECONDS);
+    }
     @Override public void publishCommand(byte[] payload) throws Exception {
         if (!controlConnected()) throw new IllegalStateException("Control unavailable");
         connection.publish(new software.amazon.awssdk.crt.mqtt.MqttMessage("smartfarm/FARM001/PUMP01/command",payload,
@@ -50,9 +57,9 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
     public TelemetryIngestion(vn.smartfarm.iot.nodes.TelemetryRouter router, vn.smartfarm.iot.control.PumpService pump,
         vn.smartfarm.iot.monitoring.MqttHealth health,
         @org.springframework.beans.factory.annotation.Value("${smartfarm.control.enabled:false}") boolean controlsEnabled,
-        vn.smartfarm.iot.control.ActuatorService actuators) {
+        vn.smartfarm.iot.control.ActuatorService actuators, vn.smartfarm.iot.devmgmt.DeviceManagementService devices) {
         this.health=health; this.router = router; this.pump=pump; this.controlsEnabled=controlsEnabled;
-        this.actuators=actuators; this.actuatorsEnabled=actuators.enabled();
+        this.actuators=actuators; this.actuatorsEnabled=actuators.enabled(); this.devices=devices;
     }
 
     @Override
@@ -130,6 +137,16 @@ public class TelemetryIngestion implements ApplicationRunner, DisposableBean, vn
                     try { actuators.receive(message.getTopic(),copy); health.messageProcessed(); }
                     catch (RuntimeException error) { LOG.warn("Actuator message rejected or not persisted"); }
                 }); } catch (RejectedExecutionException error) { LOG.error("Control queue full; actuator status/ACK not persisted"); }
+            }).get(10,TimeUnit.SECONDS);
+        }
+        if (devices.enabled()) for (String suffix : new String[]{"config-ack","config-state","ota-status"}) {
+            connection.subscribe("smartfarm/FARM001/ENV01/"+suffix,QualityOfService.AT_LEAST_ONCE,message -> {
+                if (message.getRetain() || message.getPayload().length>2048) return;
+                byte[] copy=Arrays.copyOf(message.getPayload(),message.getPayload().length);
+                try { controlWorker.execute(() -> {
+                    try { devices.receive(message.getTopic(),copy); health.messageProcessed(); }
+                    catch (RuntimeException error) { LOG.warn("Device-management message rejected or not persisted"); }
+                }); } catch (RejectedExecutionException error) { LOG.error("Control queue full; device-management message not persisted"); }
             }).get(10,TimeUnit.SECONDS);
         }
         health.subscriptionsReady(healthVersion);

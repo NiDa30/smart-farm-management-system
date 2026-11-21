@@ -24,6 +24,13 @@ smartfarm:
   actuators:
     # Contract v3 actuators (zone valves, fan, light, misting) and zone sequences; also needs control.enabled.
     enabled: ${SMARTFARM_ACTUATORS_ENABLED:false}
+  devmgmt:
+    # Remote configuration + OTA for ENV01 (contract v4).
+    enabled: ${SMARTFARM_DEVMGMT_ENABLED:false}
+  ota:
+    # Release-signing public key (PEM, from tools/ota/ota_keys.py). Empty = OTA disabled.
+    public-key: ${SMARTFARM_OTA_PUBLIC_KEY:}
+    host-suffix: ${SMARTFARM_OTA_HOST_SUFFIX:.amazonaws.com}
   realtime:
     # Browser origins allowed to open /ws/iot (explicit list, no wildcard).
     allowed-origins: ${SMARTFARM_REALTIME_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}

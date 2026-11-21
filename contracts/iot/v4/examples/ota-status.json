@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "deviceId": "ENV01",
+  "bootId": "3e4d1219-4d80-456c-8561-ec0b744f5184",
+  "sequence": 12,
+  "timestamp": "2026-11-20T01:00:05Z",
+  "otaId": "0a7f3b2e-58c1-4d1e-a0f4-6b9e2d7c4a35",
+  "version": "1.4.0",
+  "stage": "DOWNLOADING",
+  "errorCode": null,
+  "progress": 50,
+  "firmwareVersion": "1.3.0"
+}

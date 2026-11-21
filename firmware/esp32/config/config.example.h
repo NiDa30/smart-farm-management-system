@@ -43,3 +43,11 @@
 #define FARM_MIST_MAX_SECONDS 600
 // Misting draws from the same reservoir: dry float trips it with lockout, like the pump.
 #define FARM_MIST_USES_RESERVOIR 1
+
+// Remote configuration and OTA (contract v4, see contracts/iot/v4). 0 keeps the previous firmware.
+#define FARM_DEVMGMT_ENABLED 0
+#define FARM_FIRMWARE_VERSION "1.4.0"
+// Image URLs must be https on this host suffix; the pinned Amazon Root CA validates them.
+#define FARM_OTA_HOST_SUFFIX ".amazonaws.com"
+// Release public key from tools/ota/ota_keys.py (PEM, one string). Empty = OTA refused.
+#define FARM_OTA_PUBLIC_KEY_PEM ""

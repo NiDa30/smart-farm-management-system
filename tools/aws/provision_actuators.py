@@ -45,7 +45,7 @@ def policies(region, account):
     return device, backend
 
 
-def apply(session, region, account, output, device_policy):
+def apply(session, region, account, output, device_policy, policy_name=POLICY_NAME):
     from botocore.exceptions import ClientError
     if session.create_client("sts", region_name=region).get_caller_identity()["Account"] != account:
         raise ValueError("Active AWS account differs from --account-id; no resources changed")
@@ -54,15 +54,15 @@ def apply(session, region, account, output, device_policy):
         raise ValueError("provisioning.json does not belong to ENV01 in this account/region")
     iot = session.create_client("iot", region_name=region)
     try:
-        existing = iot.get_policy(policyName=POLICY_NAME)
+        existing = iot.get_policy(policyName=policy_name)
         if json.loads(existing["policyDocument"]) != device_policy:
-            raise ValueError("Existing actuator policy differs; refusing to replace or broaden it")
+            raise ValueError("Existing policy differs; refusing to replace or broaden it")
     except ClientError as error:
         if error.response["Error"]["Code"] != "ResourceNotFoundException":
             raise
-        iot.create_policy(policyName=POLICY_NAME, policyDocument=json.dumps(device_policy))
-    iot.attach_policy(policyName=POLICY_NAME, target=state["certificateArn"])
-    print("Actuator policy attached to the ENV01 certificate; original policy unchanged.")
+        iot.create_policy(policyName=policy_name, policyDocument=json.dumps(device_policy))
+    iot.attach_policy(policyName=policy_name, target=state["certificateArn"])
+    print(f"{policy_name} attached to the ENV01 certificate; existing policies unchanged.")
 
 
 def main():

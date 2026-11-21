@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "deviceId": "ENV01",
+  "bootId": "3e4d1219-4d80-456c-8561-ec0b744f5184",
+  "sequence": 10,
+  "timestamp": "2026-11-20T01:00:01Z",
+  "configId": "5b0d8a52-4b7e-4f4c-9d33-2a6c1e0f9b11",
+  "status": "APPLIED",
+  "errorCode": null,
+  "revision": 5
+}

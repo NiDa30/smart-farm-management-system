@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ENV01 remote configuration",
+  "description": "Applied whole or not at all, only with a strictly newer revision; |soilDryAdc-soilWetAdc|>=200 is checked by device and backend.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "configId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "deviceId": {
+      "const": "ENV01"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "telemetrySeconds": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 10
+        },
+        "heartbeatSeconds": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 20
+        },
+        "soilWetAdc": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "soilDryAdc": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "pumpMaxSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        }
+      },
+      "required": [
+        "telemetrySeconds",
+        "heartbeatSeconds",
+        "soilWetAdc",
+        "soilDryAdc",
+        "pumpMaxSeconds"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "configId",
+    "deviceId",
+    "revision",
+    "issuedAt",
+    "expiresAt",
+    "settings"
+  ]
+}

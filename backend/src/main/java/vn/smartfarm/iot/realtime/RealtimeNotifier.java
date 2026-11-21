@@ -8,7 +8,7 @@ import java.util.Set;
  */
 public interface RealtimeNotifier {
     Set<String> TOPICS = Set.of("telemetry", "nodes", "pump", "commands", "alerts", "automation",
-        "monitoring", "events", "safety", "dashboard", "actuators");
+        "monitoring", "events", "safety", "dashboard", "actuators", "devices");
 
     /** Sent after the surrounding transaction commits; immediately when there is none. */
     void publish(String... topics);

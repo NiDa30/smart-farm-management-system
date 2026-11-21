@@ -73,7 +73,7 @@ jobs:
         shell: bash
         run: |
           status=0
-          for t in automation events monitoring dashboard safety alerts nodes actuators; do
+          for t in automation events monitoring dashboard safety alerts nodes actuators devices; do
             if npm run -s "test:$t" > "$RUNNER_TEMP/pw-$t.log" 2>&1; then r=PASS; else r=FAIL; status=1; fi
             echo "test:$t $r $(grep -E '^ +[0-9]+ (passed|failed|flaky|skipped)' "$RUNNER_TEMP/pw-$t.log" | tr -s ' ' | tr '\n' ' ')" | tee -a "$RUNNER_TEMP/pw-summary.log"
             [ "$r" = FAIL ] && cat "$RUNNER_TEMP/pw-$t.log" >> "$RUNNER_TEMP/fe.log"
@@ -95,16 +95,21 @@ jobs:
         with:
           path: ~/.platformio
           key: pio-${{ hashFiles('firmware/**/platformio.ini') }}
-      - run: pip install -r tools/requirements-day1.txt pytest
+      - run: pip install -r tools/requirements-day1.txt pytest cryptography
       - name: native + python tests
         shell: bash
         run: |
           set -o pipefail
           {
             git -c advice.detachedHead=false clone -q --depth 1 --branch v7.4.2 https://github.com/bblanchon/ArduinoJson "$RUNNER_TEMP/ArduinoJson"
+            # mbedtls 2.28 = the version in ESP-IDF 4.4 / Arduino-ESP32 2.x (OTA hash + signature tests)
+            git -c advice.detachedHead=false clone -q --depth 1 --branch v2.28.8 https://github.com/Mbed-TLS/mbedtls "$RUNNER_TEMP/mbedtls"
+            cmake -S "$RUNNER_TEMP/mbedtls" -B "$RUNNER_TEMP/mbedtls/build" -DENABLE_TESTING=OFF -DENABLE_PROGRAMS=OFF > /dev/null
+            make -s -C "$RUNNER_TEMP/mbedtls/build" -j4 mbedcrypto > /dev/null
             for f in tools/tests/*_test.cpp; do
               n=$(basename "$f" .cpp)
-              g++ -std=c++17 -Wall -Wextra -I"$RUNNER_TEMP/ArduinoJson/src" -o "$RUNNER_TEMP/$n" "$f"
+              g++ -std=c++17 -Wall -Wextra -fsanitize=address,undefined -I"$RUNNER_TEMP/ArduinoJson/src" -I"$RUNNER_TEMP/mbedtls/include" \
+                -o "$RUNNER_TEMP/$n" "$f" -L"$RUNNER_TEMP/mbedtls/build/library" -lmbedcrypto
               "$RUNNER_TEMP/$n" > /dev/null
               echo "native $n PASS"
             done

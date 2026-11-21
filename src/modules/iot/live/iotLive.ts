@@ -1,9 +1,9 @@
 // One shared /ws/iot connection for every IoT screen. The socket only says "these topics
 // changed"; screens refetch through REST, so a lost or late message can only delay a refresh,
 // never show wrong data. Without a socket, each screen keeps its original polling cadence.
-export type LiveTopic='telemetry'|'nodes'|'pump'|'commands'|'alerts'|'automation'|'monitoring'|'events'|'safety'|'dashboard'|'actuators';
+export type LiveTopic='telemetry'|'nodes'|'pump'|'commands'|'alerts'|'automation'|'monitoring'|'events'|'safety'|'dashboard'|'actuators'|'devices';
 export type LiveStatus='idle'|'connecting'|'open'|'reconnecting'|'unsupported';
-export const LIVE_TOPICS:readonly LiveTopic[]=['telemetry','nodes','pump','commands','alerts','automation','monitoring','events','safety','dashboard','actuators'];
+export const LIVE_TOPICS:readonly LiveTopic[]=['telemetry','nodes','pump','commands','alerts','automation','monitoring','events','safety','dashboard','actuators','devices'];
 export interface LiveMessage {type:'hello'|'changed'|'heartbeat';version:number;topics:LiveTopic[]}
 
 /** Strict: anything unexpected is ignored rather than trusted. */

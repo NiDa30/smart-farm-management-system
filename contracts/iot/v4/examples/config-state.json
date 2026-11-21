@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "deviceId": "ENV01",
+  "bootId": "3e4d1219-4d80-456c-8561-ec0b744f5184",
+  "sequence": 11,
+  "timestamp": "2026-11-20T01:00:01Z",
+  "revision": 5,
+  "settings": {
+    "telemetrySeconds": 8,
+    "heartbeatSeconds": 15,
+    "soilWetAdc": 900,
+    "soilDryAdc": 3100,
+    "pumpMaxSeconds": 600
+  },
+  "firmwareVersion": "1.4.0",
+  "partition": "app1",
+  "otaTrial": false
+}

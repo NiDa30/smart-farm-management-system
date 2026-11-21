@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "configId": "5b0d8a52-4b7e-4f4c-9d33-2a6c1e0f9b11",
+  "deviceId": "ENV01",
+  "revision": 5,
+  "issuedAt": "2026-11-20T01:00:00Z",
+  "expiresAt": "2026-11-20T01:00:30Z",
+  "settings": {
+    "telemetrySeconds": 8,
+    "heartbeatSeconds": 15,
+    "soilWetAdc": 900,
+    "soilDryAdc": 3100,
+    "pumpMaxSeconds": 600
+  }
+}

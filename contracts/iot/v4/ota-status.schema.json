@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ENV01 OTA progress",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "deviceId": {
+      "const": "ENV01"
+    },
+    "bootId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "otaId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "version": {
+      "type": "string",
+      "maxLength": 23
+    },
+    "stage": {
+      "enum": [
+        "RECEIVED",
+        "DOWNLOADING",
+        "REJECTED",
+        "FAILED",
+        "REBOOTING",
+        "CONFIRMED",
+        "ROLLED_BACK"
+      ]
+    },
+    "errorCode": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "progress": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "firmwareVersion": {
+      "type": "string",
+      "maxLength": 23
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "timestamp",
+    "otaId",
+    "version",
+    "stage",
+    "errorCode",
+    "progress",
+    "firmwareVersion"
+  ]
+}
